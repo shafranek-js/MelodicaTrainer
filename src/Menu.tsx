@@ -24,6 +24,12 @@ const Menu: React.FC = () => (
       >
         Tabs
       </Link>
+      <Link
+        to="/practice"
+        className="text-white hover:text-green-400 transition-colors duration-300 font-semibold"
+      >
+        Practice
+      </Link>
     </div>
 
     {/* Right-side controls (GitHub + NotationSwitch) */}
