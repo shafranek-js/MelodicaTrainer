@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { PitchDetector } from "pitchy";
 
+interface WindowWithWebkitAudioContext extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 export function usePitchDetector(minClarity: number = 0.95) {
   const [pitch, setPitch] = useState<string | null>(null);
   const [clarity, setClarity] = useState<string | null>(null);
@@ -23,9 +27,14 @@ export function usePitchDetector(minClarity: number = 0.95) {
         });
         mediaStreamRef.current = stream;
 
-        const AudioContext =
-          window.AudioContext || (window as any).webkitAudioContext;
-        const audioContext = new AudioContext();
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as WindowWithWebkitAudioContext).webkitAudioContext;
+        if (!AudioContextClass) {
+          throw new Error("Web Audio API is not supported in this browser.");
+        }
+
+        const audioContext = new AudioContextClass();
         audioContextRef.current = audioContext;
 
         analyser = audioContext.createAnalyser();

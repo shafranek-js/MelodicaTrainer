@@ -1,8 +1,82 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { getHarmonicaHoleForNote, harmonicaKeys } from "../utils/utils";
-import { Note, Interval } from "tonal";
+import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
+
+const getPitchNoteName = (pitch: Element): string | null => {
+  const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
+  const alter = pitch.getElementsByTagName("alter")[0]?.textContent;
+  const octave = pitch.getElementsByTagName("octave")[0]?.textContent ?? "";
+
+  if (!step || !octave) return null;
+
+  const accidental = Number(alter || 0);
+  return `${step}${"#".repeat(Math.max(accidental, 0))}${"b".repeat(
+    Math.max(-accidental, 0)
+  )}${octave}`;
+};
+
+const transposeNoteName = (
+  noteName: string,
+  semitones: number
+): string | null => {
+  const midi = Note.midi(noteName);
+  if (midi === null) return null;
+
+  return Note.fromMidiSharps(midi + semitones);
+};
+
+const upsertTextElement = (
+  xmlDoc: XMLDocument,
+  parent: Element,
+  tagName: string,
+  text: string,
+  before?: Element
+) => {
+  let element = parent.getElementsByTagName(tagName)[0];
+
+  if (!element) {
+    element = xmlDoc.createElement(tagName);
+    parent.insertBefore(element, before || null);
+  }
+
+  element.textContent = text;
+  return element;
+};
+
+const writePitch = (
+  xmlDoc: XMLDocument,
+  pitch: Element,
+  noteName: string
+) => {
+  const note = Note.get(noteName);
+  if (note.empty || note.oct === undefined) return;
+
+  const octaveElement = upsertTextElement(
+    xmlDoc,
+    pitch,
+    "octave",
+    String(note.oct)
+  );
+  const existingAlter = pitch.getElementsByTagName("alter")[0];
+
+  upsertTextElement(
+    xmlDoc,
+    pitch,
+    "step",
+    note.letter,
+    existingAlter || octaveElement
+  );
+
+  if (note.alt === 0) {
+    existingAlter?.remove();
+  } else if (existingAlter) {
+    existingAlter.textContent = String(note.alt);
+  } else {
+    upsertTextElement(xmlDoc, pitch, "alter", String(note.alt), octaveElement);
+  }
+};
 
 const TestFileLoader: React.FC = () => {
   const { t } = useTranslation();
@@ -47,14 +121,12 @@ const TestFileLoader: React.FC = () => {
         const pitch = note.getElementsByTagName("pitch")[0];
         if (!pitch) continue;
 
-        const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
-        const octave =
-          pitch.getElementsByTagName("octave")[0]?.textContent ?? "";
-        const originalNote = `${step}${octave}`;
-        const transposed = Note.transpose(
-          originalNote,
-          Interval.fromSemitones(interval)
-        );
+        const originalNote = getPitchNoteName(pitch);
+        if (!originalNote) continue;
+
+        const transposed = transposeNoteName(originalNote, interval);
+        if (!transposed) continue;
+
         const tab = getHarmonicaHoleForNote(selectedKey, transposed);
 
         if (!tab) {
@@ -92,13 +164,7 @@ const TestFileLoader: React.FC = () => {
     setRawFileContent(content);
   };
 
-  useEffect(() => {
-    if (!rawFileContent) return;
-    const injected = injectHarmonicaTabs(rawFileContent);
-    setFileContent(injected);
-  }, [rawFileContent, selectedKey, transpose]);
-
-  const injectHarmonicaTabs = (xml: string): string => {
+  const injectHarmonicaTabs = useCallback((xml: string): string => {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xml, "application/xml");
     const noteElements = xmlDoc.getElementsByTagName("note");
@@ -107,11 +173,16 @@ const TestFileLoader: React.FC = () => {
       const pitch = note.getElementsByTagName("pitch")[0];
       if (!pitch) return;
 
-      const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
-      const octave = pitch.getElementsByTagName("octave")[0]?.textContent ?? "";
-      const originalNote = `${step}${octave}`;
-      const interval = Interval.fromSemitones(transpose);
-      const transposedNote = Note.transpose(originalNote, interval);
+      const originalNote = getPitchNoteName(pitch);
+      if (!originalNote) return;
+
+      const transposedNote = transposeNoteName(originalNote, transpose);
+      if (!transposedNote) return;
+
+      writePitch(xmlDoc, pitch, transposedNote);
+      note.removeAttribute("default-y");
+      note.removeAttribute("relative-y");
+
       const tab = getHarmonicaHoleForNote(selectedKey, transposedNote);
       if (!tab) return;
 
@@ -128,7 +199,13 @@ const TestFileLoader: React.FC = () => {
     });
 
     return new XMLSerializer().serializeToString(xmlDoc);
-  };
+  }, [selectedKey, transpose]);
+
+  useEffect(() => {
+    if (!rawFileContent) return;
+    const injected = injectHarmonicaTabs(rawFileContent);
+    setFileContent(injected);
+  }, [rawFileContent, injectHarmonicaTabs]);
 
   useEffect(() => {
     if (!fileContent || !osmdRef.current) return;
