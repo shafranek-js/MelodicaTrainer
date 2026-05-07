@@ -5,7 +5,29 @@ interface WindowWithWebkitAudioContext extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
-export function usePitchDetector(minClarity: number = 0.95, enabled = true) {
+type PitchDetectorOptions = {
+  allowedMidiNumbers?: Set<number>;
+  minRms?: number;
+  stableFrames?: number;
+};
+
+const getRms = (buffer: Float32Array) => {
+  const sum = buffer.reduce((total, sample) => total + sample * sample, 0);
+  return Math.sqrt(sum / buffer.length);
+};
+
+const frequencyToMidi = (frequency: number) =>
+  Math.round(69 + 12 * Math.log2(frequency / 440));
+
+export function usePitchDetector(
+  minClarity: number = 0.95,
+  enabled = true,
+  {
+    allowedMidiNumbers,
+    minRms = 0.015,
+    stableFrames = 4,
+  }: PitchDetectorOptions = {}
+) {
   const [pitch, setPitch] = useState<string | null>(null);
   const [clarity, setClarity] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +38,8 @@ export function usePitchDetector(minClarity: number = 0.95, enabled = true) {
     typeof PitchDetector.forFloat32Array
   > | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const candidateMidiRef = useRef<number | null>(null);
+  const stableFramesRef = useRef(0);
 
   useEffect(() => {
     if (!enabled) {
@@ -72,13 +96,33 @@ export function usePitchDetector(minClarity: number = 0.95, enabled = true) {
               buffer,
               audioContext.sampleRate
             );
+          const detectedMidi = frequencyToMidi(detectedPitch);
+          const isAllowedMidi =
+            !allowedMidiNumbers || allowedMidiNumbers.has(detectedMidi);
+          const isUsablePitch =
+            Number.isFinite(detectedPitch) &&
+            detectedPitch > 0 &&
+            detectedClarity > minClarity &&
+            getRms(buffer) >= minRms &&
+            isAllowedMidi;
 
-          if (detectedClarity > minClarity) {
-            setPitch(detectedPitch.toFixed(0));
-            setClarity(detectedClarity.toFixed(2));
-          } else {
+          if (!isUsablePitch) {
+            candidateMidiRef.current = null;
+            stableFramesRef.current = 0;
             setPitch(null);
             setClarity(null);
+          } else {
+            if (candidateMidiRef.current === detectedMidi) {
+              stableFramesRef.current += 1;
+            } else {
+              candidateMidiRef.current = detectedMidi;
+              stableFramesRef.current = 1;
+            }
+
+            if (stableFramesRef.current >= stableFrames) {
+              setPitch(detectedPitch.toFixed(1));
+              setClarity(detectedClarity.toFixed(2));
+            }
           }
 
           rafIdRef.current = requestAnimationFrame(updatePitch);
@@ -107,7 +151,9 @@ export function usePitchDetector(minClarity: number = 0.95, enabled = true) {
       audioContextRef.current = null;
       mediaStreamRef.current = null;
       rafIdRef.current = null;
+      candidateMidiRef.current = null;
+      stableFramesRef.current = 0;
     };
-  }, [minClarity, enabled]);
+  }, [allowedMidiNumbers, enabled, minClarity, minRms, stableFrames]);
   return { pitch, clarity, error };
 }

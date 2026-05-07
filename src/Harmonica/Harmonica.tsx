@@ -15,9 +15,21 @@ const baseKey = "C4";
 function Harmonica() {
   const { t } = useTranslation();
   const [isListening, setIsListening] = useState(false);
-  const { pitch, clarity, error } = usePitchDetector(0.7, isListening);
   const [key, setKey] = useState(baseKey);
   const layout = useMemo(() => generateLayout(key), [key]);
+  const allowedMidiNumbers = useMemo(() => {
+    const midiNumbers = Object.values(layout)
+      .flat()
+      .map((note) => (note ? Note.midi(note.name) : null))
+      .filter((midi): midi is number => midi !== null);
+
+    return new Set(midiNumbers);
+  }, [layout]);
+  const { pitch, clarity, error } = usePitchDetector(0.82, isListening, {
+    allowedMidiNumbers,
+    minRms: 0.015,
+    stableFrames: 4,
+  });
   // Get detected note and cents offset from pitch
   const detectedNote = useMemo(() => {
     if (!pitch) return null;
