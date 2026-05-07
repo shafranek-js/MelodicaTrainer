@@ -4,6 +4,13 @@ import { getHarmonicaHoleForNote, harmonicaKeys } from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
 
+const keySignatureTonicsByFifths = new Map(
+  Array.from({ length: 15 }, (_, index) => {
+    const fifths = index - 7;
+    return [fifths, (fifths * 7 + 1200) % 12];
+  })
+);
+
 const getPitchNoteName = (pitch: Element): string | null => {
   const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
   const alter = pitch.getElementsByTagName("alter")[0]?.textContent;
@@ -78,6 +85,37 @@ const writePitch = (
   }
 };
 
+const transposeKeySignatureFifths = (
+  originalFifths: number,
+  semitones: number
+) => {
+  const originalChroma = keySignatureTonicsByFifths.get(originalFifths);
+  if (originalChroma === undefined) return originalFifths;
+
+  const targetChroma = (originalChroma + semitones + 1200) % 12;
+  const candidates = Array.from(keySignatureTonicsByFifths.entries()).filter(
+    ([, chroma]) => chroma === targetChroma
+  );
+
+  return candidates.reduce((best, [fifths]) =>
+    Math.abs(fifths) < Math.abs(best) ? fifths : best
+  , candidates[0]?.[0] ?? originalFifths);
+};
+
+const transposeKeySignatures = (xmlDoc: XMLDocument, semitones: number) => {
+  Array.from(xmlDoc.getElementsByTagName("key")).forEach((key) => {
+    const fifthsElement = key.getElementsByTagName("fifths")[0];
+    if (!fifthsElement?.textContent) return;
+
+    const fifths = Number(fifthsElement.textContent);
+    if (!Number.isFinite(fifths)) return;
+
+    fifthsElement.textContent = String(
+      transposeKeySignatureFifths(fifths, semitones)
+    );
+  });
+};
+
 const TestFileLoader: React.FC = () => {
   const { t } = useTranslation();
   const [rawFileContent, setRawFileContent] = useState<string | null>(null);
@@ -91,14 +129,12 @@ const TestFileLoader: React.FC = () => {
   const osmdRef = useRef<HTMLDivElement>(null);
   const osmdInstance = useRef<OpenSheetMusicDisplay | null>(null);
   useEffect(() => {
-    fetch("/NoteBender/IntroSong.musicxml")
+    fetch(`${import.meta.env.BASE_URL}IntroSong.musicxml`)
       .then((res) => {
-        console.log("Fetch status:", res.status);
         if (!res.ok) throw new Error("Failed to load default musicxml");
         return res.text();
       })
       .then((text) => {
-        console.log("Loaded default file content length:", text.length);
         setFileName("IntroSong.musicxml");
         setRawFileContent(text);
       })
@@ -168,6 +204,7 @@ const TestFileLoader: React.FC = () => {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xml, "application/xml");
     const noteElements = xmlDoc.getElementsByTagName("note");
+    transposeKeySignatures(xmlDoc, transpose);
 
     Array.from(noteElements).forEach((note) => {
       const pitch = note.getElementsByTagName("pitch")[0];
@@ -200,6 +237,22 @@ const TestFileLoader: React.FC = () => {
 
     return new XMLSerializer().serializeToString(xmlDoc);
   }, [selectedKey, transpose]);
+
+  const downloadProcessedFile = useCallback(() => {
+    if (!fileContent) return;
+
+    const blob = new Blob([fileContent], {
+      type: "application/vnd.recordare.musicxml+xml",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const baseName = fileName?.replace(/\.(musicxml|xml)$/i, "") || "score";
+
+    link.href = url;
+    link.download = `${baseName}-notebender.musicxml`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [fileContent, fileName]);
 
   useEffect(() => {
     if (!rawFileContent) return;
@@ -295,6 +348,15 @@ const TestFileLoader: React.FC = () => {
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition w-full"
           >
             🎯 Auto Transpose (Apply Filters)
+          </button>
+
+          <button
+            type="button"
+            onClick={downloadProcessedFile}
+            disabled={!fileContent}
+            className="bg-cyan-700 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-400 text-white px-4 py-2 rounded transition w-full"
+          >
+            Download Transposed MusicXML
           </button>
 
           {/* Filter Options */}

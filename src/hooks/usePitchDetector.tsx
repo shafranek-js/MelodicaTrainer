@@ -5,9 +5,10 @@ interface WindowWithWebkitAudioContext extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
-export function usePitchDetector(minClarity: number = 0.95) {
+export function usePitchDetector(minClarity: number = 0.95, enabled = true) {
   const [pitch, setPitch] = useState<string | null>(null);
   const [clarity, setClarity] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const rafIdRef = useRef<number | null>(null);
@@ -17,14 +18,27 @@ export function usePitchDetector(minClarity: number = 0.95) {
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setPitch(null);
+      setClarity(null);
+      setError(null);
+      return;
+    }
+
     let analyser: AnalyserNode;
     let buffer: Float32Array;
+    let cancelled = false;
 
     const initAudio = async () => {
       try {
+        setError(null);
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
         });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
         mediaStreamRef.current = stream;
 
         const AudioContextClass =
@@ -46,6 +60,8 @@ export function usePitchDetector(minClarity: number = 0.95) {
         pitchDetectorRef.current = PitchDetector.forFloat32Array(buffer.length);
 
         const updatePitch = async () => {
+          if (cancelled) return;
+
           if (audioContext.state === "suspended") {
             await audioContext.resume();
           }
@@ -71,16 +87,27 @@ export function usePitchDetector(minClarity: number = 0.95) {
         updatePitch();
       } catch (error) {
         console.error("Error accessing microphone:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Unable to access the microphone."
+        );
+        setPitch(null);
+        setClarity(null);
       }
     };
 
     initAudio();
 
     return () => {
+      cancelled = true;
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       audioContextRef.current?.close();
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      audioContextRef.current = null;
+      mediaStreamRef.current = null;
+      rafIdRef.current = null;
     };
-  }, [minClarity]);
-  return { pitch, clarity };
+  }, [minClarity, enabled]);
+  return { pitch, clarity, error };
 }

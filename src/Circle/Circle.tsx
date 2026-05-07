@@ -170,7 +170,11 @@ function Circle() {
                   setSelectedMode(0);
                 }}
                 className={`absolute cursor-pointer rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-semibold text-sm sm:text-lg transition-colors duration-300 ${colorClass} ${borderClass}`}
-                style={{ left: x - 20, top: y - 20 }}
+                style={{
+                  left: x,
+                  top: y,
+                  transform: "translate(-50%, -50%)",
+                }}
                 title={`Select root: ${t(note)}`}
               >
                 {t(note)}
@@ -191,7 +195,11 @@ function Circle() {
                 return (
                   <div
                     className={`absolute rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs font-bold ${colorClass}`}
-                    style={{ left: xInner - 12, top: yInner - 12 }}
+                    style={{
+                      left: xInner,
+                      top: yInner,
+                      transform: "translate(-50%, -50%)",
+                    }}
                   >
                     {degreeIndex + 1}
                   </div>
@@ -203,7 +211,7 @@ function Circle() {
       </div>
 
       <div className="flex gap-2 sm:gap-3 overflow-x-auto max-w-full px-2 sm:px-4 mt-2 sm:mt-4 pb-2">
-        {modes
+        {[...modes]
           .sort((a, b) => a.harmonicaOrder - b.harmonicaOrder)
           .map(({ name, harmonicaPosition }) => {
             const modeIndex = modeNames.indexOf(name);

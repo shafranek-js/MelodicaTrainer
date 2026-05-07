@@ -14,7 +14,8 @@ const baseKey = "C4";
 
 function Harmonica() {
   const { t } = useTranslation();
-  const { pitch, clarity } = usePitchDetector(0.7);
+  const [isListening, setIsListening] = useState(false);
+  const { pitch, clarity, error } = usePitchDetector(0.7, isListening);
   const [key, setKey] = useState(baseKey);
   const layout = useMemo(() => generateLayout(key), [key]);
   // Get detected note and cents offset from pitch
@@ -38,8 +39,6 @@ function Harmonica() {
       />
     );
   };
-
-  console.log(t("D"));
 
   const renderRow = (
     notes: (TonalNote | null)[],
@@ -119,10 +118,22 @@ function Harmonica() {
       </div>
 
       <div className="relative w-full max-w-md mx-auto h-[5.5rem] sm:h-[6rem]">
+        {!isListening && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsListening(true)}
+              className="rounded bg-green-600 px-4 py-2 font-semibold text-white transition hover:bg-green-700"
+            >
+              Start listening
+            </button>
+            {error && <div className="text-sm text-red-300">{error}</div>}
+          </div>
+        )}
         {/* Visible when pitch is detected */}
         <div
           className={`absolute inset-0 transition-opacity duration-300 ${
-            pitch ? "opacity-100" : "opacity-0 pointer-events-none"
+            isListening && pitch ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
           <div className="text-xl sm:text-2xl font-semibold text-green-400">
@@ -141,13 +152,30 @@ function Harmonica() {
         {/* Placeholder when no pitch detected */}
         <div
           className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
-            pitch ? "opacity-0 pointer-events-none" : "opacity-100"
+            isListening && !pitch && !error
+              ? "opacity-100"
+              : "opacity-0 pointer-events-none"
           }`}
         >
           <div className="text-gray-500 text-lg sm:text-xl animate-pulse">
             Listening for pitch...
           </div>
         </div>
+        {isListening && error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+            <div className="text-center text-sm text-red-300">{error}</div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsListening(false);
+                window.setTimeout(() => setIsListening(true), 0);
+              }}
+              className="rounded bg-gray-800 px-4 py-2 font-semibold text-white transition hover:bg-gray-700"
+            >
+              Try again
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Harmonica layout */}
