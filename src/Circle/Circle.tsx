@@ -30,16 +30,27 @@ const modeDegreesMap: Record<string, number> = Object.fromEntries(
   modes.map((m) => [m.name.toLowerCase(), m.degree])
 );
 
+const scaleOptions = [
+  { label: "Position mode", value: "mode" },
+  { label: "Major", value: "major" },
+  { label: "Major pentatonic", value: "major pentatonic" },
+  { label: "Minor pentatonic", value: "minor pentatonic" },
+  { label: "Blues", value: "blues" },
+  { label: "Major blues", value: "major blues" },
+];
+
 const chordQualityColors: Record<string, string> = {
   major: "bg-yellow-400 text-black",
   minor: "bg-blue-600 text-white",
   diminished: "bg-red-500 text-white",
+  scale: "bg-emerald-500 text-black",
   none: "bg-gray-800 text-white hover:bg-green-600",
 };
 
 function Circle() {
   const [selectedRoot, setSelectedRoot] = useState("C");
   const [selectedMode, setSelectedMode] = useState(0);
+  const [selectedScale, setSelectedScale] = useState("mode");
   const [dimensions, setDimensions] = useState(getResponsiveSize());
   const { t } = useTranslation();
 
@@ -65,10 +76,25 @@ function Circle() {
 
   const majorScaleNotes = tonal.Scale.get(selectedRoot + " major").notes;
   const modeDegree = modeDegreesMap[modeName.toLowerCase()] || 1;
-  const modeTonic = majorScaleNotes[modeDegree - 1];
-  const scale = tonal.Scale.get(modeTonic + " " + modeName.toLowerCase()).notes;
+  const modeStartIndex = modeDegree - 1;
+  const modeTonic = majorScaleNotes[modeStartIndex];
+  const modeScale = [
+    ...majorScaleNotes.slice(modeStartIndex),
+    ...majorScaleNotes.slice(0, modeStartIndex),
+  ];
+  const scale =
+    selectedScale === "mode"
+      ? modeScale
+      : tonal.Scale.get(`${modeTonic} ${selectedScale}`).notes;
+  const scaleLabel =
+    selectedScale === "mode"
+      ? modeName
+      : scaleOptions.find((option) => option.value === selectedScale)?.label ||
+        modeName;
 
   const triads = useMemo(() => {
+    if (scale.length !== 7) return [];
+
     const triadsArray = [];
     for (let i = 0; i < 7; i++) {
       const root = scale[i];
@@ -90,6 +116,10 @@ function Circle() {
       map[normalizeNote(note)] = "none";
     });
 
+    scale.forEach((note) => {
+      map[normalizeNote(note)] = "scale";
+    });
+
     triads.forEach(({ root, notes, quality }) => {
       const rootNorm = normalizeNote(root);
       map[rootNorm] = quality;
@@ -102,7 +132,7 @@ function Circle() {
     });
 
     return map;
-  }, [circleOfFifths, triads]);
+  }, [circleOfFifths, scale, triads]);
 
   const angleStep = (2 * Math.PI) / circleOfFifths.length;
 
@@ -122,10 +152,11 @@ function Circle() {
           const y = center + radius * Math.sin(angle);
 
           const chroma = tonal.Note.chroma(note);
+          const noteColor = noteColors[chroma] || "none";
           const colorClass =
-            chordQualityColors[
-              tonal.Chord.get(noteColors[chroma] || "").type || "none"
-            ] || chordQualityColors.none;
+            chordQualityColors[noteColor] ||
+            chordQualityColors[tonal.Chord.get(noteColor).type || "none"] ||
+            chordQualityColors.none;
 
           const isTonicNote =
             tonal.Note.chroma(note) === tonal.Note.chroma(modeTonic);
@@ -194,11 +225,45 @@ function Circle() {
           })}
       </div>
 
+      <div className="flex gap-2 sm:gap-3 overflow-x-auto max-w-full px-2 sm:px-4 mt-2 pb-2">
+        {scaleOptions.map(({ label, value }) => {
+          const isSelected = selectedScale === value;
+
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setSelectedScale(value)}
+              className={`cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 rounded font-medium text-sm sm:text-base whitespace-nowrap ${
+                isSelected
+                  ? "bg-emerald-400 text-black shadow-md"
+                  : "bg-gray-800 text-white hover:bg-emerald-500 transition-colors"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0 mt-6 sm:mt-8 w-full px-2 sm:px-4 max-w-5xl">
         <div className="bg-gray-900 p-4 rounded-lg w-full text-sm space-y-2">
           <h2 className="text-lg font-bold mb-2">
-            Triads in {t(modeTonic)} {modeName}
+            {t(modeTonic)} {scaleLabel}
           </h2>
+          <div className="flex flex-wrap gap-2">
+            {scale.map((note, idx) => (
+              <span
+                key={`${note}-${idx}`}
+                className="rounded bg-gray-800 px-2 py-1 text-xs sm:text-sm font-medium"
+              >
+                {idx + 1}. {t(note)}
+              </span>
+            ))}
+          </div>
+          {triads.length > 0 && (
+            <h3 className="text-base font-bold pt-3">Triads</h3>
+          )}
           <ul className="space-y-1">
             {triads.map(({ root, notes, quality }, idx) => (
               <li
@@ -233,6 +298,10 @@ function Circle() {
         <div className="bg-gray-900 p-4 rounded-lg w-full text-sm space-y-2">
           <h2 className="text-lg font-bold mb-2">Legend</h2>
           <ul className="space-y-1">
+            <li>
+              <span className="inline-block w-4 h-4 bg-emerald-500 rounded-sm align-middle mr-2 border border-black"></span>
+              Scale note
+            </li>
             <li>
               <span className="inline-block w-4 h-4 bg-yellow-400 rounded-sm align-middle mr-2 border border-black"></span>
               Major triad
