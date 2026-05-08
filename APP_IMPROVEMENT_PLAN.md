@@ -15,23 +15,11 @@ Checks run:
 
 Build note:
 
-- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,303.26 kB minified and 364.05 kB gzip.
+- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,304.13 kB minified and 364.29 kB gzip.
 
 ## Highest Priority Findings
 
-### 1. Clear stale MusicXML output after failed file loads
-
-Location: `src/MusicXML/MusicXML.tsx`, lines 447-462 and 503-507.
-
-When a user loads a bad file, `rawFileContent` and `fileName` are cleared, but `fileContent` is not explicitly cleared. The previous processed score can remain visible/downloadable after a failed upload.
-
-Recommended steps:
-
-- Clear `fileContent` and playback state before starting a new file load or inside the load error path.
-- In the `rawFileContent` effect, explicitly set `fileContent` to `null` when there is no raw content.
-- Replace `alert()` error handling with route-local error state so the UI can show the failure without leaving stale controls active.
-
-### 2. Address direct dependency security findings
+### 1. Address direct dependency security findings
 
 Locations: `package.json` and `package-lock.json`.
 
@@ -48,7 +36,7 @@ Recommended steps:
 - Run `npm test`, `npm run lint`, and `npm run build` after each batch.
 - Manually smoke-test `/musicxml` after OSMD-related changes with the bundled `IntroSong.musicxml` and one uploaded file.
 
-### 3. Reduce the MusicXML route's component size and mixed responsibilities
+### 2. Reduce the MusicXML route's component size and mixed responsibilities
 
 Location: `src/MusicXML/MusicXML.tsx`, currently about 729 lines.
 
@@ -65,7 +53,7 @@ Recommended steps:
 - Extract the sidebar controls into a small component once the state boundaries are clearer.
 - Keep XML transforms and timeline helpers pure and covered by Vitest.
 
-### 4. Improve mobile layout stability
+### 3. Improve mobile layout stability
 
 Locations: `src/App.tsx`, `src/Menu.tsx`, `src/Harmonica/Harmonica.tsx`, `src/MusicXML/MusicXML.tsx`, `src/MusicXML/NoteHighway.tsx`, and `src/Circle/Circle.tsx`.
 
@@ -215,15 +203,14 @@ Recommended steps:
 
 ## Suggested Implementation Order
 
-1. Fix the remaining confirmed behavior issue: stale file content after failed upload.
-2. Add harmonica core tests, especially bend tab notation.
-3. Refactor MusicXML route into route-local hooks without changing behavior.
-4. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.
-5. Add parser-error handling for MusicXML.
-6. Address dependency upgrades in small batches.
-7. Improve Circle accessibility and responsive details.
-8. Split bundles and compare build output.
-9. Clean up README and the placeholder Settings route.
+1. Add harmonica core tests, especially bend tab notation.
+2. Refactor MusicXML route into route-local hooks without changing behavior.
+3. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.
+4. Add parser-error handling for MusicXML.
+5. Address dependency upgrades in small batches.
+6. Improve Circle accessibility and responsive details.
+7. Split bundles and compare build output.
+8. Clean up README and the placeholder Settings route.
 
 ## Definition Of Done For Each Improvement Batch
 

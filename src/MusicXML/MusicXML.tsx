@@ -35,6 +35,7 @@ const TestFileLoader: React.FC = () => {
   const [transpose, setTranspose] = useState<number>(0);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string>("C4");
   const [noOverblowOrDraw, setNoOverblowOrDraw] = useState(true);
   const [noBend, setNoBend] = useState(false);
@@ -183,6 +184,25 @@ const TestFileLoader: React.FC = () => {
       }
     }
   }, [clearPlaybackResources]);
+
+  const clearRenderedSheet = useCallback(() => {
+    sheetRenderRunRef.current += 1;
+    setIsSheetReady(false);
+    cursorEventIndexRef.current = null;
+    osmdInstance.current?.cursor?.hide();
+    osmdRef.current?.replaceChildren();
+    osmdInstance.current = null;
+    if (sheetScrollRef.current) {
+      sheetScrollRef.current.scrollTop = 0;
+    }
+  }, []);
+
+  const clearCurrentScore = useCallback(() => {
+    stopPlayback(true);
+    setRawFileContent(null);
+    setFileContent(null);
+    clearRenderedSheet();
+  }, [clearRenderedSheet, stopPlayback]);
 
   const finishPlayback = useCallback(() => {
     playbackRunRef.current += 1;
@@ -436,16 +456,23 @@ const TestFileLoader: React.FC = () => {
         return res.text();
       })
       .then((text) => {
+        setFileError(null);
         setFileName("IntroSong.musicxml");
         setRawFileContent(text);
       })
       .catch((err) => {
         console.error("Fetch error:", err);
+        setFileName(null);
+        clearCurrentScore();
+        setFileError("Couldn't load the default MusicXML file.");
       });
-  }, []);
+  }, [clearCurrentScore]);
 
   const autoTransposeWithFilters = () => {
-    if (!rawFileContent) return;
+    if (!rawFileContent) {
+      setFileError("Load a MusicXML file before using auto transpose.");
+      return;
+    }
 
     const interval = findAutoTransposeInterval(rawFileContent, {
       selectedKey,
@@ -454,28 +481,36 @@ const TestFileLoader: React.FC = () => {
     });
 
     if (interval !== null) {
+      setFileError(null);
       setTranspose(interval);
       return;
     }
 
-    alert("Couldn't find a transposition matching your selected filters.");
+    setFileError("Couldn't find a transposition matching your selected filters.");
   };
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const input = event.currentTarget;
     const file = event.target.files?.[0];
     if (!file) return;
+
+    setFileError(null);
     setFileName(file.name);
+    clearCurrentScore();
 
     try {
       const content = await readMusicXmlFile(file);
+      setFileName(file.name);
       setRawFileContent(content);
     } catch (error) {
       console.error("MusicXML file load error:", error);
       setFileName(null);
-      setRawFileContent(null);
-      alert("Couldn't load that MusicXML file. Check that the file is valid.");
+      clearCurrentScore();
+      setFileError("Couldn't load that MusicXML file. Check that the file is valid.");
+    } finally {
+      input.value = "";
     }
   };
 
@@ -518,10 +553,23 @@ const TestFileLoader: React.FC = () => {
   }, [fileContent, fileName]);
 
   useEffect(() => {
-    if (!rawFileContent) return;
-    const injected = buildHarmonicaTabXml(rawFileContent);
-    setFileContent(injected);
-  }, [rawFileContent, buildHarmonicaTabXml]);
+    if (!rawFileContent) {
+      setFileContent(null);
+      clearRenderedSheet();
+      return;
+    }
+
+    try {
+      const injected = buildHarmonicaTabXml(rawFileContent);
+      setFileContent(injected);
+      setFileError(null);
+    } catch (error) {
+      console.error("MusicXML transform error:", error);
+      setFileContent(null);
+      clearRenderedSheet();
+      setFileError("Couldn't process that MusicXML file.");
+    }
+  }, [rawFileContent, buildHarmonicaTabXml, clearRenderedSheet]);
 
   useEffect(() => {
     if (!playback) return;
@@ -533,7 +581,12 @@ const TestFileLoader: React.FC = () => {
   useEffect(() => () => stopPlayback(true), [stopPlayback]);
 
   useEffect(() => {
-    if (!displayFileContent || !osmdRef.current) return;
+    if (!displayFileContent) {
+      clearRenderedSheet();
+      return;
+    }
+
+    if (!osmdRef.current) return;
 
     const renderRun = sheetRenderRunRef.current + 1;
     sheetRenderRunRef.current = renderRun;
@@ -572,6 +625,7 @@ const TestFileLoader: React.FC = () => {
           cursor?.hide();
         }
         setIsSheetReady(true);
+        setFileError(null);
         if (sheetScrollRef.current) {
           sheetScrollRef.current.scrollTop = 0;
         }
@@ -579,10 +633,12 @@ const TestFileLoader: React.FC = () => {
       .catch((err) => {
         if (sheetRenderRunRef.current === renderRun) {
           setIsSheetReady(false);
+          stopPlayback(true);
+          setFileError("Couldn't render that MusicXML score.");
         }
         console.error("OSMD Load Error:", err);
       });
-  }, [displayFileContent]);
+  }, [clearRenderedSheet, displayFileContent, stopPlayback]);
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -644,6 +700,15 @@ const TestFileLoader: React.FC = () => {
 
             {fileName && (
               <p className="mt-1 text-sm text-gray-500">Loaded: {fileName}</p>
+            )}
+
+            {fileError && (
+              <p
+                role="alert"
+                className="mt-3 rounded border border-red-800 bg-red-950/70 px-3 py-2 text-sm text-red-200"
+              >
+                {fileError}
+              </p>
             )}
           </div>
 
