@@ -121,17 +121,6 @@ Recommended steps:
 - Disable downloads and playback when the current processed file is invalid or the sheet failed to render.
 - Keep the previous score only when intentionally preserving it, not after a failed replacement.
 
-### Make the empty Settings route deliberate
-
-Location: `src/App.tsx`, line 35, and `src/Settings/Settings.tsx`.
-
-There is a `/settings` route with placeholder text, but it is not linked in the menu. It looks like dead or unfinished surface.
-
-Recommended steps:
-
-- Remove the route until settings exist, or keep it out of production navigation and document why.
-- If kept, style it consistently with the app shell and avoid placeholder copy.
-
 ### Align README commands with the project guide
 
 Location: `README.md`.
@@ -188,7 +177,7 @@ Recommended steps:
 4. Address dependency upgrades in small batches.
 5. Improve Circle accessibility and responsive details.
 6. Split bundles and compare build output.
-7. Clean up README and the placeholder Settings route.
+7. Clean up README.
 
 ## Definition Of Done For Each Improvement Batch
 
