@@ -118,13 +118,17 @@ Recommended steps:
 
 ## Test Coverage Roadmap
 
-Current tests cover MusicXML transforms, playback parsing, timeline helpers, and harmonica core utilities. The next tests should protect route-specific derived behavior before refactors.
+Current tests cover MusicXML transforms, playback parsing, timeline helpers, harmonica core utilities, and Circle theory derivations. The next tests should protect route-specific derived behavior before refactors.
+
+Completed on 2026-05-08:
+
+- Extracted Circle theory derivations into `src/Circle/circleTheory.ts`.
+- Added `src/Circle/circleTheory.test.ts` coverage for circle generation, mode tonic selection, selected scales, triads, and note color classification.
 
 Recommended order:
 
 1. Extract and test Practice target generation so scale/position changes cannot break target selection.
-2. Extract and test Circle theory derivations: mode tonic, selected scale, triads, and color classification.
-3. Add route-level smoke tests later only if the project adopts a browser test runner.
+2. Add route-level smoke tests later only if the project adopts a browser test runner.
 
 ## Performance Work
 

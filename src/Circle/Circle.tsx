@@ -1,6 +1,14 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import * as tonal from "tonal";
+import { Chord, Note } from "tonal";
+import {
+  chordQualityColors,
+  getCircleTheory,
+  modes,
+  modeNames,
+  scaleOptions,
+  type CircleScaleValue,
+} from "./circleTheory";
 
 const getResponsiveSize = () => {
   const width = window.innerWidth;
@@ -10,47 +18,11 @@ const getResponsiveSize = () => {
   return { radius: 160, center: 180 };
 };
 
-const modes = [
-  { name: "Ionian", degree: 1, harmonicaPosition: "1st", harmonicaOrder: 1 },
-  {
-    name: "Mixolydian",
-    degree: 5,
-    harmonicaPosition: "2nd",
-    harmonicaOrder: 2,
-  },
-  { name: "Dorian", degree: 2, harmonicaPosition: "3rd", harmonicaOrder: 3 },
-  { name: "Aeolian", degree: 6, harmonicaPosition: "4th", harmonicaOrder: 4 },
-  { name: "Phrygian", degree: 3, harmonicaPosition: "5th", harmonicaOrder: 5 },
-  { name: "Locrian", degree: 7, harmonicaPosition: "6th", harmonicaOrder: 6 },
-  { name: "Lydian", degree: 4, harmonicaPosition: "12th", harmonicaOrder: 12 },
-];
-
-const modeNames = modes.map((m) => m.name);
-const modeDegreesMap: Record<string, number> = Object.fromEntries(
-  modes.map((m) => [m.name.toLowerCase(), m.degree])
-);
-
-const scaleOptions = [
-  { label: "Position mode", value: "mode" },
-  { label: "Major", value: "major" },
-  { label: "Major pentatonic", value: "major pentatonic" },
-  { label: "Minor pentatonic", value: "minor pentatonic" },
-  { label: "Blues", value: "blues" },
-  { label: "Major blues", value: "major blues" },
-];
-
-const chordQualityColors: Record<string, string> = {
-  major: "bg-yellow-400 text-black",
-  minor: "bg-blue-600 text-white",
-  diminished: "bg-red-500 text-white",
-  scale: "bg-emerald-500 text-black",
-  none: "bg-gray-800 text-white hover:bg-green-600",
-};
-
 function Circle() {
   const [selectedRoot, setSelectedRoot] = useState("C");
   const [selectedMode, setSelectedMode] = useState(0);
-  const [selectedScale, setSelectedScale] = useState("mode");
+  const [selectedScale, setSelectedScale] =
+    useState<CircleScaleValue>("mode");
   const [dimensions, setDimensions] = useState(getResponsiveSize());
   const { t } = useTranslation();
 
@@ -62,77 +34,16 @@ function Circle() {
 
   const { radius, center } = dimensions;
   const circleSize = center * 2;
-  const modeName = modeNames[selectedMode];
-
-  const circleOfFifths = useMemo(() => {
-    const notes = [];
-    let note = "C";
-    for (let i = 0; i < 12; i++) {
-      notes.push(tonal.Note.simplify(note));
-      note = tonal.Note.transpose(note, "5P");
-    }
-    return notes;
-  }, []);
-
-  const majorScaleNotes = tonal.Scale.get(selectedRoot + " major").notes;
-  const modeDegree = modeDegreesMap[modeName.toLowerCase()] || 1;
-  const modeStartIndex = modeDegree - 1;
-  const modeTonic = majorScaleNotes[modeStartIndex];
-  const modeScale = [
-    ...majorScaleNotes.slice(modeStartIndex),
-    ...majorScaleNotes.slice(0, modeStartIndex),
-  ];
-  const scale =
-    selectedScale === "mode"
-      ? modeScale
-      : tonal.Scale.get(`${modeTonic} ${selectedScale}`).notes;
-  const scaleLabel =
-    selectedScale === "mode"
-      ? modeName
-      : scaleOptions.find((option) => option.value === selectedScale)?.label ||
-        modeName;
-
-  const triads = useMemo(() => {
-    if (scale.length !== 7) return [];
-
-    const triadsArray = [];
-    for (let i = 0; i < 7; i++) {
-      const root = scale[i];
-      const third = scale[(i + 2) % 7];
-      const fifth = scale[(i + 4) % 7];
-      const triadNotes = [root, third, fifth];
-      const qualities = tonal.Chord.detect(triadNotes);
-      const quality = qualities.length > 0 ? qualities[0] : "none";
-      triadsArray.push({ root, notes: triadNotes, quality });
-    }
-    return triadsArray;
-  }, [scale]);
-
-  const noteColors = useMemo(() => {
-    const map: Record<string, string> = {};
-    const normalizeNote = (n: string) => tonal.Note.chroma(n);
-
-    circleOfFifths.forEach((note) => {
-      map[normalizeNote(note)] = "none";
-    });
-
-    scale.forEach((note) => {
-      map[normalizeNote(note)] = "scale";
-    });
-
-    triads.forEach(({ root, notes, quality }) => {
-      const rootNorm = normalizeNote(root);
-      map[rootNorm] = quality;
-      notes.forEach((note) => {
-        const noteNorm = normalizeNote(note);
-        if (noteNorm !== rootNorm && map[noteNorm] === "none") {
-          map[noteNorm] = quality;
-        }
-      });
-    });
-
-    return map;
-  }, [circleOfFifths, scale, triads]);
+  const { circleOfFifths, modeTonic, scale, scaleLabel, triads, noteColors } =
+    useMemo(
+      () =>
+        getCircleTheory({
+          selectedRoot,
+          selectedMode,
+          selectedScale,
+        }),
+      [selectedRoot, selectedMode, selectedScale]
+    );
 
   const angleStep = (2 * Math.PI) / circleOfFifths.length;
 
@@ -151,15 +62,15 @@ function Circle() {
           const x = center + radius * Math.cos(angle);
           const y = center + radius * Math.sin(angle);
 
-          const chroma = tonal.Note.chroma(note);
+          const chroma = Note.chroma(note);
           const noteColor = noteColors[chroma] || "none";
           const colorClass =
             chordQualityColors[noteColor] ||
-            chordQualityColors[tonal.Chord.get(noteColor).type || "none"] ||
+            chordQualityColors[Chord.get(noteColor).type || "none"] ||
             chordQualityColors.none;
 
           const isTonicNote =
-            tonal.Note.chroma(note) === tonal.Note.chroma(modeTonic);
+            Note.chroma(note) === Note.chroma(modeTonic);
           const borderClass = isTonicNote ? "border-4 border-cyan-300" : "";
 
           return (
@@ -172,7 +83,7 @@ function Circle() {
                 }}
                 aria-label={`Select root: ${t(note)}`}
                 aria-pressed={
-                  tonal.Note.chroma(note) === tonal.Note.chroma(selectedRoot)
+                  Note.chroma(note) === Note.chroma(selectedRoot)
                 }
                 className={`absolute cursor-pointer rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-semibold text-sm sm:text-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-gray-950 ${colorClass} ${borderClass}`}
                 style={{
@@ -187,7 +98,7 @@ function Circle() {
 
               {(() => {
                 const degreeIndex = scale.findIndex(
-                  (n) => tonal.Note.chroma(n) === tonal.Note.chroma(note)
+                  (n) => Note.chroma(n) === Note.chroma(note)
                 );
                 if (degreeIndex === -1) return null;
 
@@ -294,11 +205,11 @@ function Circle() {
                 </span>
                 <span
                   className={`justify-self-start rounded px-2 py-1 text-xs font-semibold capitalize sm:justify-self-end ${
-                    chordQualityColors[tonal.Chord.get(quality).type || "none"]
+                    chordQualityColors[Chord.get(quality).type || "none"]
                   }`}
                 >
                   {(() => {
-                    const chordData = tonal.Chord.get(quality); // e.g., C#m → { tonic: "C#", type: "m", name: "C#m" }
+                    const chordData = Chord.get(quality); // e.g., C#m -> { tonic: "C#", type: "m", name: "C#m" }
 
                     if (!chordData.tonic) return quality; // fallback
 
