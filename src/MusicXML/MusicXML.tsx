@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { getHarmonicaHoleForNote, harmonicaKeys } from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
+import { Gauge, Pause, Play, RotateCcw } from "lucide-react";
 
 const keySignatureTonicsByFifths = new Map(
   Array.from({ length: 15 }, (_, index) => {
@@ -22,6 +23,88 @@ const getPitchNoteName = (pitch: Element): string | null => {
   return `${step}${"#".repeat(Math.max(accidental, 0))}${"b".repeat(
     Math.max(-accidental, 0)
   )}${octave}`;
+};
+
+type PlaybackEvent = {
+  durationBeats: number;
+  notes: string[];
+  tabs: string[];
+};
+
+const getChildNumber = (
+  parent: Element,
+  tagName: string,
+  fallback: number
+) => {
+  const value = Number(parent.getElementsByTagName(tagName)[0]?.textContent);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+
+const getTabFromNote = (note: Element) =>
+  note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
+
+const parsePlaybackEvents = (xml: string) => {
+  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const events: PlaybackEvent[] = [];
+  let divisions = 1;
+  let detectedTempo = 90;
+
+  Array.from(xmlDoc.getElementsByTagName("sound")).some((sound) => {
+    const tempo = Number(sound.getAttribute("tempo"));
+    if (!Number.isFinite(tempo) || tempo <= 0) return false;
+
+    detectedTempo = tempo;
+    return true;
+  });
+
+  Array.from(xmlDoc.getElementsByTagName("measure")).forEach((measure) => {
+    const attributes = measure.getElementsByTagName("attributes")[0];
+    if (attributes) {
+      divisions = getChildNumber(attributes, "divisions", divisions);
+    }
+
+    Array.from(measure.children).forEach((child) => {
+      if (child.tagName !== "note") return;
+
+      const duration = getChildNumber(child, "duration", divisions);
+      const durationBeats = duration / divisions;
+      const pitch = child.getElementsByTagName("pitch")[0];
+      const noteName = pitch ? getPitchNoteName(pitch) : null;
+      const isChord = Boolean(child.getElementsByTagName("chord")[0]);
+      const tab = getTabFromNote(child);
+
+      if (isChord && events.length) {
+        if (noteName) events[events.length - 1].notes.push(noteName);
+        if (tab) events[events.length - 1].tabs.push(tab);
+        return;
+      }
+
+      events.push({
+        durationBeats,
+        notes: noteName ? [noteName] : [],
+        tabs: tab ? [tab] : [],
+      });
+    });
+  });
+
+  return { events, detectedTempo };
+};
+
+const ensureAudioContext = (audioContext: AudioContext | null) => {
+  if (audioContext) return audioContext;
+
+  return new AudioContext();
+};
+
+const stopOscillators = (oscillators: OscillatorNode[]) => {
+  oscillators.forEach((oscillator) => {
+    try {
+      oscillator.stop();
+    } catch {
+      // Already stopped.
+    }
+    oscillator.disconnect();
+  });
 };
 
 const transposeNoteName = (
@@ -125,9 +208,134 @@ const TestFileLoader: React.FC = () => {
   const [selectedKey, setSelectedKey] = useState<string>("C4");
   const [noOverblowOrDraw, setNoOverblowOrDraw] = useState(true);
   const [noBend, setNoBend] = useState(false);
+  const [tempo, setTempo] = useState(90);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [currentTab, setCurrentTab] = useState("");
 
   const osmdRef = useRef<HTMLDivElement>(null);
   const osmdInstance = useRef<OpenSheetMusicDisplay | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const playbackTimerRef = useRef<number | null>(null);
+  const playbackRunRef = useRef(0);
+  const activeOscillatorsRef = useRef<OscillatorNode[]>([]);
+
+  const playback = useMemo(
+    () => (fileContent ? parsePlaybackEvents(fileContent) : null),
+    [fileContent]
+  );
+  const playbackEvents = playback?.events ?? [];
+  const progress =
+    playbackEvents.length > 0
+      ? Math.round((currentEventIndex / playbackEvents.length) * 100)
+      : 0;
+
+  const stopPlayback = useCallback((reset = false) => {
+    playbackRunRef.current += 1;
+
+    if (playbackTimerRef.current !== null) {
+      window.clearTimeout(playbackTimerRef.current);
+      playbackTimerRef.current = null;
+    }
+
+    stopOscillators(activeOscillatorsRef.current);
+    activeOscillatorsRef.current = [];
+    setIsPlaying(false);
+
+    if (reset) {
+      setCurrentEventIndex(0);
+      setCurrentTab("");
+      osmdInstance.current?.cursor?.reset();
+      osmdInstance.current?.cursor?.hide();
+    }
+  }, []);
+
+  const playNotes = useCallback((notes: string[], durationMs: number) => {
+    const audioContext = ensureAudioContext(audioContextRef.current);
+    audioContextRef.current = audioContext;
+    activeOscillatorsRef.current = [];
+
+    notes.forEach((noteName) => {
+      const frequency = Note.freq(noteName);
+      if (!frequency) return;
+
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+      const noteSeconds = Math.max(0.08, durationMs / 1000);
+
+      oscillator.type = "sawtooth";
+      oscillator.frequency.setValueAtTime(frequency, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + noteSeconds * 0.9);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + noteSeconds);
+      activeOscillatorsRef.current.push(oscillator);
+    });
+  }, []);
+
+  const moveCursorToEvent = useCallback((eventIndex: number) => {
+    const cursor = osmdInstance.current?.cursor;
+    if (!cursor) return;
+
+    cursor.reset();
+    cursor.show();
+    for (let index = 0; index < eventIndex; index += 1) {
+      cursor.next();
+    }
+  }, []);
+
+  const schedulePlayback = useCallback(
+    (startIndex: number, runId: number) => {
+      const event = playbackEvents[startIndex];
+      if (!event) {
+        stopPlayback(true);
+        return;
+      }
+
+      const durationMs = Math.max(80, (60000 / tempo) * event.durationBeats);
+      setCurrentEventIndex(startIndex);
+      setCurrentTab(event.tabs.join("  "));
+      moveCursorToEvent(startIndex);
+      stopOscillators(activeOscillatorsRef.current);
+      playNotes(event.notes, durationMs);
+
+      playbackTimerRef.current = window.setTimeout(() => {
+        if (playbackRunRef.current !== runId) return;
+        schedulePlayback(startIndex + 1, runId);
+      }, durationMs);
+    },
+    [moveCursorToEvent, playNotes, playbackEvents, stopPlayback, tempo]
+  );
+
+  const togglePlayback = useCallback(async () => {
+    if (isPlaying) {
+      stopPlayback();
+      return;
+    }
+
+    if (!playbackEvents.length) return;
+
+    audioContextRef.current = ensureAudioContext(audioContextRef.current);
+    await audioContextRef.current.resume();
+
+    const startIndex =
+      currentEventIndex >= playbackEvents.length ? 0 : currentEventIndex;
+    const runId = playbackRunRef.current + 1;
+    playbackRunRef.current = runId;
+    setIsPlaying(true);
+    schedulePlayback(startIndex, runId);
+  }, [
+    currentEventIndex,
+    isPlaying,
+    playbackEvents.length,
+    schedulePlayback,
+    stopPlayback,
+  ]);
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}IntroSong.musicxml`)
       .then((res) => {
@@ -261,6 +469,15 @@ const TestFileLoader: React.FC = () => {
   }, [rawFileContent, injectHarmonicaTabs]);
 
   useEffect(() => {
+    if (!playback) return;
+
+    stopPlayback(true);
+    setTempo(Math.round(playback.detectedTempo));
+  }, [playback, stopPlayback]);
+
+  useEffect(() => () => stopPlayback(true), [stopPlayback]);
+
+  useEffect(() => {
     if (!fileContent || !osmdRef.current) return;
 
     if (!osmdInstance.current) {
@@ -271,12 +488,16 @@ const TestFileLoader: React.FC = () => {
         drawFingerings: true,
         fingeringPosition: "below",
         autoResize: true,
+        followCursor: true,
       });
     }
 
     osmdInstance.current
       .load(fileContent)
-      .then(() => osmdInstance.current?.render())
+      .then(() => {
+        osmdInstance.current?.render();
+        osmdInstance.current?.cursor?.hide();
+      })
       .catch((err) => console.error("OSMD Load Error:", err));
   }, [fileContent]);
   return (
@@ -358,6 +579,67 @@ const TestFileLoader: React.FC = () => {
           >
             Download Transposed MusicXML
           </button>
+
+          <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-300">
+                Tab playback
+              </span>
+              <span className="text-xs text-gray-500">
+                {playbackEvents.length} notes
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={togglePlayback}
+                disabled={!playbackEvents.length}
+                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded bg-emerald-600 px-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400"
+              >
+                {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                {isPlaying ? "Pause" : "Play"}
+              </button>
+              <button
+                type="button"
+                aria-label="Restart playback"
+                title="Restart playback"
+                onClick={() => stopPlayback(true)}
+                disabled={!playbackEvents.length}
+                className="inline-flex h-10 w-10 items-center justify-center rounded border border-gray-700 bg-gray-800 text-gray-100 transition hover:bg-gray-700 disabled:text-gray-500"
+              >
+                <RotateCcw size={18} />
+              </button>
+            </div>
+
+            <label className="block text-sm text-gray-300">
+              <span className="mb-1 flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-2">
+                  <Gauge size={16} />
+                  Tempo
+                </span>
+                <span>{tempo} bpm</span>
+              </span>
+              <input
+                type="range"
+                min="40"
+                max="180"
+                value={tempo}
+                onChange={(event) => setTempo(Number(event.target.value))}
+                className="w-full accent-emerald-500"
+              />
+            </label>
+
+            <div className="h-2 overflow-hidden rounded bg-gray-800">
+              <div
+                className="h-full bg-emerald-500 transition-[width]"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="min-h-8 rounded border border-gray-800 bg-gray-900 px-3 py-2 text-center text-xl font-bold tracking-normal text-emerald-300">
+              {currentTab || "-"}
+            </div>
+          </div>
 
           {/* Filter Options */}
           <div className="space-y-2">
