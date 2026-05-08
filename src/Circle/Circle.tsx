@@ -164,12 +164,17 @@ function Circle() {
 
           return (
             <React.Fragment key={note}>
-              <div
+              <button
+                type="button"
                 onClick={() => {
                   setSelectedRoot(note);
                   setSelectedMode(0);
                 }}
-                className={`absolute cursor-pointer rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-semibold text-sm sm:text-lg transition-colors duration-300 ${colorClass} ${borderClass}`}
+                aria-label={`Select root: ${t(note)}`}
+                aria-pressed={
+                  tonal.Note.chroma(note) === tonal.Note.chroma(selectedRoot)
+                }
+                className={`absolute cursor-pointer rounded-full w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center font-semibold text-sm sm:text-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:ring-offset-2 focus:ring-offset-gray-950 ${colorClass} ${borderClass}`}
                 style={{
                   left: x,
                   top: y,
@@ -178,7 +183,7 @@ function Circle() {
                 title={`Select root: ${t(note)}`}
               >
                 {t(note)}
-              </div>
+              </button>
 
               {(() => {
                 const degreeIndex = scale.findIndex(
@@ -218,17 +223,19 @@ function Circle() {
             const isSelected = modeIndex === selectedMode;
 
             return (
-              <div
+              <button
+                type="button"
                 key={name}
                 onClick={() => setSelectedMode(modeIndex)}
-                className={`cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 rounded font-medium text-sm sm:text-base whitespace-nowrap ${
+                aria-pressed={isSelected}
+                className={`cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 rounded font-medium text-sm sm:text-base whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2 focus:ring-offset-gray-950 ${
                   isSelected
                     ? "bg-indigo-400 text-black shadow-md"
                     : "bg-gray-800 text-white hover:bg-indigo-500 transition-colors"
                 }`}
               >
                 {name} ({harmonicaPosition})
-              </div>
+              </button>
             );
           })}
       </div>
@@ -242,7 +249,8 @@ function Circle() {
               key={value}
               type="button"
               onClick={() => setSelectedScale(value)}
-              className={`cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 rounded font-medium text-sm sm:text-base whitespace-nowrap ${
+              aria-pressed={isSelected}
+              className={`cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 rounded font-medium text-sm sm:text-base whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:ring-offset-2 focus:ring-offset-gray-950 ${
                 isSelected
                   ? "bg-emerald-400 text-black shadow-md"
                   : "bg-gray-800 text-white hover:bg-emerald-500 transition-colors"
