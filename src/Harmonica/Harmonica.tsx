@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import * as tonal from "tonal";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
@@ -78,7 +77,7 @@ function Harmonica() {
 
         if (
           detectedNote &&
-          tonal.Note.midi(detectedNote.note) === tonal.Note.midi(note.name)
+          Note.midi(detectedNote.note) === Note.midi(note.name)
         ) {
           showLine = true;
           // Map cents offset (±50 cents) to ±8px vertical offset
@@ -87,9 +86,7 @@ function Harmonica() {
         }
 
         // Use t() to translate note pitch classes, fallback to original
-        const simplifiedPitchClass = tonal.Note.simplify(
-          tonal.Note.pitchClass(note.name)
-        );
+        const simplifiedPitchClass = Note.simplify(Note.pitchClass(note.name));
         const translatedNoteName = t(simplifiedPitchClass);
 
         return (

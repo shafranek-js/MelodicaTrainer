@@ -146,11 +146,7 @@ Completed on 2026-05-08:
 - Verified the route split with `npm run build`, which now emits separate `Circle-*.js` and `Practice-*.js` chunks.
 - Added Rollup `manualChunks` for OSMD/VexFlow and JSZip/Pako so the large MusicXML renderer and archive code can be cached independently of the route component.
 - Verified the vendor split with `npm run build`, which now emits separate `MusicXML-*.js`, `osmd-*.js`, and `jszip-*.js` chunks.
-
-Remaining recommended steps:
-
-- Use named Tonal imports where practical instead of `import * as tonal` in route components.
-- Re-run `npm run build` and compare chunk sizes after each change.
+- Replaced the remaining route-level `import * as tonal` usage with the existing named `Note` import in the Harmonica route.
 
 ### Render/update pressure
 
@@ -169,7 +165,6 @@ Recommended steps:
 1. Refactor MusicXML route into route-local hooks without changing behavior.
 2. Address dependency upgrades in small batches.
 3. Improve Circle accessibility and responsive details.
-4. Continue smaller bundle tuning with named Tonal imports where practical.
 
 ## Definition Of Done For Each Improvement Batch
 
