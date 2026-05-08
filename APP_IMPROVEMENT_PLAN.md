@@ -8,31 +8,18 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 3 files and 21 tests.
+- `npm test`: passed, 4 files and 23 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
 
 Build note:
 
-- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,302.87 kB minified and 363.92 kB gzip.
+- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,303.26 kB minified and 364.05 kB gzip.
 
 ## Highest Priority Findings
 
-### 1. Keep end-of-playback stats instead of resetting them
-
-Location: `src/MusicXML/MusicXML.tsx`, especially `schedulePlayback` and `stopPlayback` around lines 145-176 and 277-304.
-
-Current behavior appears to reset playback state when playback naturally reaches the end because `schedulePlayback` calls `stopPlayback(true)` when there is no next event. That also resets `gameStats`, `lastHitIndex`, `currentTab`, and progress. This makes the note-highway result disappear right when the user should be able to review it.
-
-Recommended steps:
-
-- Split "finish playback" from "reset playback".
-- On natural completion, stop timers and audio, set `isPlaying` false, keep stats visible, and allow progress to reach 100 percent.
-- Reserve `stopPlayback(true)` for explicit restart, file changes, route unmount, or hard reset.
-- Add a focused test around the scoring/progress state if this logic is extracted from the component.
-
-### 2. Clear stale MusicXML output after failed file loads
+### 1. Clear stale MusicXML output after failed file loads
 
 Location: `src/MusicXML/MusicXML.tsx`, lines 447-462 and 503-507.
 
@@ -44,7 +31,7 @@ Recommended steps:
 - In the `rawFileContent` effect, explicitly set `fileContent` to `null` when there is no raw content.
 - Replace `alert()` error handling with route-local error state so the UI can show the failure without leaving stale controls active.
 
-### 3. Address direct dependency security findings
+### 2. Address direct dependency security findings
 
 Locations: `package.json` and `package-lock.json`.
 
@@ -61,7 +48,7 @@ Recommended steps:
 - Run `npm test`, `npm run lint`, and `npm run build` after each batch.
 - Manually smoke-test `/musicxml` after OSMD-related changes with the bundled `IntroSong.musicxml` and one uploaded file.
 
-### 4. Reduce the MusicXML route's component size and mixed responsibilities
+### 3. Reduce the MusicXML route's component size and mixed responsibilities
 
 Location: `src/MusicXML/MusicXML.tsx`, currently about 729 lines.
 
@@ -78,7 +65,7 @@ Recommended steps:
 - Extract the sidebar controls into a small component once the state boundaries are clearer.
 - Keep XML transforms and timeline helpers pure and covered by Vitest.
 
-### 5. Improve mobile layout stability
+### 4. Improve mobile layout stability
 
 Locations: `src/App.tsx`, `src/Menu.tsx`, `src/Harmonica/Harmonica.tsx`, `src/MusicXML/MusicXML.tsx`, `src/MusicXML/NoteHighway.tsx`, and `src/Circle/Circle.tsx`.
 
@@ -228,7 +215,7 @@ Recommended steps:
 
 ## Suggested Implementation Order
 
-1. Fix confirmed behavior issues: end-of-playback reset and stale file content after failed upload.
+1. Fix the remaining confirmed behavior issue: stale file content after failed upload.
 2. Add harmonica core tests, especially bend tab notation.
 3. Refactor MusicXML route into route-local hooks without changing behavior.
 4. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.

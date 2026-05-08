@@ -85,14 +85,21 @@ const TestFileLoader: React.FC = () => {
     () => createPlaybackTimeline(playbackEvents, tempoScale),
     [playbackEvents, tempoScale]
   );
+  const playbackEndMs =
+    playbackTimeline[playbackTimeline.length - 1]?.endMs ?? 0;
   const laneKeys = useMemo(() => getLaneKeys(playbackEvents), [playbackEvents]);
   const visualPlayheadMs =
     isPlaying
       ? currentGameTimeMs
-      : playbackTimeline[currentEventIndex]?.startMs ?? 0;
+      : currentEventIndex >= playbackEvents.length
+        ? playbackEndMs
+        : playbackTimeline[currentEventIndex]?.startMs ?? 0;
   const progress =
     playbackEvents.length > 0
-      ? Math.round((currentEventIndex / playbackEvents.length) * 100)
+      ? Math.min(
+          100,
+          Math.round((currentEventIndex / playbackEvents.length) * 100)
+        )
       : 0;
   const visibleGameEvents = useMemo(
     () =>
@@ -142,9 +149,7 @@ const TestFileLoader: React.FC = () => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
-  const stopPlayback = useCallback((reset = false) => {
-    playbackRunRef.current += 1;
-
+  const clearPlaybackResources = useCallback(() => {
     if (playbackTimerRef.current !== null) {
       window.clearTimeout(playbackTimerRef.current);
       playbackTimerRef.current = null;
@@ -155,6 +160,11 @@ const TestFileLoader: React.FC = () => {
     }
 
     stopAudioNodes(activeAudioNodesRef.current);
+  }, []);
+
+  const stopPlayback = useCallback((reset = false) => {
+    playbackRunRef.current += 1;
+    clearPlaybackResources();
     setIsPlaying(false);
 
     if (reset) {
@@ -172,7 +182,15 @@ const TestFileLoader: React.FC = () => {
         sheetScrollRef.current.scrollTop = 0;
       }
     }
-  }, []);
+  }, [clearPlaybackResources]);
+
+  const finishPlayback = useCallback(() => {
+    playbackRunRef.current += 1;
+    clearPlaybackResources();
+    setIsPlaying(false);
+    setCurrentEventIndex(playbackEvents.length);
+    setCurrentGameTimeMs(playbackEndMs);
+  }, [clearPlaybackResources, playbackEndMs, playbackEvents.length]);
 
   const playNotes = useCallback((notes: PlaybackNote[], tempoBpm: number) => {
     const audioContext = ensureAudioContext(audioContextRef.current);
@@ -277,7 +295,7 @@ const TestFileLoader: React.FC = () => {
     (startIndex: number, runId: number) => {
       const event = playbackEvents[startIndex];
       if (!event) {
-        stopPlayback(true);
+        finishPlayback();
         return;
       }
 
@@ -304,10 +322,10 @@ const TestFileLoader: React.FC = () => {
     },
     [
       moveCursorThroughEvent,
+      finishPlayback,
       playNotes,
       playbackEvents,
       playbackTimeline,
-      stopPlayback,
       tempoScale,
     ]
   );
