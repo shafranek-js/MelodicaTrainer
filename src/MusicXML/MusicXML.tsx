@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { getHarmonicaHoleForNote, harmonicaKeys } from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
@@ -25,9 +25,20 @@ const getPitchNoteName = (pitch: Element): string | null => {
   )}${octave}`;
 };
 
+type PlaybackNote = {
+  name: string;
+  durationBeats: number;
+  velocity: number;
+  articulation: "normal" | "staccato" | "tenuto" | "accent";
+  tieStart: boolean;
+  tieStop: boolean;
+  shouldPlay: boolean;
+};
+
 type PlaybackEvent = {
   durationBeats: number;
-  notes: string[];
+  tempoBpm: number;
+  notes: PlaybackNote[];
   tabs: string[];
 };
 
@@ -43,11 +54,96 @@ const getChildNumber = (
 const getTabFromNote = (note: Element) =>
   note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
 
+const dynamicVelocities: Record<string, number> = {
+  ppp: 0.25,
+  pp: 0.32,
+  p: 0.42,
+  mp: 0.52,
+  mf: 0.68,
+  f: 0.82,
+  ff: 0.94,
+  fff: 1,
+};
+
+const getDynamicVelocity = (direction: Element) => {
+  const dynamics = direction.getElementsByTagName("dynamics")[0];
+  const dynamic = Array.from(dynamics?.children ?? []).find(
+    (child) => child.tagName in dynamicVelocities
+  );
+
+  return dynamic ? dynamicVelocities[dynamic.tagName] : null;
+};
+
+const getNoteArticulation = (
+  note: Element
+): PlaybackNote["articulation"] => {
+  const articulations = note.getElementsByTagName("articulations")[0];
+  if (!articulations) return "normal";
+  if (articulations.getElementsByTagName("accent")[0]) return "accent";
+  if (articulations.getElementsByTagName("staccato")[0]) return "staccato";
+  if (articulations.getElementsByTagName("tenuto")[0]) return "tenuto";
+
+  return "normal";
+};
+
+const getNoteVelocity = (note: Element, currentVelocity: number) => {
+  const velocity = Number(note.getAttribute("dynamics"));
+  if (Number.isFinite(velocity) && velocity > 0) {
+    return Math.min(1, Math.max(0.15, velocity / 100));
+  }
+
+  return currentVelocity;
+};
+
+const getTies = (note: Element) => {
+  const tieTypes = Array.from(note.getElementsByTagName("tie")).map((tie) =>
+    tie.getAttribute("type")
+  );
+
+  return {
+    tieStart: tieTypes.includes("start"),
+    tieStop: tieTypes.includes("stop"),
+  };
+};
+
+const resolveTiedNotes = (events: PlaybackEvent[]) => {
+  events.forEach((event, eventIndex) => {
+    event.notes.forEach((note) => {
+      if (note.tieStop) {
+        note.shouldPlay = false;
+      }
+
+      if (!note.tieStart || note.tieStop) return;
+
+      for (
+        let nextEventIndex = eventIndex + 1;
+        nextEventIndex < events.length;
+        nextEventIndex += 1
+      ) {
+        const tiedNote = events[nextEventIndex].notes.find(
+          (candidate) => candidate.name === note.name && candidate.tieStop
+        );
+
+        if (!tiedNote) break;
+
+        note.durationBeats += events[nextEventIndex].durationBeats;
+        tiedNote.shouldPlay = false;
+
+        if (!tiedNote.tieStart) break;
+      }
+    });
+  });
+
+  return events;
+};
+
 const parsePlaybackEvents = (xml: string) => {
   const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
   const events: PlaybackEvent[] = [];
   let divisions = 1;
   let detectedTempo = 90;
+  let currentTempo = detectedTempo;
+  let currentVelocity = dynamicVelocities.mf;
 
   Array.from(xmlDoc.getElementsByTagName("sound")).some((sound) => {
     const tempo = Number(sound.getAttribute("tempo"));
@@ -64,6 +160,24 @@ const parsePlaybackEvents = (xml: string) => {
     }
 
     Array.from(measure.children).forEach((child) => {
+      if (child.tagName === "direction") {
+        const sound = child.getElementsByTagName("sound")[0];
+        const tempo = Number(sound?.getAttribute("tempo"));
+        const dynamics = Number(sound?.getAttribute("dynamics"));
+        const dynamicVelocity = getDynamicVelocity(child);
+
+        if (Number.isFinite(tempo) && tempo > 0) {
+          currentTempo = tempo;
+        }
+        if (Number.isFinite(dynamics) && dynamics > 0) {
+          currentVelocity = Math.min(1, Math.max(0.15, dynamics / 100));
+        }
+        if (dynamicVelocity !== null) {
+          currentVelocity = dynamicVelocity;
+        }
+        return;
+      }
+
       if (child.tagName !== "note") return;
 
       const duration = getChildNumber(child, "duration", divisions);
@@ -71,23 +185,36 @@ const parsePlaybackEvents = (xml: string) => {
       const pitch = child.getElementsByTagName("pitch")[0];
       const noteName = pitch ? getPitchNoteName(pitch) : null;
       const isChord = Boolean(child.getElementsByTagName("chord")[0]);
+      const isRest = Boolean(child.getElementsByTagName("rest")[0]);
       const tab = getTabFromNote(child);
+      const ties = getTies(child);
+      const note = noteName
+        ? {
+            name: noteName,
+            durationBeats,
+            velocity: getNoteVelocity(child, currentVelocity),
+            articulation: getNoteArticulation(child),
+            shouldPlay: true,
+            ...ties,
+          }
+        : null;
 
       if (isChord && events.length) {
-        if (noteName) events[events.length - 1].notes.push(noteName);
+        if (note) events[events.length - 1].notes.push(note);
         if (tab) events[events.length - 1].tabs.push(tab);
         return;
       }
 
       events.push({
         durationBeats,
-        notes: noteName ? [noteName] : [],
+        tempoBpm: currentTempo,
+        notes: note && !isRest ? [note] : [],
         tabs: tab ? [tab] : [],
       });
     });
   });
 
-  return { events, detectedTempo };
+  return { events: resolveTiedNotes(events), detectedTempo };
 };
 
 const ensureAudioContext = (audioContext: AudioContext | null) => {
@@ -96,14 +223,14 @@ const ensureAudioContext = (audioContext: AudioContext | null) => {
   return new AudioContext();
 };
 
-const stopOscillators = (oscillators: OscillatorNode[]) => {
-  oscillators.forEach((oscillator) => {
+const stopAudioNodes = (nodes: AudioScheduledSourceNode[]) => {
+  nodes.forEach((node) => {
     try {
-      oscillator.stop();
+      node.stop();
     } catch {
       // Already stopped.
     }
-    oscillator.disconnect();
+    node.disconnect();
   });
 };
 
@@ -218,13 +345,15 @@ const TestFileLoader: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const playbackTimerRef = useRef<number | null>(null);
   const playbackRunRef = useRef(0);
-  const activeOscillatorsRef = useRef<OscillatorNode[]>([]);
+  const activeAudioNodesRef = useRef<AudioScheduledSourceNode[]>([]);
+  const cursorEventIndexRef = useRef<number | null>(null);
 
   const playback = useMemo(
     () => (fileContent ? parsePlaybackEvents(fileContent) : null),
     [fileContent]
   );
-  const playbackEvents = playback?.events ?? [];
+  const playbackEvents = useMemo(() => playback?.events ?? [], [playback]);
+  const tempoScale = tempo / (playback?.detectedTempo || tempo || 90);
   const progress =
     playbackEvents.length > 0
       ? Math.round((currentEventIndex / playbackEvents.length) * 100)
@@ -238,55 +367,101 @@ const TestFileLoader: React.FC = () => {
       playbackTimerRef.current = null;
     }
 
-    stopOscillators(activeOscillatorsRef.current);
-    activeOscillatorsRef.current = [];
+    stopAudioNodes(activeAudioNodesRef.current);
+    activeAudioNodesRef.current = [];
     setIsPlaying(false);
 
     if (reset) {
       setCurrentEventIndex(0);
       setCurrentTab("");
+      cursorEventIndexRef.current = null;
       osmdInstance.current?.cursor?.reset();
       osmdInstance.current?.cursor?.hide();
     }
   }, []);
 
-  const playNotes = useCallback((notes: string[], durationMs: number) => {
+  const playNotes = useCallback((notes: PlaybackNote[], tempoBpm: number) => {
     const audioContext = ensureAudioContext(audioContextRef.current);
     audioContextRef.current = audioContext;
-    activeOscillatorsRef.current = [];
 
-    notes.forEach((noteName) => {
-      const frequency = Note.freq(noteName);
+    notes.forEach((note) => {
+      if (!note.shouldPlay) return;
+
+      const frequency = Note.freq(note.name);
       if (!frequency) return;
 
-      const oscillator = audioContext.createOscillator();
+      const mainOscillator = audioContext.createOscillator();
+      const bodyOscillator = audioContext.createOscillator();
+      const filter = audioContext.createBiquadFilter();
       const gain = audioContext.createGain();
       const now = audioContext.currentTime;
-      const noteSeconds = Math.max(0.08, durationMs / 1000);
+      const durationMs = Math.max(
+        80,
+        (60000 / tempoBpm) * note.durationBeats
+      );
+      const articulationRatio =
+        note.tieStart
+          ? 1
+          : note.articulation === "staccato"
+          ? 0.42
+          : note.articulation === "tenuto"
+            ? 0.98
+            : 0.86;
+      const accentBoost = note.articulation === "accent" ? 1.18 : 1;
+      const noteSeconds = Math.max(0.08, (durationMs / 1000) * articulationRatio);
+      const peakGain = Math.min(0.2, 0.045 * note.velocity * accentBoost);
+      const attack = note.tieStop ? 0.004 : 0.018;
 
-      oscillator.type = "sawtooth";
-      oscillator.frequency.setValueAtTime(frequency, now);
+      mainOscillator.type = "triangle";
+      bodyOscillator.type = "sine";
+      mainOscillator.frequency.setValueAtTime(frequency, now);
+      bodyOscillator.frequency.setValueAtTime(frequency * 2, now);
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(2400 + note.velocity * 1800, now);
+      filter.Q.setValueAtTime(0.9, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + noteSeconds * 0.9);
+      gain.gain.exponentialRampToValueAtTime(peakGain, now + attack);
+      gain.gain.setTargetAtTime(peakGain * 0.72, now + attack, 0.08);
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        now + Math.max(0.05, noteSeconds)
+      );
 
-      oscillator.connect(gain);
+      mainOscillator.connect(filter);
+      bodyOscillator.connect(filter);
+      filter.connect(gain);
       gain.connect(audioContext.destination);
-      oscillator.start(now);
-      oscillator.stop(now + noteSeconds);
-      activeOscillatorsRef.current.push(oscillator);
+      mainOscillator.start(now);
+      bodyOscillator.start(now);
+      mainOscillator.stop(now + noteSeconds + 0.02);
+      bodyOscillator.stop(now + noteSeconds + 0.02);
+      activeAudioNodesRef.current.push(mainOscillator, bodyOscillator);
     });
   }, []);
 
-  const moveCursorToEvent = useCallback((eventIndex: number) => {
+  const moveCursorToEvent = useCallback((eventIndex: number, durationMs: number) => {
     const cursor = osmdInstance.current?.cursor;
     if (!cursor) return;
 
-    cursor.reset();
+    const cursorElement = cursor.cursorElement;
+    cursorElement.style.transition = `left ${durationMs}ms linear, top 160ms linear, height 160ms linear`;
+    cursorElement.style.backgroundColor = "rgba(16, 185, 129, 0.78)";
+    cursorElement.style.boxShadow = "0 0 0 1px rgba(6, 95, 70, 0.55), 0 0 12px rgba(16, 185, 129, 0.55)";
+    cursorElement.style.width = "3px";
+
+    if (
+      cursorEventIndexRef.current === null ||
+      eventIndex <= cursorEventIndexRef.current
+    ) {
+      cursor.reset();
+      cursorEventIndexRef.current = 0;
+    }
+
     cursor.show();
-    for (let index = 0; index < eventIndex; index += 1) {
+    for (let index = cursorEventIndexRef.current; index < eventIndex; index += 1) {
       cursor.next();
     }
+    cursorEventIndexRef.current = eventIndex;
   }, []);
 
   const schedulePlayback = useCallback(
@@ -297,19 +472,22 @@ const TestFileLoader: React.FC = () => {
         return;
       }
 
-      const durationMs = Math.max(80, (60000 / tempo) * event.durationBeats);
+      const effectiveTempo = Math.max(20, event.tempoBpm * tempoScale);
+      const durationMs = Math.max(
+        80,
+        (60000 / effectiveTempo) * event.durationBeats
+      );
       setCurrentEventIndex(startIndex);
       setCurrentTab(event.tabs.join("  "));
-      moveCursorToEvent(startIndex);
-      stopOscillators(activeOscillatorsRef.current);
-      playNotes(event.notes, durationMs);
+      moveCursorToEvent(startIndex, durationMs);
+      playNotes(event.notes, effectiveTempo);
 
       playbackTimerRef.current = window.setTimeout(() => {
         if (playbackRunRef.current !== runId) return;
         schedulePlayback(startIndex + 1, runId);
       }, durationMs);
     },
-    [moveCursorToEvent, playNotes, playbackEvents, stopPlayback, tempo]
+    [moveCursorToEvent, playNotes, playbackEvents, stopPlayback, tempoScale]
   );
 
   const togglePlayback = useCallback(async () => {
@@ -489,6 +667,14 @@ const TestFileLoader: React.FC = () => {
         fingeringPosition: "below",
         autoResize: true,
         followCursor: true,
+        cursorsOptions: [
+          {
+            type: CursorType.ThinLeft,
+            color: "#10b981",
+            alpha: 0.85,
+            follow: true,
+          },
+        ],
       });
     }
 
