@@ -6,11 +6,11 @@ import {
   Navigate,
 } from "react-router-dom";
 import Menu from "./Menu";
-import Circle from "./Circle/Circle";
 import Harmonica from "./Harmonica/Harmonica";
-import Practice from "./Practice/Practice";
 
+const Circle = lazy(() => import("./Circle/Circle"));
 const MusicXML = lazy(() => import("./MusicXML/MusicXML"));
+const Practice = lazy(() => import("./Practice/Practice"));
 
 function App() {
   return (

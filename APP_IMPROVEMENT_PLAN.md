@@ -8,14 +8,16 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 7 files and 39 tests.
+- `npm test`: passed, 8 files and 42 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
 
 Build note:
 
-- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,306.01 kB minified and 365.02 kB gzip.
+- The production build still warns because the OSMD vendor chunk is large: `dist/assets/osmd-*.js` is about 1,173.29 kB minified and 323.28 kB gzip.
+- The MusicXML route code now builds as a small lazy chunk, about 33.29 kB minified and 11.33 kB gzip, with JSZip split into a separate 97.26 kB minified and 30.29 kB gzip chunk.
+- The Circle and Practice routes build as separate lazy chunks: about 8.61 kB and 7.84 kB minified.
 
 ## Highest Priority Findings
 
@@ -134,13 +136,18 @@ Recommended order:
 
 ### Bundle size
 
-The build passes, but the MusicXML chunk is large.
+The build passes, but the OSMD vendor chunk is large.
 
-Recommended steps:
+Completed on 2026-05-08:
 
-- Keep MusicXML lazy-loaded.
-- Consider lazy-loading other non-default routes so `/harmonica` starts with less code.
-- Add Rollup `manualChunks` for large stable libraries such as OSMD and possibly JSZip so browser caching is more effective.
+- Lazy-loaded the Circle and Practice routes alongside the existing lazy MusicXML route.
+- Kept the default Harmonica route eager so the `/harmonica` landing route still loads directly.
+- Verified the route split with `npm run build`, which now emits separate `Circle-*.js` and `Practice-*.js` chunks.
+- Added Rollup `manualChunks` for OSMD/VexFlow and JSZip/Pako so the large MusicXML renderer and archive code can be cached independently of the route component.
+- Verified the vendor split with `npm run build`, which now emits separate `MusicXML-*.js`, `osmd-*.js`, and `jszip-*.js` chunks.
+
+Remaining recommended steps:
+
 - Use named Tonal imports where practical instead of `import * as tonal` in route components.
 - Re-run `npm run build` and compare chunk sizes after each change.
 
@@ -161,7 +168,7 @@ Recommended steps:
 1. Refactor MusicXML route into route-local hooks without changing behavior.
 2. Address dependency upgrades in small batches.
 3. Improve Circle accessibility and responsive details.
-4. Split bundles and compare build output.
+4. Continue smaller bundle tuning with named Tonal imports where practical.
 
 ## Definition Of Done For Each Improvement Batch
 
