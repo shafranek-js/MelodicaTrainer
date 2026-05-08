@@ -12,6 +12,7 @@ import {
 } from "./audioPlayback";
 import { readMusicXmlFile } from "./musicXmlFile";
 import {
+  createFirstStaffDisplayXml,
   findAutoTransposeInterval,
   injectHarmonicaTabs,
 } from "./musicXmlTransform";
@@ -64,10 +65,14 @@ const TestFileLoader: React.FC = () => {
   const gameClockOffsetMsRef = useRef(0);
   const sheetRenderRunRef = useRef(0);
   const isPlayingRef = useRef(false);
+  const displayFileContent = useMemo(
+    () => (fileContent ? createFirstStaffDisplayXml(fileContent) : null),
+    [fileContent]
+  );
 
   const playback = useMemo(
-    () => (fileContent ? parsePlaybackEvents(fileContent) : null),
-    [fileContent]
+    () => (displayFileContent ? parsePlaybackEvents(displayFileContent) : null),
+    [displayFileContent]
   );
   const playbackEvents = useMemo(() => playback?.events ?? [], [playback]);
   const playableMidiNumbers = useMemo(
@@ -493,7 +498,7 @@ const TestFileLoader: React.FC = () => {
   useEffect(() => () => stopPlayback(true), [stopPlayback]);
 
   useEffect(() => {
-    if (!fileContent || !osmdRef.current) return;
+    if (!displayFileContent || !osmdRef.current) return;
 
     const renderRun = sheetRenderRunRef.current + 1;
     sheetRenderRunRef.current = renderRun;
@@ -521,7 +526,7 @@ const TestFileLoader: React.FC = () => {
     }
 
     osmdInstance.current
-      .load(fileContent)
+      .load(displayFileContent)
       .then(() => {
         if (sheetRenderRunRef.current !== renderRun) return;
         osmdInstance.current?.render();
@@ -542,7 +547,7 @@ const TestFileLoader: React.FC = () => {
         }
         console.error("OSMD Load Error:", err);
       });
-  }, [fileContent]);
+  }, [displayFileContent]);
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">

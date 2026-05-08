@@ -5,6 +5,7 @@ import {
   getFirstPart,
   getFirstStaffNoteElements,
   getFirstStaffNumber,
+  isFirstStaffNote,
 } from "./musicXmlSelection";
 
 const keySignatureTonicsByFifths = new Map(
@@ -84,6 +85,76 @@ const replaceHarmonicaFingering = (
   fingering.setAttribute("placement", "below");
   fingering.textContent = tab;
   technical.appendChild(fingering);
+};
+
+export const createFirstStaffDisplayXml = (xml: string): string => {
+  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const firstPart = getFirstPart(xmlDoc);
+  if (!firstPart) return xml;
+
+  const firstStaffNumber = getFirstStaffNumber(firstPart);
+  if (!firstStaffNumber) return xml;
+
+  const firstPartId = firstPart.getAttribute("id");
+  Array.from(xmlDoc.getElementsByTagName("score-part")).forEach((scorePart) => {
+    if (firstPartId && scorePart.getAttribute("id") !== firstPartId) {
+      scorePart.remove();
+    }
+  });
+
+  Array.from(xmlDoc.getElementsByTagName("part")).forEach((part) => {
+    if (part !== firstPart) part.remove();
+  });
+
+  getDirectChildren(firstPart, "measure").forEach((measure) => {
+    Array.from(measure.children).forEach((child) => {
+      if (child.tagName === "backup" || child.tagName === "forward") {
+        child.remove();
+        return;
+      }
+
+      if (child.tagName === "note") {
+        if (!isFirstStaffNote(child, firstStaffNumber)) {
+          child.remove();
+          return;
+        }
+
+        getDirectChild(child, "staff")?.remove();
+        return;
+      }
+
+      const staff = getDirectChild(child, "staff");
+      if (!staff) return;
+
+      if (staff.textContent?.trim() !== firstStaffNumber) {
+        child.remove();
+        return;
+      }
+      staff.remove();
+    });
+
+    Array.from(measure.getElementsByTagName("staves")).forEach((staves) =>
+      staves.remove()
+    );
+    Array.from(measure.querySelectorAll("[number]")).forEach((element) => {
+      const number = element.getAttribute("number");
+      if (!number) return;
+
+      if (["clef", "key", "time", "staff-details"].includes(element.tagName)) {
+        if (number !== firstStaffNumber) {
+          element.remove();
+        } else {
+          element.removeAttribute("number");
+        }
+      }
+
+      if (element.tagName === "staff-layout") {
+        element.remove();
+      }
+    });
+  });
+
+  return new XMLSerializer().serializeToString(xmlDoc);
 };
 
 export const writePitch = (

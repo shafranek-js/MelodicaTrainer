@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createFirstStaffDisplayXml,
   injectHarmonicaTabs,
   transposeKeySignatureFifths,
   transposeNoteName,
@@ -165,5 +166,72 @@ describe("injectHarmonicaTabs", () => {
     expect(secondNoteChildren.indexOf("notations")).toBeLessThan(
       secondNoteChildren.indexOf("lyric")
     );
+  });
+});
+
+describe("createFirstStaffDisplayXml", () => {
+  it("removes lower staves and extra parts from the rendered XML", () => {
+    const output = createFirstStaffDisplayXml(`
+      <score-partwise>
+        <part-list>
+          <score-part id="P1"><part-name>Piano</part-name></score-part>
+          <score-part id="P2"><part-name>Bass</part-name></score-part>
+        </part-list>
+        <part id="P1">
+          <measure>
+            <print>
+              <staff-layout number="2"><staff-distance>65</staff-distance></staff-layout>
+            </print>
+            <attributes>
+              <divisions>1</divisions>
+              <staves>2</staves>
+              <clef number="1"><sign>G</sign><line>2</line></clef>
+              <clef number="2"><sign>F</sign><line>4</line></clef>
+            </attributes>
+            <direction><direction-type><words>Allegro</words></direction-type><staff>1</staff></direction>
+            <direction><direction-type><words>Pedal</words></direction-type><staff>2</staff></direction>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <staff>1</staff>
+            </note>
+            <backup><duration>1</duration></backup>
+            <note>
+              <pitch><step>C</step><octave>3</octave></pitch>
+              <duration>1</duration>
+              <staff>2</staff>
+            </note>
+          </measure>
+        </part>
+        <part id="P2">
+          <measure><note><rest/><duration>1</duration></note></measure>
+        </part>
+      </score-partwise>
+    `);
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+
+    expect(xmlDoc.getElementsByTagName("part")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("score-part")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("staves")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("staff")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("backup")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("staff-layout")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("clef")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("note")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("words")[0].textContent).toBe("Allegro");
+  });
+
+  it("returns the XML unchanged when there are no staff numbers", () => {
+    const xml = `
+      <score-partwise>
+        <part>
+          <measure>
+            <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration></note>
+          </measure>
+        </part>
+      </score-partwise>
+    `;
+
+    expect(createFirstStaffDisplayXml(xml)).toBe(xml);
   });
 });
