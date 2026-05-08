@@ -126,11 +126,12 @@ Completed on 2026-05-08:
 
 - Extracted Circle theory derivations into `src/Circle/circleTheory.ts`.
 - Added `src/Circle/circleTheory.test.ts` coverage for circle generation, mode tonic selection, selected scales, triads, and note color classification.
+- Extracted Practice target and scale derivations into `src/Practice/practiceTargets.ts`.
+- Added `src/Practice/practiceTargets.test.ts` coverage for position mode selection, alternate scale tonics, playable target filtering, bend-only target order, and target changes across position and scale changes.
 
-Recommended order:
+Remaining recommended order:
 
-1. Extract and test Practice target generation so scale/position changes cannot break target selection.
-2. Add route-level smoke tests later only if the project adopts a browser test runner.
+1. Add route-level smoke tests later only if the project adopts a browser test runner.
 
 ## Performance Work
 

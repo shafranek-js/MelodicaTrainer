@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Chord, Note, Scale } from "tonal";
+import { Chord, Note } from "tonal";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import {
   freqToNoteAndCents,
@@ -9,29 +9,15 @@ import {
   harmonicaKeys,
   harmonicaLayoutDisplayRows,
 } from "../utils/utils";
-import type {
-  HarmonicaLayout,
-  HarmonicaLayoutDisplayRowKey,
-  TonalNote,
-} from "../utils/utils";
-
-const positionOptions = [
-  { label: "1st", name: "Ionian", degree: 1 },
-  { label: "2nd", name: "Mixolydian", degree: 5 },
-  { label: "3rd", name: "Dorian", degree: 2 },
-  { label: "4th", name: "Aeolian", degree: 6 },
-  { label: "5th", name: "Phrygian", degree: 3 },
-  { label: "12th", name: "Lydian", degree: 4 },
-];
-
-const scaleOptions = [
-  { label: "Position mode", value: "mode" },
-  { label: "Major", value: "major" },
-  { label: "Major pentatonic", value: "major pentatonic" },
-  { label: "Minor pentatonic", value: "minor pentatonic" },
-  { label: "Blues", value: "blues" },
-  { label: "Major blues", value: "major blues" },
-];
+import {
+  bluesBars,
+  getPitchClassSet,
+  getPracticeTargets,
+  positionOptions,
+  scaleOptions,
+} from "./practiceTargets";
+import type { HarmonicaLayoutDisplayRowKey, TonalNote } from "../utils/utils";
+import type { PracticeScaleValue } from "./practiceTargets";
 
 const trainerModes = [
   { label: "Explore", value: "explore" },
@@ -50,55 +36,36 @@ const rowColorClasses = {
   oneAndHalfStepDrawBend: "bg-amber-800",
 } satisfies Record<HarmonicaLayoutDisplayRowKey, string>;
 
-const bluesBars = ["I", "I", "I", "I", "IV", "IV", "I", "I", "V", "IV", "I", "V"];
-
 type TrainerMode = (typeof trainerModes)[number]["value"];
-const pitchClassSet = (notes: string[]) =>
-  new Set(notes.map((note) => Note.chroma(note)).filter((chroma) => chroma >= 0));
-
-const getLayoutTargets = (
-  layout: HarmonicaLayout,
-  activePitchClasses: Set<number>,
-  includeOnlyBends = false
-) =>
-  harmonicaLayoutDisplayRows.flatMap(({ key, practiceLabel, isBend }) =>
-    layout[key].flatMap((note, index) => {
-      if (!note) return [];
-
-      const midi = Note.midi(note.name);
-      const chroma = Note.chroma(note.name);
-
-      if (midi === null || !activePitchClasses.has(chroma)) return [];
-      if (includeOnlyBends && !isBend) return [];
-
-      return [
-        {
-          label: `${practiceLabel} ${index + 1}`,
-          midi,
-          noteName: note.name,
-          row: practiceLabel,
-        },
-      ];
-    })
-  );
 
 function Practice() {
   const { t } = useTranslation();
   const [key, setKey] = useState("C4");
   const [positionIndex, setPositionIndex] = useState(1);
-  const [scaleValue, setScaleValue] = useState("blues");
+  const [scaleValue, setScaleValue] = useState<PracticeScaleValue>("blues");
   const [trainerMode, setTrainerMode] = useState<TrainerMode>("explore");
   const [targetIndex, setTargetIndex] = useState(0);
   const [barIndex, setBarIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
 
   const layout = useMemo(() => generateLayout(key), [key]);
-  const keyScale = useMemo(() => Scale.get(`${Note.pitchClass(key)} major`).notes, [key]);
-  const position = positionOptions[positionIndex];
-  const tonic = keyScale[position.degree - 1];
-  const modeScale = [...keyScale.slice(position.degree - 1), ...keyScale.slice(0, position.degree - 1)];
-  const scale =
-    scaleValue === "mode" ? modeScale : Scale.get(`${tonic} ${scaleValue}`).notes;
+  const {
+    position,
+    tonic,
+    scaleLabel,
+    activePitchClasses,
+    practiceTargets,
+    bendTargets,
+  } = useMemo(
+    () =>
+      getPracticeTargets({
+        layout,
+        harmonicaKey: key,
+        positionIndex,
+        scaleValue,
+      }),
+    [key, layout, positionIndex, scaleValue]
+  );
 
   const bluesRoots = useMemo(
     () => ({
@@ -111,18 +78,9 @@ function Practice() {
   const currentBluesRoot = bluesRoots[bluesBars[barIndex] as keyof typeof bluesRoots];
   const currentChordNotes = Chord.get(`${currentBluesRoot}7`).notes;
 
-  const activePitchClasses = useMemo(() => pitchClassSet(scale), [scale]);
   const chordPitchClasses = useMemo(
-    () => pitchClassSet(currentChordNotes),
+    () => getPitchClassSet(currentChordNotes),
     [currentChordNotes]
-  );
-  const practiceTargets = useMemo(
-    () => getLayoutTargets(layout, activePitchClasses),
-    [activePitchClasses, layout]
-  );
-  const bendTargets = useMemo(
-    () => getLayoutTargets(layout, activePitchClasses, true),
-    [activePitchClasses, layout]
   );
   const targets = trainerMode === "bends" ? bendTargets : practiceTargets;
   const target = targets[targetIndex % Math.max(targets.length, 1)];
@@ -203,7 +161,7 @@ function Practice() {
           <h1 className="text-2xl font-bold sm:text-3xl">Practice Trainer</h1>
           <p className="mt-1 text-sm text-gray-400">
             {t(Note.pitchClass(key))} harmonica · {position.label} position · {t(tonic)}{" "}
-            {scaleOptions.find((option) => option.value === scaleValue)?.label}
+            {scaleLabel}
           </p>
         </div>
 
@@ -249,7 +207,7 @@ function Practice() {
             <select
               value={scaleValue}
               onChange={(event) => {
-                setScaleValue(event.target.value);
+                setScaleValue(event.target.value as PracticeScaleValue);
                 setTargetIndex(0);
               }}
               className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
