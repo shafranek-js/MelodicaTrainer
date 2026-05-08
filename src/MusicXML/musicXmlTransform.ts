@@ -3,6 +3,7 @@ import { getHarmonicaHoleForNote } from "../utils/utils";
 import { getPitchNoteName } from "./playbackParser";
 import {
   getFirstPart,
+  getFirstPartMeasures,
   getFirstStaffNoteElements,
   getFirstStaffNumber,
   isFirstStaffNote,
@@ -85,6 +86,39 @@ const replaceHarmonicaFingering = (
   fingering.setAttribute("placement", "below");
   fingering.textContent = tab;
   technical.appendChild(fingering);
+};
+
+const getFingeringText = (note: Element) =>
+  note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
+
+export const exportHarpTabsText = (xml: string): string => {
+  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const firstPart = getFirstPart(xmlDoc);
+  const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
+
+  return getFirstPartMeasures(xmlDoc)
+    .map((measure) => {
+      const tokens: string[] = [];
+
+      getDirectChildren(measure, "note").forEach((note) => {
+        if (!isFirstStaffNote(note, firstStaffNumber)) return;
+
+        const tab = getFingeringText(note);
+        if (!tab) return;
+
+        const isChord = Boolean(getDirectChild(note, "chord"));
+        if (isChord && tokens.length) {
+          tokens[tokens.length - 1] = `${tokens[tokens.length - 1]}/${tab}`;
+          return;
+        }
+
+        tokens.push(tab);
+      });
+
+      return tokens.join(" ");
+    })
+    .filter(Boolean)
+    .join("\n");
 };
 
 export const createFirstStaffDisplayXml = (xml: string): string => {

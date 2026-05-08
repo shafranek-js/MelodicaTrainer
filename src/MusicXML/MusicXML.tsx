@@ -13,6 +13,7 @@ import {
 import { readMusicXmlFile } from "./musicXmlFile";
 import {
   createFirstStaffDisplayXml,
+  exportHarpTabsText,
   findAutoTransposeInterval,
   injectHarmonicaTabs,
 } from "./musicXmlTransform";
@@ -482,6 +483,23 @@ const TestFileLoader: React.FC = () => {
     URL.revokeObjectURL(url);
   }, [fileContent, fileName]);
 
+  const downloadHarpTabsText = useCallback(() => {
+    if (!fileContent) return;
+
+    const text = exportHarpTabsText(fileContent);
+    const blob = new Blob([text], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const baseName = fileName?.replace(/\.(mxl|musicxml|xml)$/i, "") || "score";
+
+    link.href = url;
+    link.download = `${baseName}-harptabs.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [fileContent, fileName]);
+
   useEffect(() => {
     if (!rawFileContent) return;
     const injected = buildHarmonicaTabXml(rawFileContent);
@@ -659,6 +677,15 @@ const TestFileLoader: React.FC = () => {
             className="bg-cyan-700 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-400 text-white px-4 py-2 rounded transition w-full"
           >
             Download Transposed MusicXML
+          </button>
+
+          <button
+            type="button"
+            onClick={downloadHarpTabsText}
+            disabled={!fileContent}
+            className="bg-indigo-700 hover:bg-indigo-600 disabled:bg-gray-700 disabled:text-gray-400 text-white px-4 py-2 rounded transition w-full"
+          >
+            Download HarpTabs text
           </button>
 
         </div>

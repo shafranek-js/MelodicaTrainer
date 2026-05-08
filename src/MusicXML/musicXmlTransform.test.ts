@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createFirstStaffDisplayXml,
+  exportHarpTabsText,
   injectHarmonicaTabs,
   transposeKeySignatureFifths,
   transposeNoteName,
@@ -233,5 +234,54 @@ describe("createFirstStaffDisplayXml", () => {
     `;
 
     expect(createFirstStaffDisplayXml(xml)).toBe(xml);
+  });
+});
+
+describe("exportHarpTabsText", () => {
+  it("exports first-staff fingerings as measure lines", () => {
+    const output = exportHarpTabsText(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes><divisions>1</divisions><staves>2</staves></attributes>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <staff>1</staff>
+              <notations><technical><fingering>1</fingering></technical></notations>
+            </note>
+            <note>
+              <chord />
+              <pitch><step>E</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <staff>1</staff>
+              <notations><technical><fingering>2</fingering></technical></notations>
+            </note>
+            <backup><duration>1</duration></backup>
+            <note>
+              <pitch><step>C</step><octave>3</octave></pitch>
+              <duration>1</duration>
+              <staff>2</staff>
+              <notations><technical><fingering>-1</fingering></technical></notations>
+            </note>
+          </measure>
+          <measure>
+            <note>
+              <rest />
+              <duration>1</duration>
+              <staff>1</staff>
+            </note>
+            <note>
+              <pitch><step>G</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <staff>1</staff>
+              <notations><technical><fingering>-4'</fingering></technical></notations>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(output).toBe("1/2\n-4'");
   });
 });
