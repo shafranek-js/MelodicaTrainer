@@ -18,6 +18,18 @@ export const stopAudioNodes = (nodes: AudioScheduledSourceNode[]) => {
   });
 };
 
+export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
+  if (!audioContext) return 0;
+
+  const contextWithLatency = audioContext as AudioContext & {
+    outputLatency?: number;
+  };
+  const latencySeconds =
+    (audioContext.baseLatency || 0) + (contextWithLatency.outputLatency || 0);
+
+  return Math.max(0, latencySeconds * 1000);
+};
+
 export const playPlaybackNotes = (
   audioContext: AudioContext,
   activeAudioNodes: AudioScheduledSourceNode[],

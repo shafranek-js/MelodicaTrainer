@@ -78,4 +78,54 @@ describe("injectHarmonicaTabs", () => {
       xmlDoc.getElementsByTagName("fingering")[0].getAttribute("placement")
     ).toBe("below");
   });
+
+  it("only transposes and annotates the first staff from the first part", () => {
+    const output = injectHarmonicaTabs(
+      `
+        <score-partwise>
+          <part id="P1">
+            <measure>
+              <attributes>
+                <key number="1"><fifths>0</fifths></key>
+                <key number="2"><fifths>-1</fifths></key>
+              </attributes>
+              <note>
+                <pitch><step>C</step><octave>4</octave></pitch>
+                <duration>1</duration>
+                <staff>1</staff>
+              </note>
+              <note>
+                <pitch><step>G</step><octave>3</octave></pitch>
+                <duration>1</duration>
+                <staff>2</staff>
+              </note>
+            </measure>
+          </part>
+          <part id="P2">
+            <measure>
+              <attributes><key><fifths>2</fifths></key></attributes>
+              <note>
+                <pitch><step>D</step><octave>5</octave></pitch>
+                <duration>1</duration>
+              </note>
+            </measure>
+          </part>
+        </score-partwise>
+      `,
+      { selectedKey: "C4", transpose: 2 }
+    );
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+    const notes = xmlDoc.getElementsByTagName("note");
+    const keys = xmlDoc.getElementsByTagName("fifths");
+
+    expect(notes[0].getElementsByTagName("step")[0].textContent).toBe("D");
+    expect(notes[0].getElementsByTagName("fingering")[0].textContent).toBe("-1");
+    expect(notes[1].getElementsByTagName("step")[0].textContent).toBe("G");
+    expect(notes[1].getElementsByTagName("fingering")[0]).toBeUndefined();
+    expect(notes[2].getElementsByTagName("step")[0].textContent).toBe("D");
+    expect(notes[2].getElementsByTagName("fingering")[0]).toBeUndefined();
+    expect(keys[0].textContent).toBe("2");
+    expect(keys[1].textContent).toBe("-1");
+    expect(keys[2].textContent).toBe("2");
+  });
 });

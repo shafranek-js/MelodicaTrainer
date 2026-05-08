@@ -1,4 +1,9 @@
 import type { PlaybackEvent, PlaybackNote } from "./types";
+import {
+  getFirstPartMeasures,
+  getFirstStaffNumber,
+  isFirstStaffNote,
+} from "./musicXmlSelection";
 
 export const getPitchNoteName = (pitch: Element): string | null => {
   const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
@@ -111,13 +116,71 @@ const resolveTiedNotes = (events: PlaybackEvent[]) => {
   return events;
 };
 
+const clonePlaybackEvent = (event: PlaybackEvent): PlaybackEvent => ({
+  ...event,
+  notes: event.notes.map((note) => ({ ...note })),
+  tabs: [...event.tabs],
+});
+
+const getRepeatDirection = (
+  measure: Element,
+  direction: "forward" | "backward"
+) =>
+  Array.from(measure.getElementsByTagName("repeat")).find(
+    (repeat) => repeat.getAttribute("direction") === direction
+  );
+
+const getRepeatTimes = (repeat: Element | undefined) => {
+  const times = Number(repeat?.getAttribute("times"));
+  return Number.isFinite(times) && times > 1 ? Math.floor(times) : 2;
+};
+
+const expandRepeats = (
+  measures: { element: Element; events: PlaybackEvent[] }[]
+) => {
+  const expanded: PlaybackEvent[] = [];
+  let repeatStartMeasureIndex = 0;
+
+  measures.forEach((measure, measureIndex) => {
+    const forwardRepeat = getRepeatDirection(measure.element, "forward");
+    const backwardRepeat = getRepeatDirection(measure.element, "backward");
+
+    if (forwardRepeat) {
+      repeatStartMeasureIndex = measureIndex;
+    }
+
+    expanded.push(...measure.events.map(clonePlaybackEvent));
+
+    if (!backwardRepeat) return;
+
+    const repeatTimes = getRepeatTimes(backwardRepeat);
+    const repeatedMeasures = measures.slice(
+      repeatStartMeasureIndex,
+      measureIndex + 1
+    );
+
+    for (let repeatIndex = 1; repeatIndex < repeatTimes; repeatIndex += 1) {
+      repeatedMeasures.forEach((repeatedMeasure) => {
+        expanded.push(...repeatedMeasure.events.map(clonePlaybackEvent));
+      });
+    }
+
+    repeatStartMeasureIndex = measureIndex + 1;
+  });
+
+  return expanded;
+};
+
 export const parsePlaybackEvents = (xml: string) => {
   const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
-  const events: PlaybackEvent[] = [];
+  const measuresWithEvents: { element: Element; events: PlaybackEvent[] }[] = [];
   let divisions = 1;
   let detectedTempo = 90;
   let currentTempo = detectedTempo;
   let currentVelocity = dynamicVelocities.mf;
+  let sourceEventIndex = 0;
+  const firstPart = xmlDoc.getElementsByTagName("part")[0];
+  const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
 
   Array.from(xmlDoc.getElementsByTagName("sound")).some((sound) => {
     const tempo = Number(sound.getAttribute("tempo"));
@@ -127,7 +190,8 @@ export const parsePlaybackEvents = (xml: string) => {
     return true;
   });
 
-  Array.from(xmlDoc.getElementsByTagName("measure")).forEach((measure) => {
+  getFirstPartMeasures(xmlDoc).forEach((measure) => {
+    const measureEvents: PlaybackEvent[] = [];
     const attributes = measure.getElementsByTagName("attributes")[0];
     if (attributes) {
       divisions = getChildNumber(attributes, "divisions", divisions);
@@ -153,6 +217,7 @@ export const parsePlaybackEvents = (xml: string) => {
       }
 
       if (child.tagName !== "note") return;
+      if (!isFirstStaffNote(child, firstStaffNumber)) return;
 
       const duration = getChildNumber(child, "duration", divisions);
       const durationBeats = duration / divisions;
@@ -173,20 +238,26 @@ export const parsePlaybackEvents = (xml: string) => {
           }
         : null;
 
-      if (isChord && events.length) {
-        if (note) events[events.length - 1].notes.push(note);
-        if (tab) events[events.length - 1].tabs.push(tab);
+      if (isChord && measureEvents.length) {
+        if (note) measureEvents[measureEvents.length - 1].notes.push(note);
+        if (tab) measureEvents[measureEvents.length - 1].tabs.push(tab);
         return;
       }
 
-      events.push({
+      measureEvents.push({
         durationBeats,
         tempoBpm: currentTempo,
         notes: note && !isRest ? [note] : [],
         tabs: tab ? [tab] : [],
+        sourceEventIndex,
       });
+      sourceEventIndex += 1;
     });
+
+    measuresWithEvents.push({ element: measure, events: measureEvents });
   });
+
+  const events = expandRepeats(measuresWithEvents);
 
   return { events: resolveTiedNotes(events), detectedTempo };
 };

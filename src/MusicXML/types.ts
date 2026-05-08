@@ -13,6 +13,7 @@ export type PlaybackEvent = {
   tempoBpm: number;
   notes: PlaybackNote[];
   tabs: string[];
+  sourceEventIndex: number;
 };
 
 export type GameStats = {

@@ -77,6 +77,152 @@ describe("parsePlaybackEvents", () => {
     });
   });
 
+  it("only parses the first staff from the first part", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part id="P1">
+          <measure>
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <staff>1</staff>
+              <notations><technical><fingering>1</fingering></technical></notations>
+            </note>
+            <note>
+              <pitch><step>C</step><octave>3</octave></pitch>
+              <duration>1</duration>
+              <staff>2</staff>
+              <notations><technical><fingering>-1</fingering></technical></notations>
+            </note>
+          </measure>
+        </part>
+        <part id="P2">
+          <measure>
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <pitch><step>G</step><octave>5</octave></pitch>
+              <duration>1</duration>
+              <notations><technical><fingering>6</fingering></technical></notations>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0].notes).toMatchObject([{ name: "C4" }]);
+    expect(result.events[0].tabs).toEqual(["1"]);
+  });
+
+  it("parses all notes when the first part has no staff numbers", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+            <note>
+              <pitch><step>D</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events.map((event) => event.notes[0]?.name)).toEqual([
+      "C4",
+      "D4",
+    ]);
+  });
+
+  it("expands simple repeat blocks while keeping source event indexes", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure number="1">
+            <attributes><divisions>1</divisions></attributes>
+            <barline location="left">
+              <repeat direction="forward" />
+            </barline>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+          <measure number="2">
+            <note>
+              <pitch><step>D</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+            <barline location="right">
+              <repeat direction="backward" />
+            </barline>
+          </measure>
+          <measure number="3">
+            <note>
+              <pitch><step>E</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events.map((event) => event.notes[0]?.name)).toEqual([
+      "C4",
+      "D4",
+      "C4",
+      "D4",
+      "E4",
+    ]);
+    expect(result.events.map((event) => event.sourceEventIndex)).toEqual([
+      0,
+      1,
+      0,
+      1,
+      2,
+    ]);
+  });
+
+  it("repeats from the beginning when a backward repeat has no forward repeat", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure number="1">
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+          <measure number="2">
+            <note>
+              <pitch><step>D</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+            <barline location="right">
+              <repeat direction="backward" times="3" />
+            </barline>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events.map((event) => event.notes[0]?.name)).toEqual([
+      "C4",
+      "D4",
+      "C4",
+      "D4",
+      "C4",
+      "D4",
+    ]);
+  });
+
   it("extends tie starts and disables repeated tie-stop playback", () => {
     const result = parsePlaybackEvents(`
       <score-partwise>

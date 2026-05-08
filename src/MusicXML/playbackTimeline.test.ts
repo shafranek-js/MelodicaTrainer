@@ -16,6 +16,7 @@ const makeEvent = (
   durationBeats,
   tempoBpm,
   tabs,
+  sourceEventIndex: 0,
   notes: [
     {
       name: noteName,

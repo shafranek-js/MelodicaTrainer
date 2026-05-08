@@ -3,9 +3,13 @@ import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { freqToNoteAndCents, harmonicaKeys } from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
-import { Gauge, Pause, Play, RotateCcw } from "lucide-react";
 import { usePitchDetector } from "../hooks/usePitchDetector";
-import { ensureAudioContext, playPlaybackNotes, stopAudioNodes } from "./audioPlayback";
+import {
+  ensureAudioContext,
+  getAudioOutputLatencyMs,
+  playPlaybackNotes,
+  stopAudioNodes,
+} from "./audioPlayback";
 import { readMusicXmlFile } from "./musicXmlFile";
 import {
   findAutoTransposeInterval,
@@ -45,6 +49,7 @@ const TestFileLoader: React.FC = () => {
   const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
 
   const osmdRef = useRef<HTMLDivElement>(null);
+  const sheetScrollRef = useRef<HTMLDivElement>(null);
   const osmdInstance = useRef<OpenSheetMusicDisplay | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const playbackTimerRef = useRef<number | null>(null);
@@ -150,6 +155,9 @@ const TestFileLoader: React.FC = () => {
       cursorEventIndexRef.current = null;
       osmdInstance.current?.cursor?.reset();
       osmdInstance.current?.cursor?.hide();
+      if (sheetScrollRef.current) {
+        sheetScrollRef.current.scrollTop = 0;
+      }
     }
   }, []);
 
@@ -162,6 +170,24 @@ const TestFileLoader: React.FC = () => {
       notes,
       tempoBpm
     );
+  }, []);
+
+  const scrollSheetToCursor = useCallback(() => {
+    const sheet = sheetScrollRef.current;
+    const cursorElement = osmdInstance.current?.cursor?.cursorElement;
+    if (!sheet || !cursorElement) return;
+
+    window.requestAnimationFrame(() => {
+      const sheetRect = sheet.getBoundingClientRect();
+      const cursorRect = cursorElement.getBoundingClientRect();
+      const targetTop = sheet.clientHeight * 0.32;
+      const offset = cursorRect.top - sheetRect.top - targetTop;
+
+      sheet.scrollTo({
+        top: Math.max(0, sheet.scrollTop + offset),
+        behavior: "smooth",
+      });
+    });
   }, []);
 
   const moveCursorInstantlyToEvent = useCallback((eventIndex: number) => {
@@ -185,7 +211,8 @@ const TestFileLoader: React.FC = () => {
     cursorEventIndexRef.current = eventIndex;
     styleSheetCursor(cursor.cursorElement, 0);
     void cursor.cursorElement.offsetHeight;
-  }, []);
+    scrollSheetToCursor();
+  }, [scrollSheetToCursor]);
 
   const animateCursorToEvent = useCallback(
     (eventIndex: number, durationMs: number) => {
@@ -207,21 +234,30 @@ const TestFileLoader: React.FC = () => {
 
       window.requestAnimationFrame(() => {
         styleSheetCursor(cursor.cursorElement, durationMs);
+        scrollSheetToCursor();
       });
     },
-    []
+    [scrollSheetToCursor]
   );
 
   const moveCursorThroughEvent = useCallback(
     (eventIndex: number, durationMs: number) => {
-      moveCursorInstantlyToEvent(eventIndex);
+      const event = playbackEvents[eventIndex];
+      if (!event) return;
+
+      const sourceEventIndex = event.sourceEventIndex;
+      moveCursorInstantlyToEvent(sourceEventIndex);
 
       const nextEventIndex = eventIndex + 1;
-      if (nextEventIndex < playbackEvents.length) {
-        animateCursorToEvent(nextEventIndex, durationMs);
+      const nextSourceEventIndex = playbackEvents[nextEventIndex]?.sourceEventIndex;
+      if (
+        nextSourceEventIndex !== undefined &&
+        nextSourceEventIndex > sourceEventIndex
+      ) {
+        animateCursorToEvent(nextSourceEventIndex, durationMs);
       }
     },
-    [animateCursorToEvent, moveCursorInstantlyToEvent, playbackEvents.length]
+    [animateCursorToEvent, moveCursorInstantlyToEvent, playbackEvents]
   );
 
   const schedulePlayback = useCallback(
@@ -239,9 +275,10 @@ const TestFileLoader: React.FC = () => {
       );
       const eventStartMs = playbackTimeline[startIndex]?.startMs ?? 0;
 
-      gameClockOffsetMsRef.current = eventStartMs;
+      gameClockOffsetMsRef.current =
+        eventStartMs - getAudioOutputLatencyMs(audioContextRef.current);
       gameClockStartMsRef.current = performance.now();
-      setCurrentGameTimeMs(eventStartMs);
+      setCurrentGameTimeMs(gameClockOffsetMsRef.current);
       setCurrentEventIndex(startIndex);
       setCurrentTab(event.tabs.join("  "));
       moveCursorThroughEvent(startIndex, durationMs);
@@ -281,7 +318,9 @@ const TestFileLoader: React.FC = () => {
       scoredEventIndexRef.current = null;
       previousEventIndexRef.current = 0;
     }
-    gameClockOffsetMsRef.current = playbackTimeline[startIndex]?.startMs ?? 0;
+    gameClockOffsetMsRef.current =
+      (playbackTimeline[startIndex]?.startMs ?? 0) -
+      getAudioOutputLatencyMs(audioContextRef.current);
     gameClockStartMsRef.current = performance.now();
     setCurrentGameTimeMs(gameClockOffsetMsRef.current);
     const runId = playbackRunRef.current + 1;
@@ -455,13 +494,13 @@ const TestFileLoader: React.FC = () => {
         drawFingerings: true,
         fingeringPosition: "below",
         autoResize: true,
-        followCursor: true,
+        followCursor: false,
         cursorsOptions: [
           {
             type: CursorType.ThinLeft,
             color: "#10b981",
             alpha: 0.85,
-            follow: true,
+            follow: false,
           },
         ],
       });
@@ -472,6 +511,9 @@ const TestFileLoader: React.FC = () => {
       .then(() => {
         osmdInstance.current?.render();
         osmdInstance.current?.cursor?.hide();
+        if (sheetScrollRef.current) {
+          sheetScrollRef.current.scrollTop = 0;
+        }
       })
       .catch((err) => console.error("OSMD Load Error:", err));
   }, [fileContent]);
@@ -588,72 +630,14 @@ const TestFileLoader: React.FC = () => {
             Download Transposed MusicXML
           </button>
 
-          <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-gray-300">
-                Tab playback
-              </span>
-              <span className="text-xs text-gray-500">
-                {playbackEvents.length} notes
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={togglePlayback}
-                disabled={!playbackEvents.length}
-                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded bg-emerald-600 px-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400"
-              >
-                {isPlaying ? <Pause size={18} /> : <Play size={18} />}
-                {isPlaying ? "Pause" : "Play"}
-              </button>
-              <button
-                type="button"
-                aria-label="Restart playback"
-                title="Restart playback"
-                onClick={() => stopPlayback(true)}
-                disabled={!playbackEvents.length}
-                className="inline-flex h-10 w-10 items-center justify-center rounded border border-gray-700 bg-gray-800 text-gray-100 transition hover:bg-gray-700 disabled:text-gray-500"
-              >
-                <RotateCcw size={18} />
-              </button>
-            </div>
-
-            <label className="block text-sm text-gray-300">
-              <span className="mb-1 flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-2">
-                  <Gauge size={16} />
-                  Tempo
-                </span>
-                <span>{tempo} bpm</span>
-              </span>
-              <input
-                type="range"
-                min="40"
-                max="180"
-                value={tempo}
-                onChange={(event) => setTempo(Number(event.target.value))}
-                className="w-full accent-emerald-500"
-              />
-            </label>
-
-            <div className="h-2 overflow-hidden rounded bg-gray-800">
-              <div
-                className="h-full bg-emerald-500 transition-[width]"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="min-h-8 rounded border border-gray-800 bg-gray-900 px-3 py-2 text-center text-xl font-bold tracking-normal text-emerald-300">
-              {currentTab || "-"}
-            </div>
-          </div>
-
         </div>
 
         <div className="grid w-full flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_520px]">
           {/* Sheet Music Viewer */}
-          <div className="w-full overflow-x-auto rounded bg-white p-4 text-black shadow min-h-[60vh]">
+          <div
+            ref={sheetScrollRef}
+            className="sticky top-4 h-[calc(100vh-7rem)] min-h-[520px] w-full overflow-auto rounded bg-white p-4 text-black shadow"
+          >
             <div ref={osmdRef} />
           </div>
 
@@ -667,7 +651,13 @@ const TestFileLoader: React.FC = () => {
             isPlaying={isPlaying}
             laneKeys={laneKeys}
             lastHitIndex={lastHitIndex}
+            onRestartPlayback={() => stopPlayback(true)}
+            onTogglePlayback={togglePlayback}
+            playbackEventsCount={playbackEvents.length}
             pitchError={pitchError}
+            progress={progress}
+            setTempo={setTempo}
+            tempo={tempo}
             visibleGameEvents={visibleGameEvents}
             visualPlayheadMs={visualPlayheadMs}
           />

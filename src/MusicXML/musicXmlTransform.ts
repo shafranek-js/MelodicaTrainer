@@ -1,6 +1,11 @@
 import { Note } from "tonal";
 import { getHarmonicaHoleForNote } from "../utils/utils";
 import { getPitchNoteName } from "./playbackParser";
+import {
+  getFirstPart,
+  getFirstStaffNoteElements,
+  getFirstStaffNumber,
+} from "./musicXmlSelection";
 
 const keySignatureTonicsByFifths = new Map(
   Array.from({ length: 15 }, (_, index) => {
@@ -92,7 +97,18 @@ export const transposeKeySignatures = (
   xmlDoc: XMLDocument,
   semitones: number
 ) => {
-  Array.from(xmlDoc.getElementsByTagName("key")).forEach((key) => {
+  const firstPart = getFirstPart(xmlDoc);
+  const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
+  const keyElements = firstPart
+    ? Array.from(firstPart.getElementsByTagName("key"))
+    : Array.from(xmlDoc.getElementsByTagName("key"));
+
+  keyElements.forEach((key) => {
+    const staffNumber = key.getAttribute("number");
+    if (firstStaffNumber && staffNumber && staffNumber !== firstStaffNumber) {
+      return;
+    }
+
     const fifthsElement = key.getElementsByTagName("fifths")[0];
     if (!fifthsElement?.textContent) return;
 
@@ -116,10 +132,10 @@ export const injectHarmonicaTabs = (
 ): string => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xml, "application/xml");
-  const noteElements = xmlDoc.getElementsByTagName("note");
+  const noteElements = getFirstStaffNoteElements(xmlDoc);
   transposeKeySignatures(xmlDoc, transpose);
 
-  Array.from(noteElements).forEach((note) => {
+  noteElements.forEach((note) => {
     const pitch = note.getElementsByTagName("pitch")[0];
     if (!pitch) return;
 
@@ -162,7 +178,7 @@ export const findAutoTransposeInterval = (
 ) => {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xml, "application/xml");
-  const noteElements = Array.from(xmlDoc.getElementsByTagName("note"));
+  const noteElements = getFirstStaffNoteElements(xmlDoc);
 
   for (let interval = -36; interval <= 36; interval += 1) {
     let hasInvalidNotes = false;

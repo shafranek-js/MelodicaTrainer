@@ -1,4 +1,4 @@
-import { Mic, Target } from "lucide-react";
+import { Gauge, Mic, Pause, Play, RotateCcw, Target } from "lucide-react";
 import { Note } from "tonal";
 import type { freqToNoteAndCents } from "../utils/utils";
 import {
@@ -24,7 +24,13 @@ type NoteHighwayProps = {
   isPlaying: boolean;
   laneKeys: number[];
   lastHitIndex: number | null;
+  onRestartPlayback: () => void;
+  onTogglePlayback: () => void;
+  playbackEventsCount: number;
   pitchError: string | null;
+  progress: number;
+  setTempo: (tempo: number) => void;
+  tempo: number;
   visibleGameEvents: VisibleGameEvent[];
   visualPlayheadMs: number;
 };
@@ -39,7 +45,13 @@ export const NoteHighway = ({
   isPlaying,
   laneKeys,
   lastHitIndex,
+  onRestartPlayback,
+  onTogglePlayback,
+  playbackEventsCount,
   pitchError,
+  progress,
+  setTempo,
+  tempo,
   visibleGameEvents,
   visualPlayheadMs,
 }: NoteHighwayProps) => (
@@ -65,6 +77,71 @@ export const NoteHighway = ({
         <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
           {accuracy}% accuracy
         </span>
+      </div>
+    </div>
+
+    <div className="mb-3 rounded border border-emerald-500/30 bg-gray-950 p-3 shadow-[0_0_22px_rgba(16,185,129,0.08)]">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-sm font-semibold text-gray-100">
+            Tab playback
+          </div>
+          <div className="text-xs text-gray-500">
+            {playbackEventsCount} notes
+          </div>
+        </div>
+        <div className="min-w-20 rounded border border-gray-800 bg-gray-900 px-3 py-2 text-center text-xl font-bold tracking-normal text-emerald-300">
+          {currentTab || "-"}
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onTogglePlayback}
+            disabled={!playbackEventsCount}
+            className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded bg-emerald-600 px-4 text-base font-semibold text-white transition hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400"
+          >
+            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+            {isPlaying ? "Pause" : "Play"}
+          </button>
+          <button
+            type="button"
+            aria-label="Restart playback"
+            title="Restart playback"
+            onClick={onRestartPlayback}
+            disabled={!playbackEventsCount}
+            className="inline-flex h-12 w-12 items-center justify-center rounded border border-gray-700 bg-gray-800 text-gray-100 transition hover:bg-gray-700 disabled:text-gray-500"
+          >
+            <RotateCcw size={20} />
+          </button>
+        </div>
+
+        <label className="block text-sm text-gray-300">
+          <span className="mb-1 flex items-center justify-between gap-2">
+            <span className="inline-flex items-center gap-2">
+              <Gauge size={16} />
+              Tempo
+            </span>
+            <span>{tempo} bpm</span>
+          </span>
+          <input
+            type="range"
+            min="40"
+            max="180"
+            value={tempo}
+            onChange={(event) => setTempo(Number(event.target.value))}
+            className="w-full accent-emerald-500"
+          />
+        </label>
+      </div>
+
+      <div className="mt-3 h-2 overflow-hidden rounded bg-gray-800">
+        <div
+          className="h-full bg-emerald-500 transition-[width]"
+          style={{ width: `${progress}%` }}
+        />
       </div>
     </div>
 
@@ -141,7 +218,9 @@ export const NoteHighway = ({
                   NOTE_TARGET_LINE_PERCENT -
                   (timeToHitMs / NOTE_HIGHWAY_LOOKAHEAD_MS) *
                     NOTE_TARGET_LINE_PERCENT;
-                const isActive = Math.abs(timeToHitMs) <= NOTE_HIT_WINDOW_MS;
+                const isActive =
+                  timeToHitMs <= 0 &&
+                  Math.abs(timeToHitMs) <= NOTE_HIT_WINDOW_MS;
                 const wasHit = lastHitIndex === index && isActive;
 
                 return (
