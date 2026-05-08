@@ -61,7 +61,6 @@ Main risks:
 
 - `src/App.tsx` uses `h-screen` while route pages also use `min-h-screen`; this can create nested viewport/scroll issues on mobile browser UI.
 - `src/Menu.tsx` uses one non-wrapping horizontal flex row with links and right-side controls. Narrow screens can overflow.
-- `src/Harmonica/Harmonica.tsx` renders a 10-column layout without the horizontal overflow protection used in Practice.
 - `src/MusicXML/MusicXML.tsx` uses a sticky sheet with `h-[calc(100vh-7rem)] min-h-[520px]`, which can be awkward on mobile and inside the app shell.
 - `src/MusicXML/NoteHighway.tsx` uses a fixed `h-[520px]` highway.
 - `src/Circle/Circle.tsx` uses fixed window-based circle sizes and dense flex rows for triads.
@@ -70,7 +69,6 @@ Recommended steps:
 
 - Change the app shell to `min-h-dvh` and make route pages fill available space without adding another full viewport when nested.
 - Make the menu responsive with wrapping or horizontal scrolling for nav links, and keep the notation/support controls from forcing page overflow.
-- Give Harmonica the same stable horizontal scroll treatment as Practice: an outer `overflow-x-auto` wrapper and an inner fixed minimum grid width.
 - Make MusicXML sheet stickiness large-screen-only; on small screens use normal flow with bounded height based on `dvh`.
 - Use responsive highway heights such as smaller mobile height and larger desktop height.
 - In Circle, use container sizing where possible and make triad rows wrap or grid instead of relying on `justify-between`.

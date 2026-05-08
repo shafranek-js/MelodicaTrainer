@@ -81,7 +81,7 @@ function Harmonica() {
         return (
           <div
             key={`${label}-${idx}`}
-            className={`relative rounded px-2 py-1 border border-gray-700 ${colorClass}`}
+            className={`relative flex min-h-8 items-center justify-center rounded border border-gray-700 px-2 py-1 text-sm font-semibold ${colorClass}`}
           >
             {translatedNoteName}
             {showLine && renderLine(offsetY)}
@@ -188,39 +188,43 @@ function Harmonica() {
       </div>
 
       {/* Harmonica layout */}
-      <div className="max-w-xl w-full text-center">
+      <div className="w-full max-w-3xl text-center">
         <h2 className="text-xl font-semibold mb-4">
           🎵 Harmonica Layout ({t(Note.pitchClass(key))} Major)
         </h2>
 
-        {renderRow(
-          layout.wholeStepBlowBend,
-          "Whole Step Blow Bend",
-          "bg-purple-700 text-white"
-        )}
-        {renderRow(
-          layout.HalfStepBlowBend,
-          "Half Step Blow Bend",
-          "bg-indigo-700 text-white"
-        )}
-        {renderRow(layout.blow, "Blow", "bg-blue-600 text-white")}
-        {renderHoleNumbers()}
-        {renderRow(layout.draw, "Draw", "bg-red-600 text-white")}
-        {renderRow(
-          layout.halfStepDrawBendOverdraw,
-          "Half Step Draw Bend + Overdraw",
-          "bg-pink-700 text-white"
-        )}
-        {renderRow(
-          layout.wholeStepDrawBend,
-          "Whole Step Draw Bend",
-          "bg-rose-700 text-white"
-        )}
-        {renderRow(
-          layout.oneAndHalfStepDrawBend,
-          "1.5 Step Draw Bend",
-          "bg-amber-700 text-white"
-        )}
+        <div className="overflow-x-auto rounded border border-gray-800 bg-gray-900 p-4">
+          <div className="min-w-[620px]">
+            {renderRow(
+              layout.wholeStepBlowBend,
+              "Whole Step Blow Bend",
+              "bg-purple-700 text-white"
+            )}
+            {renderRow(
+              layout.HalfStepBlowBend,
+              "Half Step Blow Bend",
+              "bg-indigo-700 text-white"
+            )}
+            {renderRow(layout.blow, "Blow", "bg-blue-600 text-white")}
+            {renderHoleNumbers()}
+            {renderRow(layout.draw, "Draw", "bg-red-600 text-white")}
+            {renderRow(
+              layout.halfStepDrawBendOverdraw,
+              "Half Step Draw Bend + Overdraw",
+              "bg-pink-700 text-white"
+            )}
+            {renderRow(
+              layout.wholeStepDrawBend,
+              "Whole Step Draw Bend",
+              "bg-rose-700 text-white"
+            )}
+            {renderRow(
+              layout.oneAndHalfStepDrawBend,
+              "1.5 Step Draw Bend",
+              "bg-amber-700 text-white"
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
