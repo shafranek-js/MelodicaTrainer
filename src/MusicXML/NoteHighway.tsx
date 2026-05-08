@@ -155,7 +155,7 @@ export const NoteHighway = ({
         </div>
         <div className="space-y-2">
           {visibleGameEvents
-            .filter(({ index }) => index > currentEventIndex)
+            .filter(({ event, index }) => index > currentEventIndex && event.notes.length)
             .slice(0, 7)
             .map(({ event, index }) => (
               <div
@@ -203,8 +203,7 @@ export const NoteHighway = ({
         />
 
         {visibleGameEvents.flatMap(({ event, index, timing }) =>
-          event.notes.length
-            ? event.notes.map((note, noteIndex) => {
+          event.notes.map((note, noteIndex) => {
                 const tab = event.tabs[noteIndex] || event.tabs[0] || "";
                 const hole = getTabHole(tab);
                 const laneCount = Math.max(laneKeys.length, 1);
@@ -245,20 +244,6 @@ export const NoteHighway = ({
                   </div>
                 );
               })
-            : [
-                <div
-                  key={`${index}-rest`}
-                  className="absolute left-1/2 h-2 w-16 -translate-x-1/2 rounded bg-gray-700"
-                  style={{
-                    top: `${
-                      NOTE_TARGET_LINE_PERCENT -
-                      ((timing.startMs - visualPlayheadMs) /
-                        NOTE_HIGHWAY_LOOKAHEAD_MS) *
-                        NOTE_TARGET_LINE_PERCENT
-                    }%`,
-                  }}
-                />,
-              ]
         )}
 
         <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300">
