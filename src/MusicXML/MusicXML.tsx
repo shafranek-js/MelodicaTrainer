@@ -1,10 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import JSZip from "jszip";
-import { getHarmonicaHoleForNote, harmonicaKeys } from "../utils/utils";
+import {
+  freqToNoteAndCents,
+  getHarmonicaHoleForNote,
+  harmonicaKeys,
+} from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
-import { Gauge, Pause, Play, RotateCcw } from "lucide-react";
+import { Gauge, Mic, Pause, Play, RotateCcw, Target } from "lucide-react";
+import { usePitchDetector } from "../hooks/usePitchDetector";
 
 const keySignatureTonicsByFifths = new Map(
   Array.from({ length: 15 }, (_, index) => {
@@ -41,6 +46,25 @@ type PlaybackEvent = {
   tempoBpm: number;
   notes: PlaybackNote[];
   tabs: string[];
+};
+
+type GameStats = {
+  hits: number;
+  misses: number;
+  streak: number;
+};
+
+type PlaybackTiming = {
+  startMs: number;
+  durationMs: number;
+  endMs: number;
+};
+
+const getTabHole = (tab: string) => {
+  const match = tab.match(/^-?\d+/);
+  if (!match) return null;
+
+  return Math.abs(Number(match[0]));
 };
 
 const getChildNumber = (
@@ -384,6 +408,13 @@ const TestFileLoader: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [currentTab, setCurrentTab] = useState("");
+  const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
+  const [gameStats, setGameStats] = useState<GameStats>({
+    hits: 0,
+    misses: 0,
+    streak: 0,
+  });
+  const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
 
   const osmdRef = useRef<HTMLDivElement>(null);
   const osmdInstance = useRef<OpenSheetMusicDisplay | null>(null);
@@ -392,16 +423,114 @@ const TestFileLoader: React.FC = () => {
   const playbackRunRef = useRef(0);
   const activeAudioNodesRef = useRef<AudioScheduledSourceNode[]>([]);
   const cursorEventIndexRef = useRef<number | null>(null);
+  const scoredEventIndexRef = useRef<number | null>(null);
+  const previousEventIndexRef = useRef(0);
+  const gameClockFrameRef = useRef<number | null>(null);
+  const gameClockStartMsRef = useRef(0);
+  const gameClockOffsetMsRef = useRef(0);
 
   const playback = useMemo(
     () => (fileContent ? parsePlaybackEvents(fileContent) : null),
     [fileContent]
   );
   const playbackEvents = useMemo(() => playback?.events ?? [], [playback]);
+  const playableMidiNumbers = useMemo(() => {
+    const midiNumbers = playbackEvents
+      .flatMap((event) => event.notes)
+      .map((note) => Note.midi(note.name))
+      .filter((midi): midi is number => midi !== null);
+
+    return new Set(midiNumbers);
+  }, [playbackEvents]);
   const tempoScale = tempo / (playback?.detectedTempo || tempo || 90);
+  const playbackTimeline = useMemo(() => {
+    let cursorMs = 0;
+
+    return playbackEvents.map((event): PlaybackTiming => {
+      const effectiveTempo = Math.max(20, event.tempoBpm * tempoScale);
+      const durationMs = Math.max(
+        80,
+        (60000 / effectiveTempo) * event.durationBeats
+      );
+      const timing = {
+        startMs: cursorMs,
+        durationMs,
+        endMs: cursorMs + durationMs,
+      };
+
+      cursorMs = timing.endMs;
+      return timing;
+    });
+  }, [playbackEvents, tempoScale]);
+  const laneKeys = useMemo(() => {
+    const holes = new Set<number>();
+
+    playbackEvents.forEach((event) => {
+      event.tabs.forEach((tab) => {
+        const hole = getTabHole(tab);
+        if (hole !== null) holes.add(hole);
+      });
+    });
+
+    return Array.from(holes).sort((a, b) => a - b);
+  }, [playbackEvents]);
+  const visualPlayheadMs =
+    isPlaying
+      ? currentGameTimeMs
+      : playbackTimeline[currentEventIndex]?.startMs ?? 0;
   const progress =
     playbackEvents.length > 0
       ? Math.round((currentEventIndex / playbackEvents.length) * 100)
+      : 0;
+  const currentGameEvent = playbackEvents[currentEventIndex];
+  const currentTargetNotes = currentGameEvent?.notes ?? [];
+  const currentTargetMidiNumbers = useMemo(
+    () =>
+      new Set(
+        currentTargetNotes
+          .map((note) => Note.midi(note.name))
+          .filter((midi): midi is number => midi !== null)
+      ),
+    [currentTargetNotes]
+  );
+  const visibleGameEvents = useMemo(
+    () =>
+      playbackEvents
+        .map((event, index) => ({
+          event,
+          index,
+          timing: playbackTimeline[index],
+        }))
+        .filter(({ timing }) => {
+          if (!timing) return false;
+          return (
+            timing.endMs >= visualPlayheadMs - 550 &&
+            timing.startMs <= visualPlayheadMs + 5200
+          );
+        }),
+    [playbackEvents, playbackTimeline, visualPlayheadMs]
+  );
+  const { pitch, clarity, error: pitchError } = usePitchDetector(
+    0.82,
+    isPlaying && playbackEvents.length > 0,
+    {
+      allowedMidiNumbers: playableMidiNumbers,
+      minRms: 0.012,
+      stableFrames: 2,
+    }
+  );
+  const detectedNote = useMemo(() => {
+    if (!pitch) return null;
+    return freqToNoteAndCents(Number(pitch));
+  }, [pitch]);
+  const detectedMidi = detectedNote ? Note.midi(detectedNote.note) : null;
+  const isCurrentHit =
+    detectedMidi !== null &&
+    currentTargetMidiNumbers.has(detectedMidi) &&
+    Math.abs(detectedNote?.cents ?? 99) <= 35;
+  const accuracy =
+    gameStats.hits + gameStats.misses > 0
+      ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
       : 0;
 
   const stopPlayback = useCallback((reset = false) => {
@@ -411,6 +540,10 @@ const TestFileLoader: React.FC = () => {
       window.clearTimeout(playbackTimerRef.current);
       playbackTimerRef.current = null;
     }
+    if (gameClockFrameRef.current !== null) {
+      window.cancelAnimationFrame(gameClockFrameRef.current);
+      gameClockFrameRef.current = null;
+    }
 
     stopAudioNodes(activeAudioNodesRef.current);
     activeAudioNodesRef.current = [];
@@ -419,6 +552,11 @@ const TestFileLoader: React.FC = () => {
     if (reset) {
       setCurrentEventIndex(0);
       setCurrentTab("");
+      setCurrentGameTimeMs(0);
+      setGameStats({ hits: 0, misses: 0, streak: 0 });
+      setLastHitIndex(null);
+      scoredEventIndexRef.current = null;
+      previousEventIndexRef.current = 0;
       cursorEventIndexRef.current = null;
       osmdInstance.current?.cursor?.reset();
       osmdInstance.current?.cursor?.hide();
@@ -548,6 +686,15 @@ const TestFileLoader: React.FC = () => {
 
     const startIndex =
       currentEventIndex >= playbackEvents.length ? 0 : currentEventIndex;
+    if (startIndex === 0) {
+      setGameStats({ hits: 0, misses: 0, streak: 0 });
+      setLastHitIndex(null);
+      scoredEventIndexRef.current = null;
+      previousEventIndexRef.current = 0;
+    }
+    gameClockOffsetMsRef.current = playbackTimeline[startIndex]?.startMs ?? 0;
+    gameClockStartMsRef.current = performance.now();
+    setCurrentGameTimeMs(gameClockOffsetMsRef.current);
     const runId = playbackRunRef.current + 1;
     playbackRunRef.current = runId;
     setIsPlaying(true);
@@ -556,9 +703,68 @@ const TestFileLoader: React.FC = () => {
     currentEventIndex,
     isPlaying,
     playbackEvents.length,
+    playbackTimeline,
     schedulePlayback,
     stopPlayback,
   ]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const updateClock = () => {
+      setCurrentGameTimeMs(
+        gameClockOffsetMsRef.current +
+          (performance.now() - gameClockStartMsRef.current)
+      );
+      gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
+    };
+
+    gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
+
+    return () => {
+      if (gameClockFrameRef.current !== null) {
+        window.cancelAnimationFrame(gameClockFrameRef.current);
+        gameClockFrameRef.current = null;
+      }
+    };
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!isCurrentHit || scoredEventIndexRef.current === currentEventIndex) {
+      return;
+    }
+
+    scoredEventIndexRef.current = currentEventIndex;
+    setLastHitIndex(currentEventIndex);
+    setGameStats((stats) => ({
+      ...stats,
+      hits: stats.hits + 1,
+      streak: stats.streak + 1,
+    }));
+  }, [currentEventIndex, isCurrentHit]);
+
+  useEffect(() => {
+    const previousIndex = previousEventIndexRef.current;
+    if (currentEventIndex <= previousIndex) {
+      previousEventIndexRef.current = currentEventIndex;
+      return;
+    }
+
+    const previousEvent = playbackEvents[previousIndex];
+    const shouldScoreMiss =
+      previousEvent?.notes.length &&
+      scoredEventIndexRef.current !== previousIndex;
+
+    if (shouldScoreMiss) {
+      setGameStats((stats) => ({
+        ...stats,
+        misses: stats.misses + 1,
+        streak: 0,
+      }));
+    }
+
+    previousEventIndexRef.current = currentEventIndex;
+  }, [currentEventIndex, playbackEvents]);
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}IntroSong.musicxml`)
       .then((res) => {
@@ -903,9 +1109,152 @@ const TestFileLoader: React.FC = () => {
           </div>
         </div>
 
-        {/* Sheet Music Viewer */}
-        <div className="flex-1 w-full bg-white text-black rounded shadow overflow-x-auto p-4 min-h-[60vh]">
-          <div ref={osmdRef} />
+        <div className="grid w-full flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_520px]">
+          {/* Sheet Music Viewer */}
+          <div className="w-full overflow-x-auto rounded bg-white p-4 text-black shadow min-h-[60vh]">
+            <div ref={osmdRef} />
+          </div>
+
+          <div className="rounded-lg border border-gray-700 bg-gray-900 p-4 shadow">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Target size={18} className="text-emerald-300" />
+                <span className="text-sm font-semibold text-gray-100">
+                  Note highway
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
+                  Hits {gameStats.hits}
+                </span>
+                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
+                  Miss {gameStats.misses}
+                </span>
+                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-emerald-300">
+                  Streak {gameStats.streak}
+                </span>
+                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
+                  {accuracy}% accuracy
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-[128px_minmax(0,1fr)] xl:grid-cols-[116px_minmax(0,1fr)]">
+              <div className="rounded border border-gray-800 bg-gray-950 p-3">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-gray-500">
+                  Tab
+                </div>
+                <div className="mb-3 rounded border border-emerald-400/40 bg-emerald-400/10 px-2 py-3 text-center text-2xl font-bold text-emerald-200">
+                  {currentTab || "-"}
+                </div>
+                <div className="space-y-2">
+                  {visibleGameEvents
+                    .filter(({ index }) => index > currentEventIndex)
+                    .slice(0, 7)
+                    .map(({ event, index }) => (
+                      <div
+                        key={`tab-${index}`}
+                        className="flex min-h-8 items-center justify-center rounded border border-gray-800 bg-gray-900 px-2 text-sm font-semibold text-gray-300"
+                      >
+                        {event.tabs.join("  ") || "rest"}
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div className="relative h-[520px] overflow-hidden rounded border border-gray-800 bg-gray-950">
+                {Array.from({ length: Math.max(laneKeys.length - 1, 0) }).map((_, lane) => (
+                  <div
+                    key={lane}
+                    className="absolute bottom-0 top-0 border-l border-gray-800"
+                    style={{ left: `${((lane + 1) / laneKeys.length) * 100}%` }}
+                  />
+                ))}
+                {laneKeys.map((hole, lane) => (
+                  <div
+                    key={`lane-label-${hole}`}
+                    className="absolute top-2 -translate-x-1/2 text-[10px] font-semibold text-gray-600"
+                    style={{ left: `${((lane + 0.5) / laneKeys.length) * 100}%` }}
+                  >
+                    {hole}
+                  </div>
+                ))}
+                {!laneKeys.length && (
+                  <div className="absolute inset-x-0 top-2 text-center text-[10px] font-semibold text-gray-600">
+                    No tab lanes
+                  </div>
+                )}
+
+                <div className="absolute left-0 right-0 top-[78%] h-[3px] bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
+                <div className="absolute left-2 right-2 top-[calc(78%_-_28px)] h-14 rounded-full border-2 border-emerald-300/80 bg-emerald-400/10" />
+
+                {visibleGameEvents.flatMap(({ event, index, timing }) =>
+                  event.notes.length
+                    ? event.notes.map((note, noteIndex) => {
+                        const tab = event.tabs[noteIndex] || event.tabs[0] || "";
+                        const hole = getTabHole(tab);
+                        const laneCount = Math.max(laneKeys.length, 1);
+                        const laneIndex =
+                          hole === null ? noteIndex % laneCount : laneKeys.indexOf(hole);
+                        const safeLaneIndex =
+                          laneIndex >= 0 ? laneIndex : noteIndex % laneCount;
+                        const left = ((safeLaneIndex + 0.5) / laneCount) * 100;
+                        const timeToHitMs = timing.startMs - visualPlayheadMs;
+                        const top = 78 - (timeToHitMs / 5200) * 78;
+                        const isActive = index === currentEventIndex;
+                        const wasHit = lastHitIndex === index;
+
+                        return (
+                          <div
+                            key={`${index}-${note.name}-${noteIndex}`}
+                            className={`absolute flex h-12 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded border text-sm font-bold ${
+                              wasHit
+                                ? "scale-110 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
+                                : isActive
+                                  ? "border-cyan-200 bg-cyan-400 text-black"
+                                  : "border-gray-600 bg-gray-800 text-gray-100"
+                            }`}
+                            style={{
+                              left: `${left}%`,
+                              top: `${top}%`,
+                              width: `min(56px, calc(${100 / laneCount}% - 8px))`,
+                              opacity: top < -4 || top > 94 ? 0 : 1,
+                            }}
+                          >
+                            {tab || Note.pitchClass(note.name)}
+                          </div>
+                        );
+                      })
+                    : [
+                        <div
+                          key={`${index}-rest`}
+                          className="absolute left-1/2 h-2 w-16 -translate-x-1/2 rounded bg-gray-700"
+                          style={{
+                            top: `${78 - ((timing.startMs - visualPlayheadMs) / 5200) * 78}%`,
+                          }}
+                        />,
+                      ]
+                )}
+
+                <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300">
+                  <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+                    <Mic size={14} />
+                    {pitchError
+                      ? "Mic unavailable"
+                      : detectedNote
+                        ? `${Note.pitchClass(detectedNote.note)} ${detectedNote.cents > 0 ? "+" : ""}${Math.round(detectedNote.cents)}c`
+                        : isPlaying
+                          ? "Listening"
+                          : "Press play"}
+                  </span>
+                  <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+                    Clarity {clarity || "-"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
