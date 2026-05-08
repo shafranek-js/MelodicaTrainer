@@ -665,7 +665,7 @@ const TestFileLoader: React.FC = () => {
       });
   }, [clearRenderedSheet, displayFileContent, stopPlayback]);
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-6">
+    <div className="min-h-full bg-gray-950 p-4 text-white sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
         🎼 MusicXML Viewer with Harmonica Tabs
       </h1>
@@ -801,7 +801,7 @@ const TestFileLoader: React.FC = () => {
           {/* Sheet Music Viewer */}
           <div
             ref={sheetScrollRef}
-            className="sticky top-4 h-[calc(100vh-7rem)] min-h-[520px] w-full overflow-auto rounded bg-white p-4 text-black shadow"
+            className="h-[65dvh] min-h-80 max-h-[520px] w-full overflow-auto rounded bg-white p-4 text-black shadow lg:sticky lg:top-4 lg:h-[calc(100dvh-7rem)] lg:min-h-[520px] lg:max-h-none"
           >
             <div ref={osmdRef} />
           </div>

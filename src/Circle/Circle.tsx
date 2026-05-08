@@ -137,7 +137,7 @@ function Circle() {
   const angleStep = (2 * Math.PI) / circleOfFifths.length;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white p-4 sm:p-6">
+    <div className="flex min-h-full flex-col items-center justify-center bg-gray-950 p-4 text-white sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">
         🎵 Circle of Fifths
       </h1>
@@ -284,14 +284,16 @@ function Circle() {
             {triads.map(({ root, notes, quality }, idx) => (
               <li
                 key={idx}
-                className="flex items-center justify-between px-2 py-1 bg-gray-800 rounded text-xs sm:text-sm"
+                className="grid gap-2 rounded bg-gray-800 px-2 py-1 text-xs sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:text-sm"
               >
                 <span className="font-medium">
                   {idx + 1}. {t(root)}
                 </span>
-                <span>{notes.map((note) => t(note)).join(" - ")}</span>{" "}
+                <span className="text-gray-300 sm:text-center">
+                  {notes.map((note) => t(note)).join(" - ")}
+                </span>
                 <span
-                  className={`text-xs px-2 py-1 rounded font-semibold capitalize ${
+                  className={`justify-self-start rounded px-2 py-1 text-xs font-semibold capitalize sm:justify-self-end ${
                     chordQualityColors[tonal.Chord.get(quality).type || "none"]
                   }`}
                 >

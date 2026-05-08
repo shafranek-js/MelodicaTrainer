@@ -197,7 +197,7 @@ function Practice() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 p-4 text-white sm:p-6">
+    <div className="min-h-full bg-gray-950 p-4 text-white sm:p-6">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">Practice Trainer</h1>

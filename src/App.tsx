@@ -15,14 +15,12 @@ const MusicXML = lazy(() => import("./MusicXML/MusicXML"));
 function App() {
   return (
     <Router>
-      <div className="flex flex-col h-screen">
-        <div>
-          <Menu />
-        </div>
-        <div className="flex-1 overflow-y-auto">
+      <div className="grid min-h-dvh grid-rows-[auto_1fr] bg-gray-950">
+        <Menu />
+        <main className="min-h-0">
           <Suspense
             fallback={
-              <div className="min-h-screen bg-gray-950 p-6 text-white">
+              <div className="min-h-full bg-gray-950 p-6 text-white">
                 Loading...
               </div>
             }
@@ -35,7 +33,7 @@ function App() {
               <Route path="/" element={<Navigate to="/harmonica" replace />} />
             </Routes>
           </Suspense>
-        </div>
+        </main>
       </div>
     </Router>
   );

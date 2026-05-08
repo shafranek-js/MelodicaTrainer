@@ -114,7 +114,7 @@ function Harmonica() {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 text-white p-4 sm:p-6">
+    <div className="flex min-h-full flex-col items-center justify-center bg-gray-950 p-4 text-white sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">
         🎶 Harmonica Pitch Visualizer
       </h1>

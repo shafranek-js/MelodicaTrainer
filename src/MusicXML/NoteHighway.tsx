@@ -170,7 +170,7 @@ export const NoteHighway = ({
         </div>
       </div>
 
-      <div className="relative h-[520px] overflow-hidden rounded border border-gray-800 bg-gray-950">
+      <div className="relative h-[360px] overflow-hidden rounded border border-gray-800 bg-gray-950 sm:h-[440px] lg:h-[520px]">
         {Array.from({ length: Math.max(laneKeys.length - 1, 0) }).map(
           (_, lane) => (
             <div

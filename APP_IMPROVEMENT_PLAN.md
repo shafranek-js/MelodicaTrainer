@@ -53,26 +53,6 @@ Recommended steps:
 - Extract the sidebar controls into a small component once the state boundaries are clearer.
 - Keep XML transforms and timeline helpers pure and covered by Vitest.
 
-### 3. Improve mobile layout stability
-
-Locations: `src/App.tsx`, `src/Menu.tsx`, `src/Harmonica/Harmonica.tsx`, `src/MusicXML/MusicXML.tsx`, `src/MusicXML/NoteHighway.tsx`, and `src/Circle/Circle.tsx`.
-
-Main risks:
-
-- `src/App.tsx` uses `h-screen` while route pages also use `min-h-screen`; this can create nested viewport/scroll issues on mobile browser UI.
-- `src/Menu.tsx` uses one non-wrapping horizontal flex row with links and right-side controls. Narrow screens can overflow.
-- `src/MusicXML/MusicXML.tsx` uses a sticky sheet with `h-[calc(100vh-7rem)] min-h-[520px]`, which can be awkward on mobile and inside the app shell.
-- `src/MusicXML/NoteHighway.tsx` uses a fixed `h-[520px]` highway.
-- `src/Circle/Circle.tsx` uses fixed window-based circle sizes and dense flex rows for triads.
-
-Recommended steps:
-
-- Change the app shell to `min-h-dvh` and make route pages fill available space without adding another full viewport when nested.
-- Make the menu responsive with wrapping or horizontal scrolling for nav links, and keep the notation/support controls from forcing page overflow.
-- Make MusicXML sheet stickiness large-screen-only; on small screens use normal flow with bounded height based on `dvh`.
-- Use responsive highway heights such as smaller mobile height and larger desktop height.
-- In Circle, use container sizing where possible and make triad rows wrap or grid instead of relying on `justify-between`.
-
 ## Code Quality And Scalability Work
 
 ### Shared harmonica layout helpers
@@ -108,6 +88,21 @@ Implemented:
 - Added `src/MusicXML/musicXmlFile.test.ts` coverage for plain XML reads, `.mxl` container lookup, fallback score candidates, missing-score archives, oversized uploads, and oversized archived scores.
 
 ## UI And Accessibility Work
+
+### Mobile layout stability
+
+Locations: `src/App.tsx`, `src/Menu.tsx`, `src/Harmonica/Harmonica.tsx`, `src/Practice/Practice.tsx`, `src/MusicXML/MusicXML.tsx`, `src/MusicXML/NoteHighway.tsx`, and `src/Circle/Circle.tsx`.
+
+Status: completed on 2026-05-08.
+
+Implemented:
+
+- Changed the app shell from fixed `h-screen` sizing to a `min-h-dvh` grid shell.
+- Changed route roots to fill the shell with `min-h-full` instead of adding nested full viewport heights.
+- Made the top menu wrap on small screens and keep notation/support controls from forcing horizontal overflow.
+- Made the MusicXML sheet sticky only on large screens, with bounded `dvh` height on small screens.
+- Changed the note highway from a fixed 520 px height to responsive mobile, tablet, and desktop heights.
+- Changed Circle triad rows to a grid layout so long note/chord labels can wrap cleanly.
 
 ### Improve MusicXML error and loading states
 
@@ -160,10 +155,9 @@ Recommended steps:
 ## Suggested Implementation Order
 
 1. Refactor MusicXML route into route-local hooks without changing behavior.
-2. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.
-3. Address dependency upgrades in small batches.
-4. Improve Circle accessibility and responsive details.
-5. Split bundles and compare build output.
+2. Address dependency upgrades in small batches.
+3. Improve Circle accessibility and responsive details.
+4. Split bundles and compare build output.
 
 ## Definition Of Done For Each Improvement Batch
 
