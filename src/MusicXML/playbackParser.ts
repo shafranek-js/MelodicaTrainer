@@ -33,6 +33,41 @@ const getChildNumber = (parent: Element, tagName: string, fallback: number) => {
 const getTabFromNote = (note: Element) =>
   note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
 
+const getMeasureCursorPositionIndexes = (
+  measure: Element,
+  divisions: number,
+  startIndex: number
+) => {
+  const positions = new Set<number>();
+  let cursorPosition = 0;
+
+  Array.from(measure.children).forEach((child) => {
+    if (child.tagName === "backup") {
+      cursorPosition -= getChildNumber(child, "duration", 0);
+      return;
+    }
+
+    if (child.tagName === "forward") {
+      cursorPosition += getChildNumber(child, "duration", 0);
+      return;
+    }
+
+    if (child.tagName !== "note") return;
+
+    const isChord = Boolean(child.getElementsByTagName("chord")[0]);
+    if (!isChord) {
+      positions.add(cursorPosition);
+      cursorPosition += getChildNumber(child, "duration", divisions);
+    }
+  });
+
+  return new Map(
+    Array.from(positions)
+      .sort((left, right) => left - right)
+      .map((position, index) => [position, startIndex + index])
+  );
+};
+
 const dynamicVelocities: Record<string, number> = {
   ppp: 0.25,
   pp: 0.32,
@@ -178,7 +213,7 @@ export const parsePlaybackEvents = (xml: string) => {
   let detectedTempo = 90;
   let currentTempo = detectedTempo;
   let currentVelocity = dynamicVelocities.mf;
-  let sourceEventIndex = 0;
+  let nextCursorPositionIndex = 0;
   const firstPart = xmlDoc.getElementsByTagName("part")[0];
   const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
 
@@ -196,6 +231,12 @@ export const parsePlaybackEvents = (xml: string) => {
     if (attributes) {
       divisions = getChildNumber(attributes, "divisions", divisions);
     }
+    const cursorPositionIndexes = getMeasureCursorPositionIndexes(
+      measure,
+      divisions,
+      nextCursorPositionIndex
+    );
+    let cursorPosition = 0;
 
     Array.from(measure.children).forEach((child) => {
       if (child.tagName === "direction") {
@@ -216,15 +257,32 @@ export const parsePlaybackEvents = (xml: string) => {
         return;
       }
 
-      if (child.tagName !== "note") return;
-      if (!isFirstStaffNote(child, firstStaffNumber)) return;
+      if (child.tagName === "backup") {
+        cursorPosition -= getChildNumber(child, "duration", 0);
+        return;
+      }
 
+      if (child.tagName === "forward") {
+        cursorPosition += getChildNumber(child, "duration", 0);
+        return;
+      }
+
+      if (child.tagName !== "note") return;
+
+      const noteStartPosition = cursorPosition;
       const duration = getChildNumber(child, "duration", divisions);
       const durationBeats = duration / divisions;
       const pitch = child.getElementsByTagName("pitch")[0];
       const noteName = pitch ? getPitchNoteName(pitch) : null;
       const isChord = Boolean(child.getElementsByTagName("chord")[0]);
       const isRest = Boolean(child.getElementsByTagName("rest")[0]);
+
+      if (!isChord) {
+        cursorPosition += duration;
+      }
+
+      if (!isFirstStaffNote(child, firstStaffNumber)) return;
+
       const tab = getTabFromNote(child);
       const ties = getTies(child);
       const note = noteName
@@ -249,12 +307,12 @@ export const parsePlaybackEvents = (xml: string) => {
         tempoBpm: currentTempo,
         notes: note && !isRest ? [note] : [],
         tabs: tab ? [tab] : [],
-        sourceEventIndex,
+        sourceEventIndex: cursorPositionIndexes.get(noteStartPosition) ?? 0,
       });
-      sourceEventIndex += 1;
     });
 
     measuresWithEvents.push({ element: measure, events: measureEvents });
+    nextCursorPositionIndex += cursorPositionIndexes.size;
   });
 
   const events = expandRepeats(measuresWithEvents);

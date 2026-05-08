@@ -42,6 +42,50 @@ const upsertTextElement = (
   return element;
 };
 
+const getDirectChild = (parent: Element, tagName: string) =>
+  Array.from(parent.children).find((child) => child.tagName === tagName);
+
+const getDirectChildren = (parent: Element, tagName: string) =>
+  Array.from(parent.children).filter((child) => child.tagName === tagName);
+
+const getNotationInsertBefore = (note: Element) =>
+  Array.from(note.children).find((child) =>
+    ["lyric", "play", "listen"].includes(child.tagName)
+  );
+
+const replaceHarmonicaFingering = (
+  xmlDoc: XMLDocument,
+  note: Element,
+  tab: string | null
+) => {
+  const notations = getDirectChildren(note, "notations");
+
+  notations.forEach((notation) => {
+    Array.from(notation.getElementsByTagName("fingering")).forEach(
+      (fingering) => fingering.remove()
+    );
+  });
+
+  if (!tab) return;
+
+  let notation = notations[0];
+  if (!notation) {
+    notation = xmlDoc.createElement("notations");
+    note.insertBefore(notation, getNotationInsertBefore(note) || null);
+  }
+
+  let technical = getDirectChild(notation, "technical");
+  if (!technical) {
+    technical = xmlDoc.createElement("technical");
+    notation.appendChild(technical);
+  }
+
+  const fingering = xmlDoc.createElement("fingering");
+  fingering.setAttribute("placement", "below");
+  fingering.textContent = tab;
+  technical.appendChild(fingering);
+};
+
 export const writePitch = (
   xmlDoc: XMLDocument,
   pitch: Element,
@@ -150,17 +194,7 @@ export const injectHarmonicaTabs = (
     note.removeAttribute("relative-y");
 
     const tab = getHarmonicaHoleForNote(selectedKey, transposedNote);
-    if (!tab) return;
-
-    const notations = xmlDoc.createElement("notations");
-    const technical = xmlDoc.createElement("technical");
-    const fingering = xmlDoc.createElement("fingering");
-    fingering.setAttribute("placement", "below");
-    fingering.textContent = tab;
-
-    technical.appendChild(fingering);
-    notations.appendChild(technical);
-    note.appendChild(notations);
+    replaceHarmonicaFingering(xmlDoc, note, tab);
   });
 
   return new XMLSerializer().serializeToString(xmlDoc);

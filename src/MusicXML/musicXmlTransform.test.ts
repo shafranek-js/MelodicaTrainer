@@ -128,4 +128,42 @@ describe("injectHarmonicaTabs", () => {
     expect(keys[1].textContent).toBe("-1");
     expect(keys[2].textContent).toBe("2");
   });
+
+  it("reuses existing notations and keeps fingerings before lyrics", () => {
+    const output = injectHarmonicaTabs(
+      `
+        <score-partwise>
+          <part>
+            <measure>
+              <attributes><divisions>1</divisions></attributes>
+              <note>
+                <pitch><step>C</step><octave>4</octave></pitch>
+                <duration>1</duration>
+                <notations><tied type="start" /></notations>
+              </note>
+              <note>
+                <pitch><step>D</step><octave>4</octave></pitch>
+                <duration>1</duration>
+                <lyric><text>la</text></lyric>
+              </note>
+            </measure>
+          </part>
+        </score-partwise>
+      `,
+      { selectedKey: "C4", transpose: 0 }
+    );
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+    const notes = xmlDoc.getElementsByTagName("note");
+
+    expect(notes[0].getElementsByTagName("notations")).toHaveLength(1);
+    expect(notes[0].getElementsByTagName("tied")[0]).toBeTruthy();
+    expect(notes[0].getElementsByTagName("fingering")[0].textContent).toBe("1");
+
+    const secondNoteChildren = Array.from(notes[1].children).map(
+      (child) => child.tagName
+    );
+    expect(secondNoteChildren.indexOf("notations")).toBeLessThan(
+      secondNoteChildren.indexOf("lyric")
+    );
+  });
 });

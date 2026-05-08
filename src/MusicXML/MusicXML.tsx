@@ -41,6 +41,7 @@ const TestFileLoader: React.FC = () => {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [currentTab, setCurrentTab] = useState("");
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
+  const [isSheetReady, setIsSheetReady] = useState(false);
   const [gameStats, setGameStats] = useState<GameStats>({
     hits: 0,
     misses: 0,
@@ -61,6 +62,8 @@ const TestFileLoader: React.FC = () => {
   const gameClockFrameRef = useRef<number | null>(null);
   const gameClockStartMsRef = useRef(0);
   const gameClockOffsetMsRef = useRef(0);
+  const sheetRenderRunRef = useRef(0);
+  const isPlayingRef = useRef(false);
 
   const playback = useMemo(
     () => (fileContent ? parsePlaybackEvents(fileContent) : null),
@@ -127,6 +130,11 @@ const TestFileLoader: React.FC = () => {
     gameStats.hits + gameStats.misses > 0
       ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
       : 0;
+  const canPlayback = isSheetReady && playbackEvents.length > 0;
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   const stopPlayback = useCallback((reset = false) => {
     playbackRunRef.current += 1;
@@ -305,7 +313,7 @@ const TestFileLoader: React.FC = () => {
       return;
     }
 
-    if (!playbackEvents.length) return;
+    if (!canPlayback) return;
 
     audioContextRef.current = ensureAudioContext(audioContextRef.current);
     await audioContextRef.current.resume();
@@ -330,6 +338,7 @@ const TestFileLoader: React.FC = () => {
   }, [
     currentEventIndex,
     isPlaying,
+    canPlayback,
     playbackEvents.length,
     playbackTimeline,
     schedulePlayback,
@@ -486,6 +495,11 @@ const TestFileLoader: React.FC = () => {
   useEffect(() => {
     if (!fileContent || !osmdRef.current) return;
 
+    const renderRun = sheetRenderRunRef.current + 1;
+    sheetRenderRunRef.current = renderRun;
+    setIsSheetReady(false);
+    cursorEventIndexRef.current = null;
+
     if (!osmdInstance.current) {
       osmdInstance.current = new OpenSheetMusicDisplay(osmdRef.current, {
         backend: "svg",
@@ -509,13 +523,25 @@ const TestFileLoader: React.FC = () => {
     osmdInstance.current
       .load(fileContent)
       .then(() => {
+        if (sheetRenderRunRef.current !== renderRun) return;
         osmdInstance.current?.render();
-        osmdInstance.current?.cursor?.hide();
+        const cursor = osmdInstance.current?.cursor;
+        cursorEventIndexRef.current = null;
+        cursor?.reset();
+        if (!isPlayingRef.current) {
+          cursor?.hide();
+        }
+        setIsSheetReady(true);
         if (sheetScrollRef.current) {
           sheetScrollRef.current.scrollTop = 0;
         }
       })
-      .catch((err) => console.error("OSMD Load Error:", err));
+      .catch((err) => {
+        if (sheetRenderRunRef.current === renderRun) {
+          setIsSheetReady(false);
+        }
+        console.error("OSMD Load Error:", err);
+      });
   }, [fileContent]);
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 sm:p-6">
@@ -643,6 +669,7 @@ const TestFileLoader: React.FC = () => {
 
           <NoteHighway
             accuracy={accuracy}
+            canPlayback={canPlayback}
             clarity={clarity}
             currentEventIndex={currentEventIndex}
             currentTab={currentTab}

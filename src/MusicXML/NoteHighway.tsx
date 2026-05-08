@@ -16,6 +16,7 @@ type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
 
 type NoteHighwayProps = {
   accuracy: number;
+  canPlayback: boolean;
   clarity: string | null;
   currentEventIndex: number;
   currentTab: string;
@@ -37,6 +38,7 @@ type NoteHighwayProps = {
 
 export const NoteHighway = ({
   accuracy,
+  canPlayback,
   clarity,
   currentEventIndex,
   currentTab,
@@ -100,7 +102,7 @@ export const NoteHighway = ({
           <button
             type="button"
             onClick={onTogglePlayback}
-            disabled={!playbackEventsCount}
+            disabled={!canPlayback}
             className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded bg-emerald-600 px-4 text-base font-semibold text-white transition hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400"
           >
             {isPlaying ? <Pause size={20} /> : <Play size={20} />}
@@ -111,7 +113,7 @@ export const NoteHighway = ({
             aria-label="Restart playback"
             title="Restart playback"
             onClick={onRestartPlayback}
-            disabled={!playbackEventsCount}
+            disabled={!canPlayback}
             className="inline-flex h-12 w-12 items-center justify-center rounded border border-gray-700 bg-gray-800 text-gray-100 transition hover:bg-gray-700 disabled:text-gray-500"
           >
             <RotateCcw size={20} />

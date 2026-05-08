@@ -115,6 +115,44 @@ describe("parsePlaybackEvents", () => {
     expect(result.events[0].tabs).toEqual(["1"]);
   });
 
+  it("maps first-staff events to score-wide cursor positions", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part id="P1">
+          <measure>
+            <attributes><divisions>1</divisions><staves>2</staves></attributes>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>2</duration>
+              <staff>1</staff>
+            </note>
+            <note>
+              <pitch><step>D</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <staff>1</staff>
+            </note>
+            <backup><duration>3</duration></backup>
+            <forward><duration>1</duration></forward>
+            <note>
+              <pitch><step>G</step><octave>3</octave></pitch>
+              <duration>1</duration>
+              <staff>2</staff>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events.map((event) => event.notes[0]?.name)).toEqual([
+      "C4",
+      "D4",
+    ]);
+    expect(result.events.map((event) => event.sourceEventIndex)).toEqual([
+      0,
+      2,
+    ]);
+  });
+
   it("parses all notes when the first part has no staff numbers", () => {
     const result = parsePlaybackEvents(`
       <score-partwise>
