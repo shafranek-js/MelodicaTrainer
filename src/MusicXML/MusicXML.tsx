@@ -1,399 +1,27 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
-import JSZip from "jszip";
-import {
-  freqToNoteAndCents,
-  getHarmonicaHoleForNote,
-  harmonicaKeys,
-} from "../utils/utils";
+import { freqToNoteAndCents, harmonicaKeys } from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
-import { Gauge, Mic, Pause, Play, RotateCcw, Target } from "lucide-react";
+import { Gauge, Pause, Play, RotateCcw } from "lucide-react";
 import { usePitchDetector } from "../hooks/usePitchDetector";
-
-const keySignatureTonicsByFifths = new Map(
-  Array.from({ length: 15 }, (_, index) => {
-    const fifths = index - 7;
-    return [fifths, (fifths * 7 + 1200) % 12];
-  })
-);
-
-const getPitchNoteName = (pitch: Element): string | null => {
-  const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
-  const alter = pitch.getElementsByTagName("alter")[0]?.textContent;
-  const octave = pitch.getElementsByTagName("octave")[0]?.textContent ?? "";
-
-  if (!step || !octave) return null;
-
-  const accidental = Number(alter || 0);
-  return `${step}${"#".repeat(Math.max(accidental, 0))}${"b".repeat(
-    Math.max(-accidental, 0)
-  )}${octave}`;
-};
-
-type PlaybackNote = {
-  name: string;
-  durationBeats: number;
-  velocity: number;
-  articulation: "normal" | "staccato" | "tenuto" | "accent";
-  tieStart: boolean;
-  tieStop: boolean;
-  shouldPlay: boolean;
-};
-
-type PlaybackEvent = {
-  durationBeats: number;
-  tempoBpm: number;
-  notes: PlaybackNote[];
-  tabs: string[];
-};
-
-type GameStats = {
-  hits: number;
-  misses: number;
-  streak: number;
-};
-
-type PlaybackTiming = {
-  startMs: number;
-  durationMs: number;
-  endMs: number;
-};
-
-const getTabHole = (tab: string) => {
-  const match = tab.match(/^-?\d+/);
-  if (!match) return null;
-
-  return Math.abs(Number(match[0]));
-};
-
-const getChildNumber = (
-  parent: Element,
-  tagName: string,
-  fallback: number
-) => {
-  const value = Number(parent.getElementsByTagName(tagName)[0]?.textContent);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-};
-
-const getTabFromNote = (note: Element) =>
-  note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
-
-const dynamicVelocities: Record<string, number> = {
-  ppp: 0.25,
-  pp: 0.32,
-  p: 0.42,
-  mp: 0.52,
-  mf: 0.68,
-  f: 0.82,
-  ff: 0.94,
-  fff: 1,
-};
-
-const getDynamicVelocity = (direction: Element) => {
-  const dynamics = direction.getElementsByTagName("dynamics")[0];
-  const dynamic = Array.from(dynamics?.children ?? []).find(
-    (child) => child.tagName in dynamicVelocities
-  );
-
-  return dynamic ? dynamicVelocities[dynamic.tagName] : null;
-};
-
-const getNoteArticulation = (
-  note: Element
-): PlaybackNote["articulation"] => {
-  const articulations = note.getElementsByTagName("articulations")[0];
-  if (!articulations) return "normal";
-  if (articulations.getElementsByTagName("accent")[0]) return "accent";
-  if (articulations.getElementsByTagName("staccato")[0]) return "staccato";
-  if (articulations.getElementsByTagName("tenuto")[0]) return "tenuto";
-
-  return "normal";
-};
-
-const getNoteVelocity = (note: Element, currentVelocity: number) => {
-  const velocity = Number(note.getAttribute("dynamics"));
-  if (Number.isFinite(velocity) && velocity > 0) {
-    return Math.min(1, Math.max(0.15, velocity / 100));
-  }
-
-  return currentVelocity;
-};
-
-const getTies = (note: Element) => {
-  const tieTypes = Array.from(note.getElementsByTagName("tie")).map((tie) =>
-    tie.getAttribute("type")
-  );
-
-  return {
-    tieStart: tieTypes.includes("start"),
-    tieStop: tieTypes.includes("stop"),
-  };
-};
-
-const resolveTiedNotes = (events: PlaybackEvent[]) => {
-  events.forEach((event, eventIndex) => {
-    event.notes.forEach((note) => {
-      if (note.tieStop) {
-        note.shouldPlay = false;
-      }
-
-      if (!note.tieStart || note.tieStop) return;
-
-      for (
-        let nextEventIndex = eventIndex + 1;
-        nextEventIndex < events.length;
-        nextEventIndex += 1
-      ) {
-        const tiedNote = events[nextEventIndex].notes.find(
-          (candidate) => candidate.name === note.name && candidate.tieStop
-        );
-
-        if (!tiedNote) break;
-
-        note.durationBeats += events[nextEventIndex].durationBeats;
-        tiedNote.shouldPlay = false;
-
-        if (!tiedNote.tieStart) break;
-      }
-    });
-  });
-
-  return events;
-};
-
-const parsePlaybackEvents = (xml: string) => {
-  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
-  const events: PlaybackEvent[] = [];
-  let divisions = 1;
-  let detectedTempo = 90;
-  let currentTempo = detectedTempo;
-  let currentVelocity = dynamicVelocities.mf;
-
-  Array.from(xmlDoc.getElementsByTagName("sound")).some((sound) => {
-    const tempo = Number(sound.getAttribute("tempo"));
-    if (!Number.isFinite(tempo) || tempo <= 0) return false;
-
-    detectedTempo = tempo;
-    return true;
-  });
-
-  Array.from(xmlDoc.getElementsByTagName("measure")).forEach((measure) => {
-    const attributes = measure.getElementsByTagName("attributes")[0];
-    if (attributes) {
-      divisions = getChildNumber(attributes, "divisions", divisions);
-    }
-
-    Array.from(measure.children).forEach((child) => {
-      if (child.tagName === "direction") {
-        const sound = child.getElementsByTagName("sound")[0];
-        const tempo = Number(sound?.getAttribute("tempo"));
-        const dynamics = Number(sound?.getAttribute("dynamics"));
-        const dynamicVelocity = getDynamicVelocity(child);
-
-        if (Number.isFinite(tempo) && tempo > 0) {
-          currentTempo = tempo;
-        }
-        if (Number.isFinite(dynamics) && dynamics > 0) {
-          currentVelocity = Math.min(1, Math.max(0.15, dynamics / 100));
-        }
-        if (dynamicVelocity !== null) {
-          currentVelocity = dynamicVelocity;
-        }
-        return;
-      }
-
-      if (child.tagName !== "note") return;
-
-      const duration = getChildNumber(child, "duration", divisions);
-      const durationBeats = duration / divisions;
-      const pitch = child.getElementsByTagName("pitch")[0];
-      const noteName = pitch ? getPitchNoteName(pitch) : null;
-      const isChord = Boolean(child.getElementsByTagName("chord")[0]);
-      const isRest = Boolean(child.getElementsByTagName("rest")[0]);
-      const tab = getTabFromNote(child);
-      const ties = getTies(child);
-      const note = noteName
-        ? {
-            name: noteName,
-            durationBeats,
-            velocity: getNoteVelocity(child, currentVelocity),
-            articulation: getNoteArticulation(child),
-            shouldPlay: true,
-            ...ties,
-          }
-        : null;
-
-      if (isChord && events.length) {
-        if (note) events[events.length - 1].notes.push(note);
-        if (tab) events[events.length - 1].tabs.push(tab);
-        return;
-      }
-
-      events.push({
-        durationBeats,
-        tempoBpm: currentTempo,
-        notes: note && !isRest ? [note] : [],
-        tabs: tab ? [tab] : [],
-      });
-    });
-  });
-
-  return { events: resolveTiedNotes(events), detectedTempo };
-};
-
-const ensureAudioContext = (audioContext: AudioContext | null) => {
-  if (audioContext) return audioContext;
-
-  return new AudioContext();
-};
-
-const stopAudioNodes = (nodes: AudioScheduledSourceNode[]) => {
-  nodes.forEach((node) => {
-    try {
-      node.stop();
-    } catch {
-      // Already stopped.
-    }
-    node.disconnect();
-  });
-};
-
-const transposeNoteName = (
-  noteName: string,
-  semitones: number
-): string | null => {
-  const midi = Note.midi(noteName);
-  if (midi === null) return null;
-
-  return Note.fromMidiSharps(midi + semitones);
-};
-
-const upsertTextElement = (
-  xmlDoc: XMLDocument,
-  parent: Element,
-  tagName: string,
-  text: string,
-  before?: Element
-) => {
-  let element = parent.getElementsByTagName(tagName)[0];
-
-  if (!element) {
-    element = xmlDoc.createElement(tagName);
-    parent.insertBefore(element, before || null);
-  }
-
-  element.textContent = text;
-  return element;
-};
-
-const writePitch = (
-  xmlDoc: XMLDocument,
-  pitch: Element,
-  noteName: string
-) => {
-  const note = Note.get(noteName);
-  if (note.empty || note.oct === undefined) return;
-
-  const octaveElement = upsertTextElement(
-    xmlDoc,
-    pitch,
-    "octave",
-    String(note.oct)
-  );
-  const existingAlter = pitch.getElementsByTagName("alter")[0];
-
-  upsertTextElement(
-    xmlDoc,
-    pitch,
-    "step",
-    note.letter,
-    existingAlter || octaveElement
-  );
-
-  if (note.alt === 0) {
-    existingAlter?.remove();
-  } else if (existingAlter) {
-    existingAlter.textContent = String(note.alt);
-  } else {
-    upsertTextElement(xmlDoc, pitch, "alter", String(note.alt), octaveElement);
-  }
-};
-
-const transposeKeySignatureFifths = (
-  originalFifths: number,
-  semitones: number
-) => {
-  const originalChroma = keySignatureTonicsByFifths.get(originalFifths);
-  if (originalChroma === undefined) return originalFifths;
-
-  const targetChroma = (originalChroma + semitones + 1200) % 12;
-  const candidates = Array.from(keySignatureTonicsByFifths.entries()).filter(
-    ([, chroma]) => chroma === targetChroma
-  );
-
-  return candidates.reduce((best, [fifths]) =>
-    Math.abs(fifths) < Math.abs(best) ? fifths : best
-  , candidates[0]?.[0] ?? originalFifths);
-};
-
-const transposeKeySignatures = (xmlDoc: XMLDocument, semitones: number) => {
-  Array.from(xmlDoc.getElementsByTagName("key")).forEach((key) => {
-    const fifthsElement = key.getElementsByTagName("fifths")[0];
-    if (!fifthsElement?.textContent) return;
-
-    const fifths = Number(fifthsElement.textContent);
-    if (!Number.isFinite(fifths)) return;
-
-    fifthsElement.textContent = String(
-      transposeKeySignatureFifths(fifths, semitones)
-    );
-  });
-};
-
-const getContainerScorePath = (containerXml: string) => {
-  const xmlDoc = new DOMParser().parseFromString(
-    containerXml,
-    "application/xml"
-  );
-  const rootFile = xmlDoc.getElementsByTagName("rootfile")[0];
-
-  return rootFile?.getAttribute("full-path") || null;
-};
-
-const extractCompressedMusicXml = async (file: File) => {
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const containerFile = zip.file("META-INF/container.xml");
-  const containerScorePath = containerFile
-    ? getContainerScorePath(await containerFile.async("text"))
-    : null;
-  const candidatePaths = [
-    containerScorePath,
-    ...Object.values(zip.files)
-      .filter(
-        (entry) =>
-          !entry.dir &&
-          /\.(musicxml|xml)$/i.test(entry.name) &&
-          entry.name !== "META-INF/container.xml"
-      )
-      .map((entry) => entry.name),
-  ].filter((path, index, paths): path is string =>
-    Boolean(path && paths.indexOf(path) === index)
-  );
-
-  for (const path of candidatePaths) {
-    const scoreFile = zip.file(path);
-    if (scoreFile) return scoreFile.async("text");
-  }
-
-  throw new Error("No MusicXML score was found inside the MXL file.");
-};
-
-const readMusicXmlFile = (file: File) => {
-  if (/\.mxl$/i.test(file.name)) return extractCompressedMusicXml(file);
-
-  return file.text();
-};
+import { ensureAudioContext, playPlaybackNotes, stopAudioNodes } from "./audioPlayback";
+import { readMusicXmlFile } from "./musicXmlFile";
+import {
+  findAutoTransposeInterval,
+  injectHarmonicaTabs,
+} from "./musicXmlTransform";
+import { NoteHighway } from "./NoteHighway";
+import { parsePlaybackEvents } from "./playbackParser";
+import {
+  createPlaybackTimeline,
+  getLaneKeys,
+  getPlayableMidiNumbers,
+  getTargetEventIndex,
+  getVisibleGameEvents,
+} from "./playbackTimeline";
+import { styleSheetCursor } from "./sheetCursor";
+import type { GameStats, PlaybackNote } from "./types";
 
 const TestFileLoader: React.FC = () => {
   const { t } = useTranslation();
@@ -434,46 +62,16 @@ const TestFileLoader: React.FC = () => {
     [fileContent]
   );
   const playbackEvents = useMemo(() => playback?.events ?? [], [playback]);
-  const playableMidiNumbers = useMemo(() => {
-    const midiNumbers = playbackEvents
-      .flatMap((event) => event.notes)
-      .map((note) => Note.midi(note.name))
-      .filter((midi): midi is number => midi !== null);
-
-    return new Set(midiNumbers);
-  }, [playbackEvents]);
+  const playableMidiNumbers = useMemo(
+    () => getPlayableMidiNumbers(playbackEvents),
+    [playbackEvents]
+  );
   const tempoScale = tempo / (playback?.detectedTempo || tempo || 90);
-  const playbackTimeline = useMemo(() => {
-    let cursorMs = 0;
-
-    return playbackEvents.map((event): PlaybackTiming => {
-      const effectiveTempo = Math.max(20, event.tempoBpm * tempoScale);
-      const durationMs = Math.max(
-        80,
-        (60000 / effectiveTempo) * event.durationBeats
-      );
-      const timing = {
-        startMs: cursorMs,
-        durationMs,
-        endMs: cursorMs + durationMs,
-      };
-
-      cursorMs = timing.endMs;
-      return timing;
-    });
-  }, [playbackEvents, tempoScale]);
-  const laneKeys = useMemo(() => {
-    const holes = new Set<number>();
-
-    playbackEvents.forEach((event) => {
-      event.tabs.forEach((tab) => {
-        const hole = getTabHole(tab);
-        if (hole !== null) holes.add(hole);
-      });
-    });
-
-    return Array.from(holes).sort((a, b) => a - b);
-  }, [playbackEvents]);
+  const playbackTimeline = useMemo(
+    () => createPlaybackTimeline(playbackEvents, tempoScale),
+    [playbackEvents, tempoScale]
+  );
+  const laneKeys = useMemo(() => getLaneKeys(playbackEvents), [playbackEvents]);
   const visualPlayheadMs =
     isPlaying
       ? currentGameTimeMs
@@ -482,33 +80,24 @@ const TestFileLoader: React.FC = () => {
     playbackEvents.length > 0
       ? Math.round((currentEventIndex / playbackEvents.length) * 100)
       : 0;
-  const currentGameEvent = playbackEvents[currentEventIndex];
-  const currentTargetNotes = currentGameEvent?.notes ?? [];
+  const visibleGameEvents = useMemo(
+    () =>
+      getVisibleGameEvents(playbackEvents, playbackTimeline, visualPlayheadMs),
+    [playbackEvents, playbackTimeline, visualPlayheadMs]
+  );
+  const targetEventIndex = useMemo(
+    () => getTargetEventIndex(visibleGameEvents, visualPlayheadMs),
+    [visibleGameEvents, visualPlayheadMs]
+  );
+  const currentGameEvent = playbackEvents[targetEventIndex ?? currentEventIndex];
   const currentTargetMidiNumbers = useMemo(
     () =>
       new Set(
-        currentTargetNotes
+        (currentGameEvent?.notes ?? [])
           .map((note) => Note.midi(note.name))
           .filter((midi): midi is number => midi !== null)
       ),
-    [currentTargetNotes]
-  );
-  const visibleGameEvents = useMemo(
-    () =>
-      playbackEvents
-        .map((event, index) => ({
-          event,
-          index,
-          timing: playbackTimeline[index],
-        }))
-        .filter(({ timing }) => {
-          if (!timing) return false;
-          return (
-            timing.endMs >= visualPlayheadMs - 550 &&
-            timing.startMs <= visualPlayheadMs + 5200
-          );
-        }),
-    [playbackEvents, playbackTimeline, visualPlayheadMs]
+    [currentGameEvent]
   );
   const { pitch, clarity, error: pitchError } = usePitchDetector(
     0.82,
@@ -525,6 +114,7 @@ const TestFileLoader: React.FC = () => {
   }, [pitch]);
   const detectedMidi = detectedNote ? Note.midi(detectedNote.note) : null;
   const isCurrentHit =
+    targetEventIndex !== null &&
     detectedMidi !== null &&
     currentTargetMidiNumbers.has(detectedMidi) &&
     Math.abs(detectedNote?.cents ?? 99) <= 35;
@@ -566,71 +156,17 @@ const TestFileLoader: React.FC = () => {
   const playNotes = useCallback((notes: PlaybackNote[], tempoBpm: number) => {
     const audioContext = ensureAudioContext(audioContextRef.current);
     audioContextRef.current = audioContext;
-
-    notes.forEach((note) => {
-      if (!note.shouldPlay) return;
-
-      const frequency = Note.freq(note.name);
-      if (!frequency) return;
-
-      const mainOscillator = audioContext.createOscillator();
-      const bodyOscillator = audioContext.createOscillator();
-      const filter = audioContext.createBiquadFilter();
-      const gain = audioContext.createGain();
-      const now = audioContext.currentTime;
-      const durationMs = Math.max(
-        80,
-        (60000 / tempoBpm) * note.durationBeats
-      );
-      const articulationRatio =
-        note.tieStart
-          ? 1
-          : note.articulation === "staccato"
-          ? 0.42
-          : note.articulation === "tenuto"
-            ? 0.98
-            : 0.86;
-      const accentBoost = note.articulation === "accent" ? 1.18 : 1;
-      const noteSeconds = Math.max(0.08, (durationMs / 1000) * articulationRatio);
-      const peakGain = Math.min(0.2, 0.045 * note.velocity * accentBoost);
-      const attack = note.tieStop ? 0.004 : 0.018;
-
-      mainOscillator.type = "triangle";
-      bodyOscillator.type = "sine";
-      mainOscillator.frequency.setValueAtTime(frequency, now);
-      bodyOscillator.frequency.setValueAtTime(frequency * 2, now);
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(2400 + note.velocity * 1800, now);
-      filter.Q.setValueAtTime(0.9, now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(peakGain, now + attack);
-      gain.gain.setTargetAtTime(peakGain * 0.72, now + attack, 0.08);
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        now + Math.max(0.05, noteSeconds)
-      );
-
-      mainOscillator.connect(filter);
-      bodyOscillator.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioContext.destination);
-      mainOscillator.start(now);
-      bodyOscillator.start(now);
-      mainOscillator.stop(now + noteSeconds + 0.02);
-      bodyOscillator.stop(now + noteSeconds + 0.02);
-      activeAudioNodesRef.current.push(mainOscillator, bodyOscillator);
-    });
+    playPlaybackNotes(
+      audioContext,
+      activeAudioNodesRef.current,
+      notes,
+      tempoBpm
+    );
   }, []);
 
   const moveCursorToEvent = useCallback((eventIndex: number, durationMs: number) => {
     const cursor = osmdInstance.current?.cursor;
     if (!cursor) return;
-
-    const cursorElement = cursor.cursorElement;
-    cursorElement.style.transition = `left ${durationMs}ms linear, top 160ms linear, height 160ms linear`;
-    cursorElement.style.backgroundColor = "rgba(16, 185, 129, 0.78)";
-    cursorElement.style.boxShadow = "0 0 0 1px rgba(6, 95, 70, 0.55), 0 0 12px rgba(16, 185, 129, 0.55)";
-    cursorElement.style.width = "3px";
 
     if (
       cursorEventIndexRef.current === null ||
@@ -645,6 +181,10 @@ const TestFileLoader: React.FC = () => {
       cursor.next();
     }
     cursorEventIndexRef.current = eventIndex;
+
+    window.requestAnimationFrame(() => {
+      styleSheetCursor(cursor.cursorElement, durationMs);
+    });
   }, []);
 
   const schedulePlayback = useCallback(
@@ -660,6 +200,11 @@ const TestFileLoader: React.FC = () => {
         80,
         (60000 / effectiveTempo) * event.durationBeats
       );
+      const eventStartMs = playbackTimeline[startIndex]?.startMs ?? 0;
+
+      gameClockOffsetMsRef.current = eventStartMs;
+      gameClockStartMsRef.current = performance.now();
+      setCurrentGameTimeMs(eventStartMs);
       setCurrentEventIndex(startIndex);
       setCurrentTab(event.tabs.join("  "));
       moveCursorToEvent(startIndex, durationMs);
@@ -670,7 +215,14 @@ const TestFileLoader: React.FC = () => {
         schedulePlayback(startIndex + 1, runId);
       }, durationMs);
     },
-    [moveCursorToEvent, playNotes, playbackEvents, stopPlayback, tempoScale]
+    [
+      moveCursorToEvent,
+      playNotes,
+      playbackEvents,
+      playbackTimeline,
+      stopPlayback,
+      tempoScale,
+    ]
   );
 
   const togglePlayback = useCallback(async () => {
@@ -730,18 +282,22 @@ const TestFileLoader: React.FC = () => {
   }, [isPlaying]);
 
   useEffect(() => {
-    if (!isCurrentHit || scoredEventIndexRef.current === currentEventIndex) {
+    if (
+      targetEventIndex === null ||
+      !isCurrentHit ||
+      scoredEventIndexRef.current === targetEventIndex
+    ) {
       return;
     }
 
-    scoredEventIndexRef.current = currentEventIndex;
-    setLastHitIndex(currentEventIndex);
+    scoredEventIndexRef.current = targetEventIndex;
+    setLastHitIndex(targetEventIndex);
     setGameStats((stats) => ({
       ...stats,
       hits: stats.hits + 1,
       streak: stats.streak + 1,
     }));
-  }, [currentEventIndex, isCurrentHit]);
+  }, [isCurrentHit, targetEventIndex]);
 
   useEffect(() => {
     const previousIndex = previousEventIndexRef.current;
@@ -783,45 +339,15 @@ const TestFileLoader: React.FC = () => {
   const autoTransposeWithFilters = () => {
     if (!rawFileContent) return;
 
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(rawFileContent, "application/xml");
-    const noteElements = Array.from(xmlDoc.getElementsByTagName("note"));
+    const interval = findAutoTransposeInterval(rawFileContent, {
+      selectedKey,
+      noOverblowOrDraw,
+      noBend,
+    });
 
-    for (let interval = -36; interval <= 36; interval++) {
-      let hasInvalidNotes = false;
-
-      for (const note of noteElements) {
-        const pitch = note.getElementsByTagName("pitch")[0];
-        if (!pitch) continue;
-
-        const originalNote = getPitchNoteName(pitch);
-        if (!originalNote) continue;
-
-        const transposed = transposeNoteName(originalNote, interval);
-        if (!transposed) continue;
-
-        const tab = getHarmonicaHoleForNote(selectedKey, transposed);
-
-        if (!tab) {
-          hasInvalidNotes = true;
-          break;
-        }
-
-        if (noOverblowOrDraw && tab.endsWith("o")) {
-          hasInvalidNotes = true;
-          break;
-        }
-
-        if (noBend && tab.endsWith("'")) {
-          hasInvalidNotes = true;
-          break;
-        }
-      }
-
-      if (!hasInvalidNotes) {
-        setTranspose(interval);
-        return;
-      }
+    if (interval !== null) {
+      setTranspose(interval);
+      return;
     }
 
     alert("Couldn't find a transposition matching your selected filters.");
@@ -845,43 +371,10 @@ const TestFileLoader: React.FC = () => {
     }
   };
 
-  const injectHarmonicaTabs = useCallback((xml: string): string => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xml, "application/xml");
-    const noteElements = xmlDoc.getElementsByTagName("note");
-    transposeKeySignatures(xmlDoc, transpose);
-
-    Array.from(noteElements).forEach((note) => {
-      const pitch = note.getElementsByTagName("pitch")[0];
-      if (!pitch) return;
-
-      const originalNote = getPitchNoteName(pitch);
-      if (!originalNote) return;
-
-      const transposedNote = transposeNoteName(originalNote, transpose);
-      if (!transposedNote) return;
-
-      writePitch(xmlDoc, pitch, transposedNote);
-      note.removeAttribute("default-y");
-      note.removeAttribute("relative-y");
-
-      const tab = getHarmonicaHoleForNote(selectedKey, transposedNote);
-      if (!tab) return;
-
-      // ➕ Now add your custom notations
-      const notations = xmlDoc.createElement("notations");
-      const technical = xmlDoc.createElement("technical");
-      const fingering = xmlDoc.createElement("fingering");
-      fingering.setAttribute("placement", "below");
-      fingering.textContent = tab;
-
-      technical.appendChild(fingering);
-      notations.appendChild(technical);
-      note.appendChild(notations);
-    });
-
-    return new XMLSerializer().serializeToString(xmlDoc);
-  }, [selectedKey, transpose]);
+  const buildHarmonicaTabXml = useCallback(
+    (xml: string): string => injectHarmonicaTabs(xml, { selectedKey, transpose }),
+    [selectedKey, transpose]
+  );
 
   const downloadProcessedFile = useCallback(() => {
     if (!fileContent) return;
@@ -901,9 +394,9 @@ const TestFileLoader: React.FC = () => {
 
   useEffect(() => {
     if (!rawFileContent) return;
-    const injected = injectHarmonicaTabs(rawFileContent);
+    const injected = buildHarmonicaTabXml(rawFileContent);
     setFileContent(injected);
-  }, [rawFileContent, injectHarmonicaTabs]);
+  }, [rawFileContent, buildHarmonicaTabXml]);
 
   useEffect(() => {
     if (!playback) return;
@@ -1115,146 +608,20 @@ const TestFileLoader: React.FC = () => {
             <div ref={osmdRef} />
           </div>
 
-          <div className="rounded-lg border border-gray-700 bg-gray-900 p-4 shadow">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Target size={18} className="text-emerald-300" />
-                <span className="text-sm font-semibold text-gray-100">
-                  Note highway
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
-                  Hits {gameStats.hits}
-                </span>
-                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
-                  Miss {gameStats.misses}
-                </span>
-                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-emerald-300">
-                  Streak {gameStats.streak}
-                </span>
-                <span className="rounded border border-gray-700 bg-gray-950 px-2 py-1 text-gray-300">
-                  {accuracy}% accuracy
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-[128px_minmax(0,1fr)] xl:grid-cols-[116px_minmax(0,1fr)]">
-              <div className="rounded border border-gray-800 bg-gray-950 p-3">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-gray-500">
-                  Tab
-                </div>
-                <div className="mb-3 rounded border border-emerald-400/40 bg-emerald-400/10 px-2 py-3 text-center text-2xl font-bold text-emerald-200">
-                  {currentTab || "-"}
-                </div>
-                <div className="space-y-2">
-                  {visibleGameEvents
-                    .filter(({ index }) => index > currentEventIndex)
-                    .slice(0, 7)
-                    .map(({ event, index }) => (
-                      <div
-                        key={`tab-${index}`}
-                        className="flex min-h-8 items-center justify-center rounded border border-gray-800 bg-gray-900 px-2 text-sm font-semibold text-gray-300"
-                      >
-                        {event.tabs.join("  ") || "rest"}
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              <div className="relative h-[520px] overflow-hidden rounded border border-gray-800 bg-gray-950">
-                {Array.from({ length: Math.max(laneKeys.length - 1, 0) }).map((_, lane) => (
-                  <div
-                    key={lane}
-                    className="absolute bottom-0 top-0 border-l border-gray-800"
-                    style={{ left: `${((lane + 1) / laneKeys.length) * 100}%` }}
-                  />
-                ))}
-                {laneKeys.map((hole, lane) => (
-                  <div
-                    key={`lane-label-${hole}`}
-                    className="absolute top-2 -translate-x-1/2 text-[10px] font-semibold text-gray-600"
-                    style={{ left: `${((lane + 0.5) / laneKeys.length) * 100}%` }}
-                  >
-                    {hole}
-                  </div>
-                ))}
-                {!laneKeys.length && (
-                  <div className="absolute inset-x-0 top-2 text-center text-[10px] font-semibold text-gray-600">
-                    No tab lanes
-                  </div>
-                )}
-
-                <div className="absolute left-0 right-0 top-[78%] h-[3px] bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
-                <div className="absolute left-2 right-2 top-[calc(78%_-_28px)] h-14 rounded-full border-2 border-emerald-300/80 bg-emerald-400/10" />
-
-                {visibleGameEvents.flatMap(({ event, index, timing }) =>
-                  event.notes.length
-                    ? event.notes.map((note, noteIndex) => {
-                        const tab = event.tabs[noteIndex] || event.tabs[0] || "";
-                        const hole = getTabHole(tab);
-                        const laneCount = Math.max(laneKeys.length, 1);
-                        const laneIndex =
-                          hole === null ? noteIndex % laneCount : laneKeys.indexOf(hole);
-                        const safeLaneIndex =
-                          laneIndex >= 0 ? laneIndex : noteIndex % laneCount;
-                        const left = ((safeLaneIndex + 0.5) / laneCount) * 100;
-                        const timeToHitMs = timing.startMs - visualPlayheadMs;
-                        const top = 78 - (timeToHitMs / 5200) * 78;
-                        const isActive = index === currentEventIndex;
-                        const wasHit = lastHitIndex === index;
-
-                        return (
-                          <div
-                            key={`${index}-${note.name}-${noteIndex}`}
-                            className={`absolute flex h-12 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded border text-sm font-bold ${
-                              wasHit
-                                ? "scale-110 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
-                                : isActive
-                                  ? "border-cyan-200 bg-cyan-400 text-black"
-                                  : "border-gray-600 bg-gray-800 text-gray-100"
-                            }`}
-                            style={{
-                              left: `${left}%`,
-                              top: `${top}%`,
-                              width: `min(56px, calc(${100 / laneCount}% - 8px))`,
-                              opacity: top < -4 || top > 94 ? 0 : 1,
-                            }}
-                          >
-                            {tab || Note.pitchClass(note.name)}
-                          </div>
-                        );
-                      })
-                    : [
-                        <div
-                          key={`${index}-rest`}
-                          className="absolute left-1/2 h-2 w-16 -translate-x-1/2 rounded bg-gray-700"
-                          style={{
-                            top: `${78 - ((timing.startMs - visualPlayheadMs) / 5200) * 78}%`,
-                          }}
-                        />,
-                      ]
-                )}
-
-                <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300">
-                  <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-                    <Mic size={14} />
-                    {pitchError
-                      ? "Mic unavailable"
-                      : detectedNote
-                        ? `${Note.pitchClass(detectedNote.note)} ${detectedNote.cents > 0 ? "+" : ""}${Math.round(detectedNote.cents)}c`
-                        : isPlaying
-                          ? "Listening"
-                          : "Press play"}
-                  </span>
-                  <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-                    Clarity {clarity || "-"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <NoteHighway
+            accuracy={accuracy}
+            clarity={clarity}
+            currentEventIndex={currentEventIndex}
+            currentTab={currentTab}
+            detectedNote={detectedNote}
+            gameStats={gameStats}
+            isPlaying={isPlaying}
+            laneKeys={laneKeys}
+            lastHitIndex={lastHitIndex}
+            pitchError={pitchError}
+            visibleGameEvents={visibleGameEvents}
+            visualPlayheadMs={visualPlayheadMs}
+          />
         </div>
       </div>
     </div>

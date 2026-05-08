@@ -1,0 +1,112 @@
+import { describe, expect, it } from "vitest";
+import { getPitchNoteName, getTabHole, parsePlaybackEvents } from "./playbackParser";
+
+const parsePitch = (xml: string) =>
+  new DOMParser()
+    .parseFromString(xml, "application/xml")
+    .getElementsByTagName("pitch")[0];
+
+describe("getPitchNoteName", () => {
+  it("includes sharps and flats from MusicXML alter values", () => {
+    expect(
+      getPitchNoteName(parsePitch("<pitch><step>F</step><alter>1</alter><octave>4</octave></pitch>"))
+    ).toBe("F#4");
+    expect(
+      getPitchNoteName(parsePitch("<pitch><step>B</step><alter>-1</alter><octave>3</octave></pitch>"))
+    ).toBe("Bb3");
+  });
+});
+
+describe("getTabHole", () => {
+  it("extracts the absolute harmonica hole from tab text", () => {
+    expect(getTabHole("-4''")).toBe(4);
+    expect(getTabHole("6o")).toBe(6);
+    expect(getTabHole("rest")).toBeNull();
+  });
+});
+
+describe("parsePlaybackEvents", () => {
+  it("builds timed note events with chords, rests, tabs, and articulations", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes><divisions>2</divisions></attributes>
+            <direction>
+              <sound tempo="120" />
+              <direction-type><dynamics><f /></dynamics></direction-type>
+            </direction>
+            <note dynamics="80">
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>2</duration>
+              <notations>
+                <technical><fingering>1</fingering></technical>
+                <articulations><accent /></articulations>
+              </notations>
+            </note>
+            <note>
+              <chord />
+              <pitch><step>E</step><octave>4</octave></pitch>
+              <duration>2</duration>
+              <notations><technical><fingering>2</fingering></technical></notations>
+            </note>
+            <note>
+              <rest />
+              <duration>1</duration>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.detectedTempo).toBe(120);
+    expect(result.events).toHaveLength(2);
+    expect(result.events[0]).toMatchObject({
+      durationBeats: 1,
+      tempoBpm: 120,
+      tabs: ["1", "2"],
+    });
+    expect(result.events[0].notes).toMatchObject([
+      { name: "C4", articulation: "accent", velocity: 0.8 },
+      { name: "E4", articulation: "normal" },
+    ]);
+    expect(result.events[1]).toMatchObject({
+      durationBeats: 0.5,
+      notes: [],
+      tabs: [],
+    });
+  });
+
+  it("extends tie starts and disables repeated tie-stop playback", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <pitch><step>G</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <tie type="start" />
+            </note>
+            <note>
+              <pitch><step>G</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <tie type="stop" />
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events[0].notes[0]).toMatchObject({
+      name: "G4",
+      durationBeats: 2,
+      shouldPlay: true,
+    });
+    expect(result.events[1].notes[0]).toMatchObject({
+      name: "G4",
+      durationBeats: 1,
+      shouldPlay: false,
+    });
+  });
+});

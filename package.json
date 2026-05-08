@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run --environment jsdom",
+    "test:watch": "vitest --environment jsdom"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.10",
@@ -35,9 +37,11 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.1.10",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.1.5"
   }
 }
