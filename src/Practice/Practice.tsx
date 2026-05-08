@@ -7,8 +7,13 @@ import {
   generateLayout,
   getLayoutMidiNumbers,
   harmonicaKeys,
+  harmonicaLayoutDisplayRows,
 } from "../utils/utils";
-import type { TonalNote } from "../utils/utils";
+import type {
+  HarmonicaLayout,
+  HarmonicaLayoutDisplayRowKey,
+  TonalNote,
+} from "../utils/utils";
 
 const positionOptions = [
   { label: "1st", name: "Ionian", degree: 1 },
@@ -35,50 +40,43 @@ const trainerModes = [
   { label: "12-bar", value: "blues" },
 ];
 
-const layoutRows = [
-  { key: "wholeStepBlowBend", label: "Blow bend", color: "bg-purple-800" },
-  { key: "HalfStepBlowBend", label: "Blow bend", color: "bg-indigo-800" },
-  { key: "blow", label: "Blow", color: "bg-blue-700" },
-  { key: "draw", label: "Draw", color: "bg-red-700" },
-  {
-    key: "halfStepDrawBendOverdraw",
-    label: "Draw bend",
-    color: "bg-pink-800",
-  },
-  { key: "wholeStepDrawBend", label: "Draw bend", color: "bg-rose-800" },
-  { key: "oneAndHalfStepDrawBend", label: "Draw bend", color: "bg-amber-800" },
-] as const;
+const rowColorClasses = {
+  wholeStepBlowBend: "bg-purple-800",
+  HalfStepBlowBend: "bg-indigo-800",
+  blow: "bg-blue-700",
+  draw: "bg-red-700",
+  halfStepDrawBendOverdraw: "bg-pink-800",
+  wholeStepDrawBend: "bg-rose-800",
+  oneAndHalfStepDrawBend: "bg-amber-800",
+} satisfies Record<HarmonicaLayoutDisplayRowKey, string>;
 
 const bluesBars = ["I", "I", "I", "I", "IV", "IV", "I", "I", "V", "IV", "I", "V"];
 
 type TrainerMode = (typeof trainerModes)[number]["value"];
-type Layout = ReturnType<typeof generateLayout>;
-type LayoutRowKey = keyof Layout;
 const pitchClassSet = (notes: string[]) =>
   new Set(notes.map((note) => Note.chroma(note)).filter((chroma) => chroma >= 0));
 
 const getLayoutTargets = (
-  layout: Layout,
+  layout: HarmonicaLayout,
   activePitchClasses: Set<number>,
   includeOnlyBends = false
 ) =>
-  layoutRows.flatMap(({ key, label }) =>
-    layout[key as LayoutRowKey].flatMap((note, index) => {
+  harmonicaLayoutDisplayRows.flatMap(({ key, practiceLabel, isBend }) =>
+    layout[key].flatMap((note, index) => {
       if (!note) return [];
 
       const midi = Note.midi(note.name);
       const chroma = Note.chroma(note.name);
-      const isBend = label.includes("bend");
 
       if (midi === null || !activePitchClasses.has(chroma)) return [];
       if (includeOnlyBends && !isBend) return [];
 
       return [
         {
-          label: `${label} ${index + 1}`,
+          label: `${practiceLabel} ${index + 1}`,
           midi,
           noteName: note.name,
-          row: label,
+          row: practiceLabel,
         },
       ];
     })
@@ -288,9 +286,11 @@ function Practice() {
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
           <div className="overflow-x-auto rounded border border-gray-800 bg-gray-900 p-4">
             <div className="min-w-[620px]">
-              {layoutRows.slice(0, 3).map(({ key, label, color }) => (
+              {harmonicaLayoutDisplayRows.slice(0, 3).map(({ key, practiceLabel }) => (
                 <div key={key} className="mb-1 grid grid-cols-10 gap-2">
-                  {layout[key].map((note, index) => renderCell(note, label, index, color))}
+                  {layout[key].map((note, index) =>
+                    renderCell(note, practiceLabel, index, rowColorClasses[key])
+                  )}
                 </div>
               ))}
               <div className="mb-2 grid grid-cols-10 gap-2 text-center text-sm font-bold text-gray-400">
@@ -298,9 +298,11 @@ function Practice() {
                   <div key={index + 1}>{index + 1}</div>
                 ))}
               </div>
-              {layoutRows.slice(3).map(({ key, label, color }) => (
+              {harmonicaLayoutDisplayRows.slice(3).map(({ key, practiceLabel }) => (
                 <div key={key} className="mb-1 grid grid-cols-10 gap-2">
-                  {layout[key].map((note, index) => renderCell(note, label, index, color))}
+                  {layout[key].map((note, index) =>
+                    renderCell(note, practiceLabel, index, rowColorClasses[key])
+                  )}
                 </div>
               ))}
             </div>

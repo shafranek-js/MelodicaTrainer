@@ -129,6 +129,62 @@ export function generateLayout(key: string) {
 
 export type HarmonicaLayout = ReturnType<typeof generateLayout>;
 
+export type HarmonicaLayoutDisplayRowMetadata = {
+  key: keyof HarmonicaLayout;
+  label: string;
+  practiceLabel: string;
+  isBend: boolean;
+};
+
+export const harmonicaLayoutDisplayRows = [
+  {
+    key: "wholeStepBlowBend",
+    label: "Whole Step Blow Bend",
+    practiceLabel: "Blow bend",
+    isBend: true,
+  },
+  {
+    key: "HalfStepBlowBend",
+    label: "Half Step Blow Bend",
+    practiceLabel: "Blow bend",
+    isBend: true,
+  },
+  {
+    key: "blow",
+    label: "Blow",
+    practiceLabel: "Blow",
+    isBend: false,
+  },
+  {
+    key: "draw",
+    label: "Draw",
+    practiceLabel: "Draw",
+    isBend: false,
+  },
+  {
+    key: "halfStepDrawBendOverdraw",
+    label: "Half Step Draw Bend + Overdraw",
+    practiceLabel: "Draw bend",
+    isBend: true,
+  },
+  {
+    key: "wholeStepDrawBend",
+    label: "Whole Step Draw Bend",
+    practiceLabel: "Draw bend",
+    isBend: true,
+  },
+  {
+    key: "oneAndHalfStepDrawBend",
+    label: "1.5 Step Draw Bend",
+    practiceLabel: "Draw bend",
+    isBend: true,
+  },
+] as const satisfies readonly HarmonicaLayoutDisplayRowMetadata[];
+
+export type HarmonicaLayoutDisplayRow =
+  (typeof harmonicaLayoutDisplayRows)[number];
+export type HarmonicaLayoutDisplayRowKey = HarmonicaLayoutDisplayRow["key"];
+
 export function getLayoutMidiNumbers(layout: HarmonicaLayout): number[] {
   return Object.values(layout).flatMap((row) =>
     row.flatMap((note) => {

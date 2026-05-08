@@ -5,6 +5,7 @@ import {
   generateLayout,
   getHarmonicaHoleForNote,
   getLayoutMidiNumbers,
+  harmonicaLayoutDisplayRows,
 } from "./utils";
 import type { TonalNote } from "./utils";
 
@@ -109,6 +110,34 @@ describe("getLayoutMidiNumbers", () => {
         midi("C#6"),
       ])
     );
+  });
+});
+
+describe("harmonicaLayoutDisplayRows", () => {
+  it("describes the rendered rows in stable top-to-bottom order", () => {
+    const layout = generateLayout("C4");
+
+    expect(harmonicaLayoutDisplayRows.map((row) => row.key)).toEqual([
+      "wholeStepBlowBend",
+      "HalfStepBlowBend",
+      "blow",
+      "draw",
+      "halfStepDrawBendOverdraw",
+      "wholeStepDrawBend",
+      "oneAndHalfStepDrawBend",
+    ]);
+    expect(harmonicaLayoutDisplayRows.every((row) => layout[row.key].length === 10)).toBe(
+      true
+    );
+    expect(
+      harmonicaLayoutDisplayRows.filter((row) => row.isBend).map((row) => row.key)
+    ).toEqual([
+      "wholeStepBlowBend",
+      "HalfStepBlowBend",
+      "halfStepDrawBendOverdraw",
+      "wholeStepDrawBend",
+      "oneAndHalfStepDrawBend",
+    ]);
   });
 });
 

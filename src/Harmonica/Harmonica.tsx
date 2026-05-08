@@ -8,10 +8,24 @@ import {
   generateLayout,
   freqToNoteAndCents,
   getLayoutMidiNumbers,
+  harmonicaLayoutDisplayRows,
+} from "../utils/utils";
+import type {
+  HarmonicaLayoutDisplayRowKey,
+  TonalNote,
 } from "../utils/utils";
 
-type TonalNote = ReturnType<typeof Note.get>;
 const baseKey = "C4";
+
+const rowColorClasses = {
+  wholeStepBlowBend: "bg-purple-700 text-white",
+  HalfStepBlowBend: "bg-indigo-700 text-white",
+  blow: "bg-blue-600 text-white",
+  draw: "bg-red-600 text-white",
+  halfStepDrawBendOverdraw: "bg-pink-700 text-white",
+  wholeStepDrawBend: "bg-rose-700 text-white",
+  oneAndHalfStepDrawBend: "bg-amber-700 text-white",
+} satisfies Record<HarmonicaLayoutDisplayRowKey, string>;
 
 function Harmonica() {
   const { t } = useTranslation();
@@ -54,7 +68,7 @@ function Harmonica() {
     label?: string,
     colorClass = "text-white"
   ) => (
-    <div className="grid grid-cols-10 gap-2 mb-1 text-center">
+    <div key={label} className="grid grid-cols-10 gap-2 mb-1 text-center">
       {notes.map((note, idx) => {
         if (!note) return <div key={`${label}-${idx}`} />;
 
@@ -195,33 +209,12 @@ function Harmonica() {
 
         <div className="overflow-x-auto rounded border border-gray-800 bg-gray-900 p-4">
           <div className="min-w-[620px]">
-            {renderRow(
-              layout.wholeStepBlowBend,
-              "Whole Step Blow Bend",
-              "bg-purple-700 text-white"
+            {harmonicaLayoutDisplayRows.slice(0, 3).map(({ key, label }) =>
+              renderRow(layout[key], label, rowColorClasses[key])
             )}
-            {renderRow(
-              layout.HalfStepBlowBend,
-              "Half Step Blow Bend",
-              "bg-indigo-700 text-white"
-            )}
-            {renderRow(layout.blow, "Blow", "bg-blue-600 text-white")}
             {renderHoleNumbers()}
-            {renderRow(layout.draw, "Draw", "bg-red-600 text-white")}
-            {renderRow(
-              layout.halfStepDrawBendOverdraw,
-              "Half Step Draw Bend + Overdraw",
-              "bg-pink-700 text-white"
-            )}
-            {renderRow(
-              layout.wholeStepDrawBend,
-              "Whole Step Draw Bend",
-              "bg-rose-700 text-white"
-            )}
-            {renderRow(
-              layout.oneAndHalfStepDrawBend,
-              "1.5 Step Draw Bend",
-              "bg-amber-700 text-white"
+            {harmonicaLayoutDisplayRows.slice(3).map(({ key, label }) =>
+              renderRow(layout[key], label, rowColorClasses[key])
             )}
           </div>
         </div>

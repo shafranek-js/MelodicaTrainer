@@ -8,7 +8,7 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 5 files and 28 tests.
+- `npm test`: passed, 5 files and 29 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
@@ -79,11 +79,7 @@ Recommended steps:
 
 Locations: `src/Harmonica/Harmonica.tsx`, `src/Practice/Practice.tsx`, `src/utils/utils.ts`.
 
-The repeated logic for deriving allowed MIDI sets from generated layouts has been moved into `getLayoutMidiNumbers(layout)` and is covered by `src/utils/utils.test.ts`. Shared rendering row metadata is still duplicated between the Harmonica and Practice routes.
-
-Remaining steps:
-
-- Consider exporting shared layout-row metadata only after confirming Harmonica and Practice should render the same rows.
+The repeated logic for deriving allowed MIDI sets from generated layouts has been moved into `getLayoutMidiNumbers(layout)` and is covered by `src/utils/utils.test.ts`. The shared visible row order, labels, and bend metadata now live in `harmonicaLayoutDisplayRows`, so the Harmonica and Practice routes render and derive targets from the same row model while keeping route-specific colors local.
 
 ### Make MusicXML parsing failures explicit
 
