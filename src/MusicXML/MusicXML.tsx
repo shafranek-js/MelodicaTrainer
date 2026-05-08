@@ -10,7 +10,7 @@ import {
   playPlaybackNotes,
   stopAudioNodes,
 } from "./audioPlayback";
-import { readMusicXmlFile } from "./musicXmlFile";
+import { getMusicXmlFileErrorMessage, readMusicXmlFile } from "./musicXmlFile";
 import {
   createFirstStaffDisplayXml,
   exportHarpTabsText,
@@ -518,7 +518,8 @@ const TestFileLoader: React.FC = () => {
       setFileName(null);
       clearCurrentScore();
       setFileError(
-        getMusicXmlParseErrorMessage(error) ??
+        getMusicXmlFileErrorMessage(error) ??
+          getMusicXmlParseErrorMessage(error) ??
           "Couldn't load that MusicXML file. Check that the file is valid."
       );
     } finally {

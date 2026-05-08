@@ -8,14 +8,14 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 6 files and 33 tests.
+- `npm test`: passed, 7 files and 39 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
 
 Build note:
 
-- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,305.13 kB minified and 364.78 kB gzip.
+- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,306.01 kB minified and 365.02 kB gzip.
 
 ## Highest Priority Findings
 
@@ -96,16 +96,16 @@ Implemented:
 
 ### Harden uploaded file handling
 
-Location: `src/MusicXML/musicXmlFile.ts`, lines 13-44.
+Locations: `src/MusicXML/musicXmlFile.ts`, `src/MusicXML/MusicXML.tsx`, and `src/MusicXML/musicXmlFile.test.ts`.
 
-The app accepts `.mxl` archives and XML text directly. Current behavior reads the whole file/archive into memory and does not enforce size limits.
+Status: completed on 2026-05-08.
 
-Recommended steps:
+Implemented:
 
-- Add a reasonable file-size limit before reading.
-- For `.mxl`, reject archives with no MusicXML candidate and show an in-app error.
-- Consider guarding against unusually large uncompressed XML entries before rendering.
-- Add tests for container lookup and missing-score cases.
+- Added a 10 MB upload limit before reading raw MusicXML or `.mxl` files.
+- Added typed MusicXML file errors so oversized files, oversized archived scores, and missing-score `.mxl` archives surface as in-app messages.
+- Added a 10 MB guard for uncompressed MusicXML score entries inside `.mxl` files, using the declared archive size when available and decoded byte length as a backstop.
+- Added `src/MusicXML/musicXmlFile.test.ts` coverage for plain XML reads, `.mxl` container lookup, fallback score candidates, missing-score archives, oversized uploads, and oversized archived scores.
 
 ## UI And Accessibility Work
 
