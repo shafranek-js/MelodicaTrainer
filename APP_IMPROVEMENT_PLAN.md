@@ -8,7 +8,7 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 8 files and 42 tests.
+- `npm test`: passed, 9 files and 47 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
@@ -16,8 +16,8 @@ Checks run:
 Build note:
 
 - The production build still warns because the OSMD vendor chunk is large: `dist/assets/osmd-*.js` is about 1,173.29 kB minified and 323.28 kB gzip.
-- The MusicXML route code now builds as a small lazy chunk, about 33.29 kB minified and 11.33 kB gzip, with JSZip split into a separate 97.26 kB minified and 30.29 kB gzip chunk.
-- The Circle and Practice routes build as separate lazy chunks: about 8.61 kB and 7.84 kB minified.
+- The MusicXML route code now builds as a small lazy chunk, about 34.45 kB minified and 11.70 kB gzip, with JSZip split into a separate 97.26 kB minified and 30.29 kB gzip chunk.
+- The Circle and Practice routes build as separate lazy chunks: about 8.61 kB and 8.29 kB minified.
 
 ## Highest Priority Findings
 
@@ -40,7 +40,7 @@ Recommended steps:
 
 ### 2. Reduce the MusicXML route's component size and mixed responsibilities
 
-Location: `src/MusicXML/MusicXML.tsx`, currently about 811 lines.
+Location: `src/MusicXML/MusicXML.tsx`, currently about 841 lines after the first scoring-hook extraction.
 
 The route owns file loading, XML transformation, OSMD rendering, audio scheduling, cursor movement, game scoring, downloads, and layout. That makes playback bugs harder to fix safely.
 
@@ -51,9 +51,12 @@ Recommended steps:
   - `useMusicXmlDocument`: default fetch, upload, processed XML, file errors.
   - `useOsmdRenderer`: OSMD instance, render runs, sheet readiness, cursor reset.
   - `usePlaybackController`: audio context, timers, game clock, start/pause/finish/reset.
-  - `useNoteHighwayScoring`: hit/miss/streak state and hit-window decisions.
 - Extract the sidebar controls into a small component once the state boundaries are clearer.
 - Keep XML transforms and timeline helpers pure and covered by Vitest.
+
+Completed on 2026-05-08:
+
+- Extracted `useNoteHighwayScoring` into `src/MusicXML/useNoteHighwayScoring.ts` so hit, miss, streak, accuracy, and last-hit state no longer live directly in the MusicXML route component.
 
 ## Code Quality And Scalability Work
 
@@ -162,7 +165,7 @@ Recommended steps:
 
 ## Suggested Implementation Order
 
-1. Refactor MusicXML route into route-local hooks without changing behavior.
+1. Continue refactoring the MusicXML route into route-local hooks without changing behavior.
 2. Address dependency upgrades in small batches.
 3. Improve Circle accessibility and responsive details.
 

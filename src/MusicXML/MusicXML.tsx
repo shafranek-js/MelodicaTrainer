@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { freqToNoteAndCents, harmonicaKeys } from "../utils/utils";
-import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import {
@@ -28,7 +27,8 @@ import {
   getVisibleGameEvents,
 } from "./playbackTimeline";
 import { styleSheetCursor } from "./sheetCursor";
-import type { GameStats, PlaybackNote } from "./types";
+import type { PlaybackNote } from "./types";
+import { useNoteHighwayScoring } from "./useNoteHighwayScoring";
 
 type RouteStatusTone = "info" | "success" | "error";
 
@@ -63,12 +63,6 @@ const TestFileLoader: React.FC = () => {
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
   const [isSheetReady, setIsSheetReady] = useState(false);
   const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
-  const [gameStats, setGameStats] = useState<GameStats>({
-    hits: 0,
-    misses: 0,
-    streak: 0,
-  });
-  const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
 
   const osmdRef = useRef<HTMLDivElement>(null);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
@@ -78,8 +72,6 @@ const TestFileLoader: React.FC = () => {
   const playbackRunRef = useRef(0);
   const activeAudioNodesRef = useRef(new Set<AudioScheduledSourceNode>());
   const cursorEventIndexRef = useRef<number | null>(null);
-  const scoredEventIndexRef = useRef<number | null>(null);
-  const previousEventIndexRef = useRef(0);
   const gameClockFrameRef = useRef<number | null>(null);
   const gameClockStartMsRef = useRef(0);
   const gameClockOffsetMsRef = useRef(0);
@@ -130,15 +122,6 @@ const TestFileLoader: React.FC = () => {
     [visibleGameEvents, visualPlayheadMs]
   );
   const currentGameEvent = playbackEvents[targetEventIndex ?? currentEventIndex];
-  const currentTargetMidiNumbers = useMemo(
-    () =>
-      new Set(
-        (currentGameEvent?.notes ?? [])
-          .map((note) => Note.midi(note.name))
-          .filter((midi): midi is number => midi !== null)
-      ),
-    [currentGameEvent]
-  );
   const { pitch, clarity, error: pitchError } = usePitchDetector(
     0.82,
     isPlaying && playbackEvents.length > 0,
@@ -152,16 +135,14 @@ const TestFileLoader: React.FC = () => {
     if (!pitch) return null;
     return freqToNoteAndCents(Number(pitch));
   }, [pitch]);
-  const detectedMidi = detectedNote ? Note.midi(detectedNote.note) : null;
-  const isCurrentHit =
-    targetEventIndex !== null &&
-    detectedMidi !== null &&
-    currentTargetMidiNumbers.has(detectedMidi) &&
-    Math.abs(detectedNote?.cents ?? 99) <= 35;
-  const accuracy =
-    gameStats.hits + gameStats.misses > 0
-      ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
-      : 0;
+  const { accuracy, gameStats, lastHitIndex, resetScoring } =
+    useNoteHighwayScoring({
+      currentEventIndex,
+      currentGameEvent,
+      detectedNote,
+      playbackEvents,
+      targetEventIndex,
+    });
   const canUseProcessedScore =
     Boolean(fileContent) && isSheetReady && !hasSheetRenderError;
   const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
@@ -192,10 +173,7 @@ const TestFileLoader: React.FC = () => {
       setCurrentEventIndex(0);
       setCurrentTab("");
       setCurrentGameTimeMs(0);
-      setGameStats({ hits: 0, misses: 0, streak: 0 });
-      setLastHitIndex(null);
-      scoredEventIndexRef.current = null;
-      previousEventIndexRef.current = 0;
+      resetScoring();
       cursorEventIndexRef.current = null;
       osmdInstance.current?.cursor?.reset();
       osmdInstance.current?.cursor?.hide();
@@ -203,7 +181,7 @@ const TestFileLoader: React.FC = () => {
         sheetScrollRef.current.scrollTop = 0;
       }
     }
-  }, [clearPlaybackResources]);
+  }, [clearPlaybackResources, resetScoring]);
 
   const clearRenderedSheet = useCallback(() => {
     sheetRenderRunRef.current += 1;
@@ -385,10 +363,7 @@ const TestFileLoader: React.FC = () => {
     const startIndex =
       currentEventIndex >= playbackEvents.length ? 0 : currentEventIndex;
     if (startIndex === 0) {
-      setGameStats({ hits: 0, misses: 0, streak: 0 });
-      setLastHitIndex(null);
-      scoredEventIndexRef.current = null;
-      previousEventIndexRef.current = 0;
+      resetScoring();
     }
     gameClockOffsetMsRef.current =
       (playbackTimeline[startIndex]?.startMs ?? 0) -
@@ -405,6 +380,7 @@ const TestFileLoader: React.FC = () => {
     canPlayback,
     playbackEvents.length,
     playbackTimeline,
+    resetScoring,
     schedulePlayback,
     stopPlayback,
   ]);
@@ -430,46 +406,6 @@ const TestFileLoader: React.FC = () => {
     };
   }, [isPlaying]);
 
-  useEffect(() => {
-    if (
-      targetEventIndex === null ||
-      !isCurrentHit ||
-      scoredEventIndexRef.current === targetEventIndex
-    ) {
-      return;
-    }
-
-    scoredEventIndexRef.current = targetEventIndex;
-    setLastHitIndex(targetEventIndex);
-    setGameStats((stats) => ({
-      ...stats,
-      hits: stats.hits + 1,
-      streak: stats.streak + 1,
-    }));
-  }, [isCurrentHit, targetEventIndex]);
-
-  useEffect(() => {
-    const previousIndex = previousEventIndexRef.current;
-    if (currentEventIndex <= previousIndex) {
-      previousEventIndexRef.current = currentEventIndex;
-      return;
-    }
-
-    const previousEvent = playbackEvents[previousIndex];
-    const shouldScoreMiss =
-      previousEvent?.notes.length &&
-      scoredEventIndexRef.current !== previousIndex;
-
-    if (shouldScoreMiss) {
-      setGameStats((stats) => ({
-        ...stats,
-        misses: stats.misses + 1,
-        streak: 0,
-      }));
-    }
-
-    previousEventIndexRef.current = currentEventIndex;
-  }, [currentEventIndex, playbackEvents]);
   useEffect(() => {
     setRouteStatus({
       tone: "info",
