@@ -164,13 +164,15 @@ const TestFileLoader: React.FC = () => {
     );
   }, []);
 
-  const moveCursorToEvent = useCallback((eventIndex: number, durationMs: number) => {
+  const moveCursorInstantlyToEvent = useCallback((eventIndex: number) => {
     const cursor = osmdInstance.current?.cursor;
     if (!cursor) return;
 
+    cursor.cursorElement.style.transition = "none";
+
     if (
       cursorEventIndexRef.current === null ||
-      eventIndex <= cursorEventIndexRef.current
+      eventIndex < cursorEventIndexRef.current
     ) {
       cursor.reset();
       cursorEventIndexRef.current = 0;
@@ -181,11 +183,46 @@ const TestFileLoader: React.FC = () => {
       cursor.next();
     }
     cursorEventIndexRef.current = eventIndex;
-
-    window.requestAnimationFrame(() => {
-      styleSheetCursor(cursor.cursorElement, durationMs);
-    });
+    styleSheetCursor(cursor.cursorElement, 0);
+    void cursor.cursorElement.offsetHeight;
   }, []);
+
+  const animateCursorToEvent = useCallback(
+    (eventIndex: number, durationMs: number) => {
+      const cursor = osmdInstance.current?.cursor;
+      if (!cursor || cursorEventIndexRef.current === null) return;
+      if (eventIndex <= cursorEventIndexRef.current) return;
+
+      styleSheetCursor(cursor.cursorElement, durationMs);
+      void cursor.cursorElement.offsetHeight;
+
+      for (
+        let index = cursorEventIndexRef.current;
+        index < eventIndex;
+        index += 1
+      ) {
+        cursor.next();
+      }
+      cursorEventIndexRef.current = eventIndex;
+
+      window.requestAnimationFrame(() => {
+        styleSheetCursor(cursor.cursorElement, durationMs);
+      });
+    },
+    []
+  );
+
+  const moveCursorThroughEvent = useCallback(
+    (eventIndex: number, durationMs: number) => {
+      moveCursorInstantlyToEvent(eventIndex);
+
+      const nextEventIndex = eventIndex + 1;
+      if (nextEventIndex < playbackEvents.length) {
+        animateCursorToEvent(nextEventIndex, durationMs);
+      }
+    },
+    [animateCursorToEvent, moveCursorInstantlyToEvent, playbackEvents.length]
+  );
 
   const schedulePlayback = useCallback(
     (startIndex: number, runId: number) => {
@@ -207,7 +244,7 @@ const TestFileLoader: React.FC = () => {
       setCurrentGameTimeMs(eventStartMs);
       setCurrentEventIndex(startIndex);
       setCurrentTab(event.tabs.join("  "));
-      moveCursorToEvent(startIndex, durationMs);
+      moveCursorThroughEvent(startIndex, durationMs);
       playNotes(event.notes, effectiveTempo);
 
       playbackTimerRef.current = window.setTimeout(() => {
@@ -216,7 +253,7 @@ const TestFileLoader: React.FC = () => {
       }, durationMs);
     },
     [
-      moveCursorToEvent,
+      moveCursorThroughEvent,
       playNotes,
       playbackEvents,
       playbackTimeline,

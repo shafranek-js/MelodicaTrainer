@@ -9,8 +9,9 @@ export const styleSheetCursor = (
 ) => {
   const renderedHeight = cursorElement.getBoundingClientRect().height;
   const cursorHeight = Math.max(renderedHeight, SHEET_CURSOR_MIN_HEIGHT_PX);
+  const verticalDurationMs = durationMs === 0 ? 0 : 160;
 
-  cursorElement.style.transition = `left ${durationMs}ms linear, top 160ms linear, height 160ms linear`;
+  cursorElement.style.transition = `left ${durationMs}ms linear, top ${verticalDurationMs}ms linear, height ${verticalDurationMs}ms linear`;
   cursorElement.style.width = `${SHEET_CURSOR_WIDTH_PX}px`;
   cursorElement.style.minWidth = `${SHEET_CURSOR_WIDTH_PX}px`;
   cursorElement.style.height = `${cursorHeight}px`;
