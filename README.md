@@ -33,11 +33,19 @@ This project uses [Vite](https://vitejs.dev/) for fast development.
 ### 📦 Install dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
 🚀 Start development server
 
 ```bash
 npm run dev
+```
+
+### ✅ Validate changes
+
+```bash
+npm test
+npm run lint
+npm run build
 ```

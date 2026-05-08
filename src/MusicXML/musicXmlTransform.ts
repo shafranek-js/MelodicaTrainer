@@ -8,6 +8,7 @@ import {
   getFirstStaffNumber,
   isFirstStaffNote,
 } from "./musicXmlSelection";
+import { parseMusicXmlDocument } from "./musicXmlParser";
 
 const keySignatureTonicsByFifths = new Map(
   Array.from({ length: 15 }, (_, index) => {
@@ -92,7 +93,7 @@ const getFingeringText = (note: Element) =>
   note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
 
 export const exportHarpTabsText = (xml: string): string => {
-  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const xmlDoc = parseMusicXmlDocument(xml);
   const firstPart = getFirstPart(xmlDoc);
   const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
 
@@ -122,7 +123,7 @@ export const exportHarpTabsText = (xml: string): string => {
 };
 
 export const createFirstStaffDisplayXml = (xml: string): string => {
-  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const xmlDoc = parseMusicXmlDocument(xml);
   const firstPart = getFirstPart(xmlDoc);
   if (!firstPart) return xml;
 
@@ -279,8 +280,7 @@ export const injectHarmonicaTabs = (
   xml: string,
   { selectedKey, transpose }: InjectHarmonicaTabsOptions
 ): string => {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xml, "application/xml");
+  const xmlDoc = parseMusicXmlDocument(xml);
   const noteElements = getFirstStaffNoteElements(xmlDoc);
   transposeKeySignatures(xmlDoc, transpose);
 
@@ -315,8 +315,7 @@ export const findAutoTransposeInterval = (
   xml: string,
   { selectedKey, noOverblowOrDraw, noBend }: AutoTransposeOptions
 ) => {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xml, "application/xml");
+  const xmlDoc = parseMusicXmlDocument(xml);
   const noteElements = getFirstStaffNoteElements(xmlDoc);
 
   for (let interval = -36; interval <= 36; interval += 1) {

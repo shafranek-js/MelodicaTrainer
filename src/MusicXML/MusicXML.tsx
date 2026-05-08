@@ -17,6 +17,7 @@ import {
   findAutoTransposeInterval,
   injectHarmonicaTabs,
 } from "./musicXmlTransform";
+import { getMusicXmlParseErrorMessage } from "./musicXmlParser";
 import { NoteHighway } from "./NoteHighway";
 import { parsePlaybackEvents } from "./playbackParser";
 import {
@@ -474,11 +475,20 @@ const TestFileLoader: React.FC = () => {
       return;
     }
 
-    const interval = findAutoTransposeInterval(rawFileContent, {
-      selectedKey,
-      noOverblowOrDraw,
-      noBend,
-    });
+    let interval: number | null;
+    try {
+      interval = findAutoTransposeInterval(rawFileContent, {
+        selectedKey,
+        noOverblowOrDraw,
+        noBend,
+      });
+    } catch (error) {
+      setFileError(
+        getMusicXmlParseErrorMessage(error) ??
+          "Couldn't inspect that MusicXML file for auto transpose."
+      );
+      return;
+    }
 
     if (interval !== null) {
       setFileError(null);
@@ -505,10 +515,12 @@ const TestFileLoader: React.FC = () => {
       setFileName(file.name);
       setRawFileContent(content);
     } catch (error) {
-      console.error("MusicXML file load error:", error);
       setFileName(null);
       clearCurrentScore();
-      setFileError("Couldn't load that MusicXML file. Check that the file is valid.");
+      setFileError(
+        getMusicXmlParseErrorMessage(error) ??
+          "Couldn't load that MusicXML file. Check that the file is valid."
+      );
     } finally {
       input.value = "";
     }
@@ -538,7 +550,17 @@ const TestFileLoader: React.FC = () => {
   const downloadHarpTabsText = useCallback(() => {
     if (!fileContent) return;
 
-    const text = exportHarpTabsText(fileContent);
+    let text: string;
+    try {
+      text = exportHarpTabsText(fileContent);
+    } catch (error) {
+      setFileError(
+        getMusicXmlParseErrorMessage(error) ??
+          "Couldn't export HarpTabs text from that MusicXML file."
+      );
+      return;
+    }
+
     const blob = new Blob([text], {
       type: "text/plain;charset=utf-8",
     });
@@ -564,10 +586,12 @@ const TestFileLoader: React.FC = () => {
       setFileContent(injected);
       setFileError(null);
     } catch (error) {
-      console.error("MusicXML transform error:", error);
       setFileContent(null);
       clearRenderedSheet();
-      setFileError("Couldn't process that MusicXML file.");
+      setFileError(
+        getMusicXmlParseErrorMessage(error) ??
+          "Couldn't process that MusicXML file."
+      );
     }
   }, [rawFileContent, buildHarmonicaTabXml, clearRenderedSheet]);
 

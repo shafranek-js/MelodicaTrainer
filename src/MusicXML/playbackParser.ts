@@ -4,6 +4,7 @@ import {
   getFirstStaffNumber,
   isFirstStaffNote,
 } from "./musicXmlSelection";
+import { parseMusicXmlDocument } from "./musicXmlParser";
 
 export const getPitchNoteName = (pitch: Element): string | null => {
   const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
@@ -207,7 +208,7 @@ const expandRepeats = (
 };
 
 export const parsePlaybackEvents = (xml: string) => {
-  const xmlDoc = new DOMParser().parseFromString(xml, "application/xml");
+  const xmlDoc = parseMusicXmlDocument(xml);
   const measuresWithEvents: { element: Element; events: PlaybackEvent[] }[] = [];
   let divisions = 1;
   let detectedTempo = 90;

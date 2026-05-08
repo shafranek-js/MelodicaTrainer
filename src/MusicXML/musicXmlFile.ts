@@ -1,10 +1,10 @@
 import JSZip from "jszip";
+import { parseMusicXmlDocument } from "./musicXmlParser";
 
 export const getContainerScorePath = (containerXml: string) => {
-  const xmlDoc = new DOMParser().parseFromString(
-    containerXml,
-    "application/xml"
-  );
+  const xmlDoc = parseMusicXmlDocument(containerXml, {
+    requireScorePart: false,
+  });
   const rootFile = xmlDoc.getElementsByTagName("rootfile")[0];
 
   return rootFile?.getAttribute("full-path") || null;
@@ -39,7 +39,12 @@ const extractCompressedMusicXml = async (file: File) => {
 };
 
 export const readMusicXmlFile = (file: File) => {
-  if (/\.mxl$/i.test(file.name)) return extractCompressedMusicXml(file);
+  const contentPromise = /\.mxl$/i.test(file.name)
+    ? extractCompressedMusicXml(file)
+    : file.text();
 
-  return file.text();
+  return contentPromise.then((content) => {
+    parseMusicXmlDocument(content);
+    return content;
+  });
 };

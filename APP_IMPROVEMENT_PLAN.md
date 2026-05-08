@@ -8,14 +8,14 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 5 files and 29 tests.
+- `npm test`: passed, 6 files and 33 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
 
 Build note:
 
-- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,304.13 kB minified and 364.29 kB gzip.
+- The production build warns that `dist/assets/MusicXML-*.js` is large: about 1,305.13 kB minified and 364.78 kB gzip.
 
 ## Highest Priority Findings
 
@@ -85,14 +85,14 @@ The repeated logic for deriving allowed MIDI sets from generated layouts has bee
 
 Locations: `src/MusicXML/musicXmlFile.ts`, `src/MusicXML/musicXmlTransform.ts`, `src/MusicXML/playbackParser.ts`.
 
-Most XML helpers parse with `DOMParser` but do not check for parser errors. Invalid XML can flow into transforms and OSMD before the route shows a useful error.
+Status: completed on 2026-05-08.
 
-Recommended steps:
+Implemented:
 
-- Create a shared `parseMusicXmlDocument(xml)` helper that checks for `parsererror`.
-- Use it in file loading, transforms, playback parsing, and first-staff display generation.
-- Return structured errors to the route instead of relying on `console.error` and `alert()`.
-- Add tests for malformed XML and missing score parts.
+- Added `src/MusicXML/musicXmlParser.ts` with `parseMusicXmlDocument(xml)`, structured `MusicXmlParseError` reasons, and a route-safe message helper.
+- File loading, `.mxl` container lookup, tab injection, first-staff display generation, HarpTabs export, auto-transpose search, and playback parsing now use the shared parser path.
+- The MusicXML route now maps parser errors into its in-app error state for upload, processing, auto transpose, and HarpTabs export.
+- Added `src/MusicXML/musicXmlParser.test.ts` coverage for valid score parsing, malformed XML, missing score parts, and supporting XML documents such as `.mxl` containers.
 
 ### Harden uploaded file handling
 
@@ -121,17 +121,6 @@ Recommended steps:
 - Disable downloads and playback when the current processed file is invalid or the sheet failed to render.
 - Keep the previous score only when intentionally preserving it, not after a failed replacement.
 
-### Align README commands with the project guide
-
-Location: `README.md`.
-
-The project guide says to install with `npm ci`, while the README says `npm install`.
-
-Recommended steps:
-
-- Update the README local setup to prefer `npm ci`.
-- Add the same validation commands used here: `npm test`, `npm run lint`, and `npm run build`.
-
 ## Test Coverage Roadmap
 
 Current tests cover MusicXML transforms, playback parsing, timeline helpers, and harmonica core utilities. The next tests should protect route-specific derived behavior before refactors.
@@ -140,8 +129,7 @@ Recommended order:
 
 1. Extract and test Practice target generation so scale/position changes cannot break target selection.
 2. Extract and test Circle theory derivations: mode tonic, selected scale, triads, and color classification.
-3. Add tests for malformed XML handling once a shared parser helper exists.
-4. Add route-level smoke tests later only if the project adopts a browser test runner.
+3. Add route-level smoke tests later only if the project adopts a browser test runner.
 
 ## Performance Work
 
@@ -173,11 +161,9 @@ Recommended steps:
 
 1. Refactor MusicXML route into route-local hooks without changing behavior.
 2. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.
-3. Add parser-error handling for MusicXML.
-4. Address dependency upgrades in small batches.
-5. Improve Circle accessibility and responsive details.
-6. Split bundles and compare build output.
-7. Clean up README.
+3. Address dependency upgrades in small batches.
+4. Improve Circle accessibility and responsive details.
+5. Split bundles and compare build output.
 
 ## Definition Of Done For Each Improvement Batch
 
