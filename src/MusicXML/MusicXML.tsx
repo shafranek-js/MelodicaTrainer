@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import JSZip from "jszip";
 import { getHarmonicaHoleForNote, harmonicaKeys } from "../utils/utils";
 import { Note } from "tonal";
 import { useTranslation } from "react-i18next";
@@ -326,6 +327,50 @@ const transposeKeySignatures = (xmlDoc: XMLDocument, semitones: number) => {
   });
 };
 
+const getContainerScorePath = (containerXml: string) => {
+  const xmlDoc = new DOMParser().parseFromString(
+    containerXml,
+    "application/xml"
+  );
+  const rootFile = xmlDoc.getElementsByTagName("rootfile")[0];
+
+  return rootFile?.getAttribute("full-path") || null;
+};
+
+const extractCompressedMusicXml = async (file: File) => {
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const containerFile = zip.file("META-INF/container.xml");
+  const containerScorePath = containerFile
+    ? getContainerScorePath(await containerFile.async("text"))
+    : null;
+  const candidatePaths = [
+    containerScorePath,
+    ...Object.values(zip.files)
+      .filter(
+        (entry) =>
+          !entry.dir &&
+          /\.(musicxml|xml)$/i.test(entry.name) &&
+          entry.name !== "META-INF/container.xml"
+      )
+      .map((entry) => entry.name),
+  ].filter((path, index, paths): path is string =>
+    Boolean(path && paths.indexOf(path) === index)
+  );
+
+  for (const path of candidatePaths) {
+    const scoreFile = zip.file(path);
+    if (scoreFile) return scoreFile.async("text");
+  }
+
+  throw new Error("No MusicXML score was found inside the MXL file.");
+};
+
+const readMusicXmlFile = (file: File) => {
+  if (/\.mxl$/i.test(file.name)) return extractCompressedMusicXml(file);
+
+  return file.text();
+};
+
 const TestFileLoader: React.FC = () => {
   const { t } = useTranslation();
   const [rawFileContent, setRawFileContent] = useState<string | null>(null);
@@ -582,8 +627,16 @@ const TestFileLoader: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
-    const content = await file.text();
-    setRawFileContent(content);
+
+    try {
+      const content = await readMusicXmlFile(file);
+      setRawFileContent(content);
+    } catch (error) {
+      console.error("MusicXML file load error:", error);
+      setFileName(null);
+      setRawFileContent(null);
+      alert("Couldn't load that MusicXML file. Check that the file is valid.");
+    }
   };
 
   const injectHarmonicaTabs = useCallback((xml: string): string => {
@@ -632,7 +685,7 @@ const TestFileLoader: React.FC = () => {
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const baseName = fileName?.replace(/\.(musicxml|xml)$/i, "") || "score";
+    const baseName = fileName?.replace(/\.(mxl|musicxml|xml)$/i, "") || "score";
 
     link.href = url;
     link.download = `${baseName}-notebender.musicxml`;
@@ -739,7 +792,7 @@ const TestFileLoader: React.FC = () => {
               📂 Browse MusicXML File
               <input
                 type="file"
-                accept=".xml,.musicxml"
+                accept=".xml,.musicxml,.mxl"
                 onChange={handleFileChange}
                 className="hidden"
               />
