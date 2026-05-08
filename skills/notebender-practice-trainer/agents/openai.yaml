@@ -1,0 +1,4 @@
+interface:
+  display_name: "NoteBender Practice Trainer"
+  short_description: "Practice route, targets, bends, and blues guidance"
+  default_prompt: "Use $notebender-practice-trainer when changing the Practice route, trainer modes, target selection, bend practice, or 12-bar blues behavior."

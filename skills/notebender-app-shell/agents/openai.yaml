@@ -1,0 +1,4 @@
+interface:
+  display_name: "NoteBender App Shell"
+  short_description: "Routing, Vite, Tailwind, and i18n guidance"
+  default_prompt: "Use $notebender-app-shell when changing NoteBender routing, navigation, styling, build config, or notation language behavior."

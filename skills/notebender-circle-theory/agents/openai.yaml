@@ -1,0 +1,4 @@
+interface:
+  display_name: "NoteBender Circle Theory"
+  short_description: "Circle of fifths, modes, scales, and triads guidance"
+  default_prompt: "Use $notebender-circle-theory when changing the Circle route, position modes, scale coloring, or triad display."
