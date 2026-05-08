@@ -7,6 +7,7 @@ import {
   harmonicaKeys,
   generateLayout,
   freqToNoteAndCents,
+  getLayoutMidiNumbers,
 } from "../utils/utils";
 
 type TonalNote = ReturnType<typeof Note.get>;
@@ -17,14 +18,10 @@ function Harmonica() {
   const [isListening, setIsListening] = useState(false);
   const [key, setKey] = useState(baseKey);
   const layout = useMemo(() => generateLayout(key), [key]);
-  const allowedMidiNumbers = useMemo(() => {
-    const midiNumbers = Object.values(layout)
-      .flat()
-      .map((note) => (note ? Note.midi(note.name) : null))
-      .filter((midi): midi is number => midi !== null);
-
-    return new Set(midiNumbers);
-  }, [layout]);
+  const allowedMidiNumbers = useMemo(
+    () => new Set(getLayoutMidiNumbers(layout)),
+    [layout]
+  );
   const { pitch, clarity, error } = usePitchDetector(0.82, isListening, {
     allowedMidiNumbers,
     minRms: 0.015,

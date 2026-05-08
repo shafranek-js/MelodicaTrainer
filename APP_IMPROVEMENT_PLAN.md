@@ -8,7 +8,7 @@ Reviewed on 2026-05-08.
 
 Checks run:
 
-- `npm test`: passed, 4 files and 23 tests.
+- `npm test`: passed, 5 files and 28 tests.
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - `npm audit --json`: reported 24 vulnerabilities: 3 low, 7 moderate, 14 high.
@@ -38,7 +38,7 @@ Recommended steps:
 
 ### 2. Reduce the MusicXML route's component size and mixed responsibilities
 
-Location: `src/MusicXML/MusicXML.tsx`, currently about 729 lines.
+Location: `src/MusicXML/MusicXML.tsx`, currently about 811 lines.
 
 The route owns file loading, XML transformation, OSMD rendering, audio scheduling, cursor movement, game scoring, downloads, and layout. That makes playback bugs harder to fix safely.
 
@@ -81,25 +81,11 @@ Recommended steps:
 
 Locations: `src/Harmonica/Harmonica.tsx`, `src/Practice/Practice.tsx`, `src/utils/utils.ts`.
 
-Repeated logic exists for deriving allowed MIDI sets from generated layouts and rendering layout rows. This is small today, but it is shared by microphone detection, Practice, MusicXML, and the harmonica visualizer.
+The repeated logic for deriving allowed MIDI sets from generated layouts has been moved into `getLayoutMidiNumbers(layout)` and is covered by `src/utils/utils.test.ts`. Shared rendering row metadata is still duplicated between the Harmonica and Practice routes.
 
-Recommended steps:
+Remaining steps:
 
-- Add a helper such as `getLayoutMidiNumbers(layout)` in `src/utils/utils.ts`.
 - Consider exporting shared layout-row metadata only after confirming Harmonica and Practice should render the same rows.
-- Add direct tests for `generateLayout`, `freqToNoteAndCents`, and `getHarmonicaHoleForNote`.
-
-### Verify bend notation consistency
-
-Location: `src/utils/utils.ts`, lines 169-181.
-
-`getHarmonicaHoleForNote` formats both whole-step blow bends and half-step blow bends with one apostrophe. The app convention says bends are represented with apostrophes, and existing draw bends use one, two, or three apostrophes depending on depth.
-
-Recommended steps:
-
-- Confirm expected notation for whole-step blow bends.
-- If whole-step blow bends should use two apostrophes, adjust the formatter call and add tests for hole 10 blow bends.
-- Add regression tests for representative blow, draw, bend, overblow, and overdraw mappings.
 
 ### Make MusicXML parsing failures explicit
 
@@ -165,15 +151,14 @@ Recommended steps:
 
 ## Test Coverage Roadmap
 
-Current tests focus on MusicXML transforms, playback parsing, and timeline helpers. That is a good base, but the next tests should protect shared behavior before refactors.
+Current tests cover MusicXML transforms, playback parsing, timeline helpers, and harmonica core utilities. The next tests should protect route-specific derived behavior before refactors.
 
 Recommended order:
 
-1. Add `src/utils/utils.test.ts` for harmonica keys, layout rows, bend notation, overblow/overdraw mapping, and `freqToNoteAndCents`.
-2. Extract and test Practice target generation so scale/position changes cannot break target selection.
-3. Extract and test Circle theory derivations: mode tonic, selected scale, triads, and color classification.
-4. Add tests for malformed XML handling once a shared parser helper exists.
-5. Add route-level smoke tests later only if the project adopts a browser test runner.
+1. Extract and test Practice target generation so scale/position changes cannot break target selection.
+2. Extract and test Circle theory derivations: mode tonic, selected scale, triads, and color classification.
+3. Add tests for malformed XML handling once a shared parser helper exists.
+4. Add route-level smoke tests later only if the project adopts a browser test runner.
 
 ## Performance Work
 
@@ -203,14 +188,13 @@ Recommended steps:
 
 ## Suggested Implementation Order
 
-1. Add harmonica core tests, especially bend tab notation.
-2. Refactor MusicXML route into route-local hooks without changing behavior.
-3. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.
-4. Add parser-error handling for MusicXML.
-5. Address dependency upgrades in small batches.
-6. Improve Circle accessibility and responsive details.
-7. Split bundles and compare build output.
-8. Clean up README and the placeholder Settings route.
+1. Refactor MusicXML route into route-local hooks without changing behavior.
+2. Improve mobile shell/menu/Harmonica/MusicXML/NoteHighway responsiveness.
+3. Add parser-error handling for MusicXML.
+4. Address dependency upgrades in small batches.
+5. Improve Circle accessibility and responsive details.
+6. Split bundles and compare build output.
+7. Clean up README and the placeholder Settings route.
 
 ## Definition Of Done For Each Improvement Batch
 

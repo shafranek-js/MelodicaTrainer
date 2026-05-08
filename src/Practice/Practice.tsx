@@ -5,6 +5,7 @@ import { usePitchDetector } from "../hooks/usePitchDetector";
 import {
   freqToNoteAndCents,
   generateLayout,
+  getLayoutMidiNumbers,
   harmonicaKeys,
 } from "../utils/utils";
 import type { TonalNote } from "../utils/utils";
@@ -131,12 +132,7 @@ function Practice() {
     trainerMode === "practice" || trainerMode === "bends" ? target : undefined;
 
   const allowedMidiNumbers = useMemo(() => {
-    const midiNumbers = Object.values(layout)
-      .flat()
-      .map((note) => (note ? Note.midi(note.name) : null))
-      .filter((midi): midi is number => midi !== null);
-
-    return new Set(midiNumbers);
+    return new Set(getLayoutMidiNumbers(layout));
   }, [layout]);
 
   const { pitch, clarity, error } = usePitchDetector(0.82, isListening, {

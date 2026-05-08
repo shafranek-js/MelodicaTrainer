@@ -127,6 +127,19 @@ export function generateLayout(key: string) {
   };
 }
 
+export type HarmonicaLayout = ReturnType<typeof generateLayout>;
+
+export function getLayoutMidiNumbers(layout: HarmonicaLayout): number[] {
+  return Object.values(layout).flatMap((row) =>
+    row.flatMap((note) => {
+      if (!note) return [];
+
+      const midi = Note.midi(note.name);
+      return midi === null ? [] : [midi];
+    })
+  );
+}
+
 export function freqToNoteAndCents(freq: number) {
   const noteName = Note.fromFreq(freq); // e.g. "C4"
   if (!noteName) return null;
@@ -173,7 +186,7 @@ export function getHarmonicaHoleForNote(
       layout.wholeStepBlowBend[i] &&
       Note.midi(layout.wholeStepBlowBend[i]!.name) === noteMidi
     )
-      return formatHole(i, 1, true, false);
+      return formatHole(i, 2, true, false);
     if (
       layout.HalfStepBlowBend[i] &&
       Note.midi(layout.HalfStepBlowBend[i]!.name) === noteMidi
