@@ -139,18 +139,6 @@ Recommended steps:
 - Return structured errors to the route instead of relying on `console.error` and `alert()`.
 - Add tests for malformed XML and missing score parts.
 
-### Control long-running audio resource growth
-
-Location: `src/MusicXML/audioPlayback.ts`, lines 33-87.
-
-`playPlaybackNotes` pushes every oscillator into `activeAudioNodes`. Finished oscillators are stopped by schedule, but they remain in the tracking array until playback is stopped. Long files can grow this array unnecessarily.
-
-Recommended steps:
-
-- Track active nodes in a `Set<AudioScheduledSourceNode>` or remove nodes in `onended`.
-- Disconnect nodes on `ended` after they stop naturally.
-- Keep `stopAudioNodes` as the hard cleanup path for pause, reset, and unmount.
-
 ### Harden uploaded file handling
 
 Location: `src/MusicXML/musicXmlFile.ts`, lines 13-44.

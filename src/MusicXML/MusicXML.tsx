@@ -57,7 +57,7 @@ const TestFileLoader: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const playbackTimerRef = useRef<number | null>(null);
   const playbackRunRef = useRef(0);
-  const activeAudioNodesRef = useRef<AudioScheduledSourceNode[]>([]);
+  const activeAudioNodesRef = useRef(new Set<AudioScheduledSourceNode>());
   const cursorEventIndexRef = useRef<number | null>(null);
   const scoredEventIndexRef = useRef<number | null>(null);
   const previousEventIndexRef = useRef(0);
@@ -155,7 +155,6 @@ const TestFileLoader: React.FC = () => {
     }
 
     stopAudioNodes(activeAudioNodesRef.current);
-    activeAudioNodesRef.current = [];
     setIsPlaying(false);
 
     if (reset) {

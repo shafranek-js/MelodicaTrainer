@@ -7,15 +7,41 @@ export const ensureAudioContext = (audioContext: AudioContext | null) => {
   return new AudioContext();
 };
 
-export const stopAudioNodes = (nodes: AudioScheduledSourceNode[]) => {
-  nodes.forEach((node) => {
+const disconnectAudioNode = (node: AudioNode) => {
+  try {
+    node.disconnect();
+  } catch {
+    // Already disconnected.
+  }
+};
+
+const trackAudioNode = (
+  activeAudioNodes: Set<AudioScheduledSourceNode>,
+  node: AudioScheduledSourceNode,
+  onEnded: () => void
+) => {
+  activeAudioNodes.add(node);
+  node.addEventListener(
+    "ended",
+    () => {
+      activeAudioNodes.delete(node);
+      disconnectAudioNode(node);
+      onEnded();
+    },
+    { once: true }
+  );
+};
+
+export const stopAudioNodes = (nodes: Set<AudioScheduledSourceNode>) => {
+  Array.from(nodes).forEach((node) => {
     try {
       node.stop();
     } catch {
       // Already stopped.
     }
-    node.disconnect();
+    disconnectAudioNode(node);
   });
+  nodes.clear();
 };
 
 export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
@@ -32,7 +58,7 @@ export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
 
 export const playPlaybackNotes = (
   audioContext: AudioContext,
-  activeAudioNodes: AudioScheduledSourceNode[],
+  activeAudioNodes: Set<AudioScheduledSourceNode>,
   notes: PlaybackNote[],
   tempoBpm: number
 ) => {
@@ -46,6 +72,14 @@ export const playPlaybackNotes = (
     const bodyOscillator = audioContext.createOscillator();
     const filter = audioContext.createBiquadFilter();
     const gain = audioContext.createGain();
+    let endedSourceCount = 0;
+    const cleanupSharedAudioNodes = () => {
+      endedSourceCount += 1;
+      if (endedSourceCount < 2) return;
+
+      disconnectAudioNode(filter);
+      disconnectAudioNode(gain);
+    };
     const now = audioContext.currentTime;
     const durationMs = Math.max(80, (60000 / tempoBpm) * note.durationBeats);
     const articulationRatio = note.tieStart
@@ -83,6 +117,7 @@ export const playPlaybackNotes = (
     bodyOscillator.start(now);
     mainOscillator.stop(now + noteSeconds + 0.02);
     bodyOscillator.stop(now + noteSeconds + 0.02);
-    activeAudioNodes.push(mainOscillator, bodyOscillator);
+    trackAudioNode(activeAudioNodes, mainOscillator, cleanupSharedAudioNodes);
+    trackAudioNode(activeAudioNodes, bodyOscillator, cleanupSharedAudioNodes);
   });
 };
