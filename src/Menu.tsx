@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Github } from "lucide-react";
+import { Coffee, Github } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
 
 const Menu: React.FC = () => (
@@ -37,6 +37,17 @@ const Menu: React.FC = () => (
       <div className="bg-cyan-700 hover:bg-cyan-600 text-white text-xs px-3 py-1 rounded shadow">
         <NotationSwitch />
       </div>
+      <a
+        href="https://buymeacoffee.com/ikzzet"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded bg-yellow-500 px-3 py-1.5 text-sm font-semibold text-gray-950 shadow transition hover:bg-yellow-400"
+        title="Buy me a coffee"
+        aria-label="Buy me a coffee"
+      >
+        <Coffee className="h-4 w-4" />
+        <span className="hidden sm:inline">Buy me a coffee</span>
+      </a>
       <a
         href="https://github.com/izabala033/NoteBender"
         target="_blank"

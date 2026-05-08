@@ -539,12 +539,45 @@ const TestFileLoader: React.FC = () => {
             )}
           </div>
 
-          <button
-            onClick={autoTransposeWithFilters}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition w-full"
-          >
-            🎯 Auto Transpose (Apply Filters)
-          </button>
+          <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-gray-300">
+                Auto transpose
+              </p>
+              <p className="text-xs text-gray-500">
+                Apply these filters when choosing a transposition.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={noOverblowOrDraw}
+                  onChange={(e) => setNoOverblowOrDraw(e.target.checked)}
+                  className="accent-blue-600"
+                />
+                No Overblow or Overdraw Notes
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={noBend}
+                  onChange={(e) => setNoBend(e.target.checked)}
+                  className="accent-blue-600"
+                />
+                No Bends
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={autoTransposeWithFilters}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition w-full"
+            >
+              🎯 Auto Transpose
+            </button>
+          </div>
 
           <button
             type="button"
@@ -616,27 +649,6 @@ const TestFileLoader: React.FC = () => {
             </div>
           </div>
 
-          {/* Filter Options */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-gray-300">
-              <input
-                type="checkbox"
-                checked={noOverblowOrDraw}
-                onChange={(e) => setNoOverblowOrDraw(e.target.checked)}
-                className="accent-blue-600"
-              />
-              No Overblow or Overdraw Notes
-            </label>
-            <label className="flex items-center gap-2 text-gray-300">
-              <input
-                type="checkbox"
-                checked={noBend}
-                onChange={(e) => setNoBend(e.target.checked)}
-                className="accent-blue-600"
-              />
-              No Bends
-            </label>
-          </div>
         </div>
 
         <div className="grid w-full flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_520px]">
