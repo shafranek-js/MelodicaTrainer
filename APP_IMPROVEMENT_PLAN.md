@@ -108,15 +108,15 @@ Implemented:
 
 ### Improve MusicXML error and loading states
 
-Location: `src/MusicXML/MusicXML.tsx`, lines 415-427, 447-462, and 546-567.
+Location: `src/MusicXML/MusicXML.tsx`.
 
-Default fetch, upload parsing, transform errors, and OSMD load errors currently log to the console or use alerts. Users need clear state in the route.
+Status: completed on 2026-05-08.
 
-Recommended steps:
+Implemented:
 
-- Add one route-local status/error area in the sidebar or above the sheet.
-- Disable downloads and playback when the current processed file is invalid or the sheet failed to render.
-- Keep the previous score only when intentionally preserving it, not after a failed replacement.
+- Added a route-local status panel for default loading, file loading, tab preparation, rendering, ready, and error states.
+- Disabled playback and MusicXML/HarpTabs downloads until the processed score has rendered successfully.
+- Cleared stale rendered sheet content after OSMD render failures so an old score is not left looking usable after a failed replacement.
 
 ## Test Coverage Roadmap
 

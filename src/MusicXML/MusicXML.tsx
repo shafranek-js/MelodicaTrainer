@@ -30,13 +30,29 @@ import {
 import { styleSheetCursor } from "./sheetCursor";
 import type { GameStats, PlaybackNote } from "./types";
 
+type RouteStatusTone = "info" | "success" | "error";
+
+type RouteStatus = {
+  tone: RouteStatusTone;
+  message: string;
+};
+
+const routeStatusClassNames: Record<RouteStatusTone, string> = {
+  info: "border-cyan-800 bg-cyan-950/60 text-cyan-100",
+  success: "border-emerald-800 bg-emerald-950/60 text-emerald-100",
+  error: "border-red-800 bg-red-950/70 text-red-200",
+};
+
 const TestFileLoader: React.FC = () => {
   const { t } = useTranslation();
   const [rawFileContent, setRawFileContent] = useState<string | null>(null);
   const [transpose, setTranspose] = useState<number>(0);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
-  const [fileError, setFileError] = useState<string | null>(null);
+  const [routeStatus, setRouteStatus] = useState<RouteStatus | null>({
+    tone: "info",
+    message: "Loading the default MusicXML score.",
+  });
   const [selectedKey, setSelectedKey] = useState<string>("C4");
   const [noOverblowOrDraw, setNoOverblowOrDraw] = useState(true);
   const [noBend, setNoBend] = useState(false);
@@ -46,6 +62,7 @@ const TestFileLoader: React.FC = () => {
   const [currentTab, setCurrentTab] = useState("");
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
   const [isSheetReady, setIsSheetReady] = useState(false);
+  const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
   const [gameStats, setGameStats] = useState<GameStats>({
     hits: 0,
     misses: 0,
@@ -145,7 +162,9 @@ const TestFileLoader: React.FC = () => {
     gameStats.hits + gameStats.misses > 0
       ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
       : 0;
-  const canPlayback = isSheetReady && playbackEvents.length > 0;
+  const canUseProcessedScore =
+    Boolean(fileContent) && isSheetReady && !hasSheetRenderError;
+  const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -189,6 +208,7 @@ const TestFileLoader: React.FC = () => {
   const clearRenderedSheet = useCallback(() => {
     sheetRenderRunRef.current += 1;
     setIsSheetReady(false);
+    setHasSheetRenderError(false);
     cursorEventIndexRef.current = null;
     osmdInstance.current?.cursor?.hide();
     osmdRef.current?.replaceChildren();
@@ -451,13 +471,17 @@ const TestFileLoader: React.FC = () => {
     previousEventIndexRef.current = currentEventIndex;
   }, [currentEventIndex, playbackEvents]);
   useEffect(() => {
+    setRouteStatus({
+      tone: "info",
+      message: "Loading the default MusicXML score.",
+    });
+
     fetch(`${import.meta.env.BASE_URL}IntroSong.musicxml`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load default musicxml");
         return res.text();
       })
       .then((text) => {
-        setFileError(null);
         setFileName("IntroSong.musicxml");
         setRawFileContent(text);
       })
@@ -465,13 +489,19 @@ const TestFileLoader: React.FC = () => {
         console.error("Fetch error:", err);
         setFileName(null);
         clearCurrentScore();
-        setFileError("Couldn't load the default MusicXML file.");
+        setRouteStatus({
+          tone: "error",
+          message: "Couldn't load the default MusicXML file.",
+        });
       });
   }, [clearCurrentScore]);
 
   const autoTransposeWithFilters = () => {
     if (!rawFileContent) {
-      setFileError("Load a MusicXML file before using auto transpose.");
+      setRouteStatus({
+        tone: "error",
+        message: "Load a MusicXML file before using auto transpose.",
+      });
       return;
     }
 
@@ -483,20 +513,31 @@ const TestFileLoader: React.FC = () => {
         noBend,
       });
     } catch (error) {
-      setFileError(
-        getMusicXmlParseErrorMessage(error) ??
-          "Couldn't inspect that MusicXML file for auto transpose."
-      );
+      setRouteStatus({
+        tone: "error",
+        message:
+          getMusicXmlParseErrorMessage(error) ??
+          "Couldn't inspect that MusicXML file for auto transpose.",
+      });
       return;
     }
 
     if (interval !== null) {
-      setFileError(null);
+      setRouteStatus({
+        tone: interval === transpose ? "success" : "info",
+        message:
+          interval === transpose
+            ? "Current transposition already matches these filters."
+            : `Applying a ${interval} semitone transposition.`,
+      });
       setTranspose(interval);
       return;
     }
 
-    setFileError("Couldn't find a transposition matching your selected filters.");
+    setRouteStatus({
+      tone: "error",
+      message: "Couldn't find a transposition matching your selected filters.",
+    });
   };
 
   const handleFileChange = async (
@@ -506,7 +547,10 @@ const TestFileLoader: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setFileError(null);
+    setRouteStatus({
+      tone: "info",
+      message: `Loading ${file.name}.`,
+    });
     setFileName(file.name);
     clearCurrentScore();
 
@@ -517,11 +561,13 @@ const TestFileLoader: React.FC = () => {
     } catch (error) {
       setFileName(null);
       clearCurrentScore();
-      setFileError(
-        getMusicXmlFileErrorMessage(error) ??
+      setRouteStatus({
+        tone: "error",
+        message:
+          getMusicXmlFileErrorMessage(error) ??
           getMusicXmlParseErrorMessage(error) ??
-          "Couldn't load that MusicXML file. Check that the file is valid."
-      );
+          "Couldn't load that MusicXML file. Check that the file is valid.",
+      });
     } finally {
       input.value = "";
     }
@@ -533,7 +579,7 @@ const TestFileLoader: React.FC = () => {
   );
 
   const downloadProcessedFile = useCallback(() => {
-    if (!fileContent) return;
+    if (!canUseProcessedScore || !fileContent) return;
 
     const blob = new Blob([fileContent], {
       type: "application/vnd.recordare.musicxml+xml",
@@ -546,19 +592,21 @@ const TestFileLoader: React.FC = () => {
     link.download = `${baseName}-notebender.musicxml`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [fileContent, fileName]);
+  }, [canUseProcessedScore, fileContent, fileName]);
 
   const downloadHarpTabsText = useCallback(() => {
-    if (!fileContent) return;
+    if (!canUseProcessedScore || !fileContent) return;
 
     let text: string;
     try {
       text = exportHarpTabsText(fileContent);
     } catch (error) {
-      setFileError(
-        getMusicXmlParseErrorMessage(error) ??
-          "Couldn't export HarpTabs text from that MusicXML file."
-      );
+      setRouteStatus({
+        tone: "error",
+        message:
+          getMusicXmlParseErrorMessage(error) ??
+          "Couldn't export HarpTabs text from that MusicXML file.",
+      });
       return;
     }
 
@@ -573,7 +621,7 @@ const TestFileLoader: React.FC = () => {
     link.download = `${baseName}-harptabs.txt`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [fileContent, fileName]);
+  }, [canUseProcessedScore, fileContent, fileName]);
 
   useEffect(() => {
     if (!rawFileContent) {
@@ -583,16 +631,23 @@ const TestFileLoader: React.FC = () => {
     }
 
     try {
+      setIsSheetReady(false);
+      setHasSheetRenderError(false);
+      setRouteStatus({
+        tone: "info",
+        message: "Preparing harmonica tabs for the score.",
+      });
       const injected = buildHarmonicaTabXml(rawFileContent);
       setFileContent(injected);
-      setFileError(null);
     } catch (error) {
       setFileContent(null);
       clearRenderedSheet();
-      setFileError(
-        getMusicXmlParseErrorMessage(error) ??
-          "Couldn't process that MusicXML file."
-      );
+      setRouteStatus({
+        tone: "error",
+        message:
+          getMusicXmlParseErrorMessage(error) ??
+          "Couldn't process that MusicXML file.",
+      });
     }
   }, [rawFileContent, buildHarmonicaTabXml, clearRenderedSheet]);
 
@@ -616,6 +671,11 @@ const TestFileLoader: React.FC = () => {
     const renderRun = sheetRenderRunRef.current + 1;
     sheetRenderRunRef.current = renderRun;
     setIsSheetReady(false);
+    setHasSheetRenderError(false);
+    setRouteStatus({
+      tone: "info",
+      message: "Rendering the MusicXML score.",
+    });
     cursorEventIndexRef.current = null;
 
     if (!osmdInstance.current) {
@@ -650,20 +710,28 @@ const TestFileLoader: React.FC = () => {
           cursor?.hide();
         }
         setIsSheetReady(true);
-        setFileError(null);
+        setHasSheetRenderError(false);
+        setRouteStatus({
+          tone: "success",
+          message: fileName ? `Ready: ${fileName}.` : "Score ready.",
+        });
         if (sheetScrollRef.current) {
           sheetScrollRef.current.scrollTop = 0;
         }
       })
       .catch((err) => {
         if (sheetRenderRunRef.current === renderRun) {
-          setIsSheetReady(false);
           stopPlayback(true);
-          setFileError("Couldn't render that MusicXML score.");
+          clearRenderedSheet();
+          setHasSheetRenderError(true);
+          setRouteStatus({
+            tone: "error",
+            message: "Couldn't render that MusicXML score.",
+          });
         }
         console.error("OSMD Load Error:", err);
       });
-  }, [clearRenderedSheet, displayFileContent, stopPlayback]);
+  }, [clearRenderedSheet, displayFileContent, fileName, stopPlayback]);
   return (
     <div className="min-h-full bg-gray-950 p-4 text-white sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -673,6 +741,16 @@ const TestFileLoader: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
         {/* Configuration Sidebar */}
         <div className="w-full lg:w-80 bg-gray-900 rounded-lg shadow p-6 space-y-5 border border-gray-700">
+          {routeStatus && (
+            <div
+              role={routeStatus.tone === "error" ? "alert" : "status"}
+              aria-live="polite"
+              className={`rounded border px-3 py-2 text-sm ${routeStatusClassNames[routeStatus.tone]}`}
+            >
+              {routeStatus.message}
+            </div>
+          )}
+
           {/* Key Selector */}
           <div>
             <label
@@ -726,15 +804,6 @@ const TestFileLoader: React.FC = () => {
             {fileName && (
               <p className="mt-1 text-sm text-gray-500">Loaded: {fileName}</p>
             )}
-
-            {fileError && (
-              <p
-                role="alert"
-                className="mt-3 rounded border border-red-800 bg-red-950/70 px-3 py-2 text-sm text-red-200"
-              >
-                {fileError}
-              </p>
-            )}
           </div>
 
           <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
@@ -780,7 +849,7 @@ const TestFileLoader: React.FC = () => {
           <button
             type="button"
             onClick={downloadProcessedFile}
-            disabled={!fileContent}
+            disabled={!canUseProcessedScore}
             className="bg-cyan-700 hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-400 text-white px-4 py-2 rounded transition w-full"
           >
             Download Transposed MusicXML
@@ -789,7 +858,7 @@ const TestFileLoader: React.FC = () => {
           <button
             type="button"
             onClick={downloadHarpTabsText}
-            disabled={!fileContent}
+            disabled={!canUseProcessedScore}
             className="bg-indigo-700 hover:bg-indigo-600 disabled:bg-gray-700 disabled:text-gray-400 text-white px-4 py-2 rounded transition w-full"
           >
             Download HarpTabs text
