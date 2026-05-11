@@ -100,47 +100,48 @@ export const NoteHighway = ({
             return (
               <div
                 key={`${index}-${note.name}-${noteIndex}`}
-                className={`absolute box-border flex items-center justify-center rounded-[20px] border-black text-xs font-bold overflow-hidden ${
+                className={`absolute box-border flex items-center justify-center rounded-[20px] text-xs font-bold transition-all duration-75 ${
                   wasHit
-                    ? "scale-110 border-white bg-emerald-400 text-black shadow-[0_0_15px_rgba(255,255,255,1),_0_0_30px_rgba(52,211,153,0.8)] z-[60]"
+                    ? "scale-110 border-2 border-white bg-emerald-400 text-black shadow-[0_0_12px_3px_rgba(255,255,255,1),0_0_24px_6px_rgba(52,211,153,0.8)] z-[60]"
                     : isStrictlyActive
                       ? isDraw
-                        ? "bg-blue-400 text-black"
+                        ? "border border-black bg-blue-400 text-black"
                         : isBlow
-                          ? "bg-red-400 text-black"
-                          : "bg-cyan-400 text-black"
+                          ? "border border-black bg-red-400 text-black"
+                          : "border border-black bg-cyan-400 text-black"
                       : isDraw
-                        ? "bg-blue-900 text-blue-100"
+                        ? "border border-black bg-blue-900 text-blue-100"
                         : isBlow
-                          ? "bg-red-900 text-red-100"
-                          : "bg-gray-800 text-gray-100"
+                          ? "border border-black bg-red-900 text-red-100"
+                          : "border border-black bg-gray-800 text-gray-100"
                 }`}
                 style={{
                   left: `${laneIndex * 10}%`,
                   top: `${topPercent}%`,
                   width: `10%`,
                   height: `${heightPercent}%`,
-                  borderBottomWidth: "2px", // Creates a visual separation between contiguous blocks
-                  borderLeftWidth: "1px",
-                  borderRightWidth: "1px",
-                  borderTopWidth: "0px",
+                  borderBottomWidth: wasHit ? "2px" : "2px", // Maintain separation
+                  borderTopWidth: wasHit ? "2px" : "0px",
                   transform: "translateY(-100%)",
                   opacity: topPercent < -10 || topPercent > 110 ? 0 : 1,
                   zIndex: 10,
                 }}
               >
-                {/* Clarity Indicator (Progress bar at the top of active note) */}
-                {showClarityOnThisNote && (
-                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40">
-                    <div 
-                      className={`h-full transition-[width] duration-75 ${
-                        clarityValue >= 0.82 ? "bg-emerald-400" : "bg-yellow-400"
-                      }`}
-                      style={{ width: `${clarityValue * 100}%` }}
-                    />
-                  </div>
-                )}
-                {showNoteNames && Note.pitchClass(note.name)}
+                {/* Internal wrapper for content to handle clipping without clipping the shadow */}
+                <div className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none flex items-center justify-center">
+                    {/* Clarity Indicator (Progress bar at the top of active note) */}
+                    {showClarityOnThisNote && (
+                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40">
+                        <div 
+                          className={`h-full transition-[width] duration-75 ${
+                            clarityValue >= 0.82 ? "bg-emerald-400" : "bg-yellow-400"
+                          }`}
+                          style={{ width: `${clarityValue * 100}%` }}
+                        />
+                      </div>
+                    )}
+                    {showNoteNames && Note.pitchClass(note.name)}
+                </div>
               </div>
             );
           })
