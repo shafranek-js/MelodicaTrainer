@@ -270,7 +270,7 @@ export const NoteHighway = ({
           {renderData.map(data => data.isVisible && (
               <div
                   key={`overlay-${data.key}`}
-                  className={`absolute box-border flex items-center justify-center text-xs font-bold ${data.wasHit ? "z-[60]" : "z-20"}`}
+                  className={`absolute box-border flex items-center justify-center text-xs font-bold ${data.wasHit ? "z-[60]" : "z-30"}`}
                   style={{
                       left: `${data.htmlLeft}%`,
                       top: `${data.htmlTop}%`,
@@ -302,7 +302,7 @@ export const NoteHighway = ({
 
                   {/* Clarity Indicator (Progress bar at the top of active note) */}
                   {data.showClarity && (
-                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40 overflow-hidden rounded-t-[20px]">
+                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40 overflow-hidden rounded-t-[20px] z-10">
                       <div 
                         className={`h-full transition-[width] duration-75 ${
                           data.clarityValue >= 0.82 ? "bg-emerald-400" : "bg-yellow-400"
@@ -312,7 +312,7 @@ export const NoteHighway = ({
                     </div>
                   )}
                   
-                  {data.showNoteNames && <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,1)] text-white pointer-events-none">{data.noteName}</span>}
+                  {data.showNoteNames && <span className="relative z-20 drop-shadow-[0_1px_1px_rgba(0,0,0,1)] text-white pointer-events-none">{data.noteName}</span>}
               </div>
           ))}
 
