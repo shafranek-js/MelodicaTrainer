@@ -83,13 +83,17 @@ export const NoteHighway = ({
               visualPlayheadMs <= timing.endMs + NOTE_HIT_WINDOW_MS;
             const wasHit = lastHitIndex === index && isActive;
 
+            // Only show clarity indicator on the specific target event note
+            const showClarityOnThisNote = isActive && !wasHit && clarity;
+            const clarityValue = showClarityOnThisNote ? parseFloat(clarity || "0") : 0;
+
             const isDraw = tab.startsWith("-");
             const isBlow = /^\d/.test(tab);
 
             return (
               <div
                 key={`${index}-${note.name}-${noteIndex}`}
-                className={`absolute box-border flex items-center justify-center rounded-sm border-black text-xs font-bold transition-transform ${
+                className={`absolute box-border flex items-center justify-center rounded-sm border-black text-xs font-bold transition-transform overflow-hidden ${
                   wasHit
                     ? "scale-105 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
                     : isActive
@@ -116,6 +120,17 @@ export const NoteHighway = ({
                   zIndex: 10,
                 }}
               >
+                {/* Clarity Indicator (Progress bar at the top of active note) */}
+                {showClarityOnThisNote && (
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40">
+                    <div 
+                      className={`h-full transition-[width] duration-75 ${
+                        clarityValue >= 0.82 ? "bg-emerald-400" : "bg-yellow-400"
+                      }`}
+                      style={{ width: `${clarityValue * 100}%` }}
+                    />
+                  </div>
+                )}
                 {showNoteNames && Note.pitchClass(note.name)}
               </div>
             );
