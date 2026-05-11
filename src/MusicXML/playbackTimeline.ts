@@ -55,9 +55,13 @@ export const getLaneKeys = (events: PlaybackEvent[]) => {
 export const getVisibleGameEvents = (
   events: PlaybackEvent[],
   timeline: PlaybackTiming[],
-  visualPlayheadMs: number
-): VisibleGameEvent[] =>
-  events
+  visualPlayheadMs: number,
+  tempoScale: number = 1
+): VisibleGameEvent[] => {
+  const dynamicLookaheadMs = NOTE_HIGHWAY_LOOKAHEAD_MS / tempoScale;
+  const dynamicTrailMs = NOTE_HIGHWAY_TRAIL_MS / tempoScale;
+
+  return events
     .map((event, index) => ({
       event,
       index,
@@ -66,10 +70,11 @@ export const getVisibleGameEvents = (
     .filter(({ timing }) => {
       if (!timing) return false;
       return (
-        timing.endMs >= visualPlayheadMs - NOTE_HIGHWAY_TRAIL_MS &&
-        timing.startMs <= visualPlayheadMs + NOTE_HIGHWAY_LOOKAHEAD_MS
+        timing.endMs >= visualPlayheadMs - dynamicTrailMs &&
+        timing.startMs <= visualPlayheadMs + dynamicLookaheadMs
       );
     });
+};
 
 export const getTargetEventIndex = (
   visibleGameEvents: VisibleGameEvent[],
