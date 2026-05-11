@@ -100,6 +100,19 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   // Compute the timeline at a fixed 1x tempo to create a static 'punch card' geometry
   const playbackTimeline = useMemo(() => createPlaybackTimeline(playbackEvents, 1), [playbackEvents]);
   const playbackEndMs = playbackTimeline[playbackTimeline.length - 1]?.endMs ?? 0;
+  
+  // Find the shortest note duration to scale the highway grid
+  const shortestNoteDurationMs = useMemo(() => {
+    if (playbackTimeline.length === 0) return 250; // Default
+    let minDuration = Number.POSITIVE_INFINITY;
+    playbackTimeline.forEach(timing => {
+        if (timing.durationMs > 0 && timing.durationMs < minDuration) {
+            minDuration = timing.durationMs;
+        }
+    });
+    return minDuration === Number.POSITIVE_INFINITY ? 250 : minDuration;
+  }, [playbackTimeline]);
+
   const laneKeys = useMemo(() => getLaneKeys(playbackEvents), [playbackEvents]);
   
   const visualPlayheadMs = isPlaying ? currentGameTimeMs : currentEventIndex >= playbackEvents.length ? playbackEndMs : playbackTimeline[currentEventIndex]?.startMs ?? 0;
@@ -457,6 +470,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                 isPlaying={isPlaying}
                 lastHitIndex={lastHitIndex}
                 pitchError={pitchError}
+                shortestNoteDurationMs={shortestNoteDurationMs}
                 showNoteNames={showNoteNames}
                 visibleGameEvents={visibleGameEvents}
                 visualPlayheadMs={visualPlayheadMs}

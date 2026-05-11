@@ -17,6 +17,7 @@ type NoteHighwayProps = {
   isPlaying: boolean;
   lastHitIndex: number | null;
   pitchError: string | null;
+  shortestNoteDurationMs: number;
   showNoteNames: boolean;
   visibleGameEvents: VisibleGameEvent[];
   visualPlayheadMs: number;
@@ -28,13 +29,14 @@ export const NoteHighway = ({
   isPlaying,
   lastHitIndex,
   pitchError,
+  shortestNoteDurationMs,
   showNoteNames,
   visibleGameEvents,
   visualPlayheadMs,
 }: NoteHighwayProps) => (
   <div className="flex h-full w-full min-w-0 flex-col rounded-lg border border-gray-700 bg-gray-900 p-4 shadow overflow-hidden">
     <div className="flex-1 w-full overflow-hidden">
-      <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950">
+      <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950" id="highway-container">
         {/* Lane tracks with alternating backgrounds */}
         {Array.from({ length: 10 }).map((_, i) => (
           <div
@@ -63,8 +65,14 @@ export const NoteHighway = ({
             const laneIndex = hole - 1;
             const timeToHitMs = timing.startMs - visualPlayheadMs;
             
-            // Calculate everything in pure percentages so it scales perfectly with any container height.
-            const percentPerMs = NOTE_TARGET_LINE_PERCENT / NOTE_HIGHWAY_LOOKAHEAD_MS;
+            // To ensure the shortest note is exactly 40px high, we determine how many MS equal 40px,
+            // then find how many MS fit into the total height (assuming a typical 520px height for reference).
+            // This defines our dynamic lookahead window so that 40px = shortestNoteDurationMs.
+            const containerHeightPx = 520; // We use a reference height to calculate the percentage ratio.
+            const msPerPx = shortestNoteDurationMs / 40;
+            const dynamicLookaheadMs = containerHeightPx * msPerPx;
+
+            const percentPerMs = NOTE_TARGET_LINE_PERCENT / dynamicLookaheadMs;
             
             // The bottom edge of the note approaches from 0% (top of screen) downwards.
             const topPercent = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * percentPerMs);
