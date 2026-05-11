@@ -123,7 +123,7 @@ export const NoteHighway = ({
                   borderBottomWidth: wasHit ? "2px" : "2px", // Maintain separation
                   borderTopWidth: wasHit ? "2px" : "0px",
                   transform: "translateY(-100%)",
-                  opacity: topPercent < -10 || topPercent > 110 ? 0 : 1,
+                  opacity: topPercent < -10 || (topPercent - heightPercent) > 110 ? 0 : 1,
                   zIndex: 10,
                 }}
               >
