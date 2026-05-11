@@ -1,5 +1,6 @@
 import { Mic } from "lucide-react";
 import { Note } from "tonal";
+import React, { useRef, useEffect, useState } from "react";
 import type { freqToNoteAndCents } from "../utils/utils";
 import {
   NOTE_HIGHWAY_LOOKAHEAD_MS,
@@ -25,7 +26,7 @@ type NoteHighwayProps = {
   playbackTimeline: PlaybackTiming[];
 };
 
-const getTargetWidthPct = (tab: string) => {
+const getTargetWidthPct = (tab: string, containerWidthPx: number) => {
     const isOverblow = tab.toLowerCase().endsWith("o");
     let bendDepth = 0;
     const bendMatch = tab.match(/('+|"+)$/);
@@ -33,12 +34,19 @@ const getTargetWidthPct = (tab: string) => {
         bendDepth = bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
     }
     
+    // Calculate the percentage of the full container that represents 40px
+    // If containerWidthPx is 0 (not yet measured), use a safe fallback (e.g. assuming a 1000px wide screen)
+    const minWidthPct = containerWidthPx > 0 ? (40 / containerWidthPx) * 100 : 4.0;
+    
     // Widths are percentages of the total screen width (100 = full screen, 10 = one lane)
-    if (isOverblow) return 11;
-    if (bendDepth === 1) return 6.5;
-    if (bendDepth === 2) return 4.8;
-    if (bendDepth >= 3) return 3.0;
-    return 8.4;
+    let targetPct = 8.4; // Natural note
+    if (isOverblow) targetPct = 11;
+    else if (bendDepth === 1) targetPct = 6.5;
+    else if (bendDepth === 2) targetPct = 4.8;
+    else if (bendDepth >= 3) targetPct = 3.0;
+
+    // Enforce minimum width of 40px
+    return Math.max(targetPct, minWidthPct);
 };
 
 export const NoteHighway = ({
@@ -54,6 +62,21 @@ export const NoteHighway = ({
   playbackEvents,
   playbackTimeline,
 }: NoteHighwayProps) => {
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const observer = new ResizeObserver(entries => {
+          for (let entry of entries) {
+              setContainerWidth(entry.contentRect.width);
+          }
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+  }, []);
 
   const renderData = visibleGameEvents.flatMap(({ event, index: globalEventIndex, timing }) => {
       return event.notes.map((note, noteIndex) => {
@@ -72,7 +95,7 @@ export const NoteHighway = ({
           const topPercent = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * percentPerMs);
           const heightPercent = timing.durationMs * percentPerMs;
 
-          const targetWidth = getTargetWidthPct(tab);
+          const targetWidth = getTargetWidthPct(tab, containerWidth);
           let bottomWidth = targetWidth;
           const topWidth = targetWidth;
           
@@ -91,7 +114,7 @@ export const NoteHighway = ({
                   if (prevNoteIndex !== -1) {
                       const prevTab = prevEvent.tabs[prevNoteIndex];
                       if (prevTab !== tab) {
-                          bottomWidth = getTargetWidthPct(prevTab);
+                          bottomWidth = getTargetWidthPct(prevTab, containerWidth);
                           isScoop = true;
                       }
                   }
