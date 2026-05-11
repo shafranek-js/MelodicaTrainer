@@ -68,15 +68,8 @@ export const NoteHighway = ({
 
             const top = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * msToPx / highwayHeight * 100);
             
-            const soundDurationMs = timing.durationMs * (note.tieStart
-              ? 1
-              : note.articulation === "staccato"
-                ? 0.42
-                : note.articulation === "tenuto"
-                  ? 0.98
-                  : 0.86);
-            
-            const height = soundDurationMs * msToPx;
+            // Visual height is strictly the full duration to create a seamless punch-card grid.
+            const height = timing.durationMs * msToPx;
 
             const isActive =
               visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS &&
