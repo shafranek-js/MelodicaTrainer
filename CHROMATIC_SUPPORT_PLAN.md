@@ -1,6 +1,6 @@
 # Implementation Plan: Chromatic Harmonica Support
 
-This document outlines the plan for adding chromatic harmonica support to NoteBender, with a focus on 10-hole chromatic models like the **Cascha HH 2272**.
+This document outlines the plan for adding chromatic harmonica support to HarpTrainer, with a focus on 10-hole chromatic models like the **Cascha HH 2272**.
 
 ## 1. Goal
 Enable users to switch between Diatonic and Chromatic harmonicas, providing accurate pitch visualization and tablature generation for both.

@@ -1,4 +1,4 @@
-# NoteBender Existing-App Improvement Plan
+# HarpTrainer Existing-App Improvement Plan
 
 This review is intentionally scoped to improving the current app. It avoids new product features and focuses on reliability, maintainability, responsiveness, performance, accessibility, dependency health, and test coverage.
 

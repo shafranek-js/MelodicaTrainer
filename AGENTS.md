@@ -1,8 +1,8 @@
-# NoteBender Agent Guide
+# HarpTrainer Agent Guide
 
 ## Project Shape
 
-NoteBender is a Vite React 19 app for harmonica players. It combines real-time microphone pitch detection, diatonic harmonica layout mapping, MusicXML tab injection and playback, a note-highway practice game, a practice trainer, and a circle-of-fifths theory view.
+HarpTrainer is a Vite React 19 app for harmonica players. It combines real-time microphone pitch detection, diatonic harmonica layout mapping, MusicXML tab injection and playback, a note-highway practice game, a practice trainer, and a circle-of-fifths theory view.
 
 Use the project-local skills in `skills/` before changing a subsystem:
 
@@ -26,7 +26,7 @@ Prefer targeted Vitest runs while iterating on MusicXML helpers, for example `np
 
 ## Architecture
 
-- `src/App.tsx` uses `HashRouter` because the app deploys to GitHub Pages. Keep `vite.config.ts` base set to `/NoteBender/` unless deployment changes.
+- `src/App.tsx` uses `HashRouter` because the app deploys to GitHub Pages. Keep `vite.config.ts` base set to `/HarpTrainer/` unless deployment changes.
 - `src/Menu.tsx`, `src/NotationSwitch.tsx`, `src/i18n.js`, and `src/styles.css` form the app shell and notation display layer.
 - `src/utils/utils.ts` is the shared harmonica domain core. `generateLayout`, `freqToNoteAndCents`, and `getHarmonicaHoleForNote` are consumed by multiple routes.
 - `src/hooks/usePitchDetector.tsx` owns microphone access, Web Audio setup, Pitchy detection, RMS gating, stable-frame filtering, and cleanup.

@@ -53,16 +53,16 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const { t } = useTranslation();
   
   // PERSISTENT STATES
-  const [rawFileContent, setRawFileContent] = usePersistentState<string | null>("notebender_raw_content", null);
-  const [transpose, setTranspose] = usePersistentState<number>("notebender_transpose", 0);
-  const [fileName, setFileName] = usePersistentState<string | null>("notebender_file_name", null);
-  const [selectedKey, setSelectedKey] = usePersistentState<string>("notebender_harmonica_key", "C4");
-  const [noOverblowOrDraw, setNoOverblowOrDraw] = usePersistentState<boolean>("notebender_no_overblow", true);
-  const [noBend, setNoBend] = usePersistentState<boolean>("notebender_no_bend", false);
-  const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("notebender_show_note_names", true);
-  const [tempo, setTempo] = usePersistentState<number>("notebender_tempo", 90);
-  const [selectedSf, setSelectedSf] = usePersistentState<string>("notebender_soundfont", "MS_Basic.sf3");
-  const [selectedPreset, setSelectedPreset] = usePersistentState<string>("notebender_preset", "0:22"); // Default to Harmonica
+  const [rawFileContent, setRawFileContent] = usePersistentState<string | null>("harptrainer_raw_content", null);
+  const [transpose, setTranspose] = usePersistentState<number>("harptrainer_transpose", 0);
+  const [fileName, setFileName] = usePersistentState<string | null>("harptrainer_file_name", null);
+  const [selectedKey, setSelectedKey] = usePersistentState<string>("harptrainer_harmonica_key", "C4");
+  const [noOverblowOrDraw, setNoOverblowOrDraw] = usePersistentState<boolean>("harptrainer_no_overblow", true);
+  const [noBend, setNoBend] = usePersistentState<boolean>("harptrainer_no_bend", false);
+  const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("harptrainer_show_note_names", true);
+  const [tempo, setTempo] = usePersistentState<number>("harptrainer_tempo", 90);
+  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "MS_Basic.sf3");
+  const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22"); // Default to Harmonica
 
   // VOLATILE STATES
   const [fileContent, setFileContent] = useState<string | null>(null);

@@ -1,9 +1,9 @@
 ---
 name: notebender-musicxml
-description: NoteBender MusicXML guidance for reading XML and MXL files, first-staff selection, harmonica tab injection, key transposition, HarpTabs export, OpenSheetMusicDisplay rendering, playback parsing, repeat and tie handling, Web Audio note scheduling, cursor synchronization, note-highway visuals, and scoring. Use when Codex changes anything under src/MusicXML or MusicXML-related tests.
+description: HarpTrainer MusicXML guidance for reading XML and MXL files, first-staff selection, harmonica tab injection, key transposition, HarpTabs export, OpenSheetMusicDisplay rendering, playback parsing, repeat and tie handling, Web Audio note scheduling, cursor synchronization, note-highway visuals, and scoring. Use when Codex changes anything under src/MusicXML or MusicXML-related tests.
 ---
 
-# NoteBender MusicXML
+# HarpTrainer MusicXML
 
 ## Start Here
 

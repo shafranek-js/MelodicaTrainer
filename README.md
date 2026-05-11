@@ -1,51 +1,75 @@
-# 🎶 NoteBender - Harmonica Pitch Detection
+# 🪗 HarpTrainer - Advanced Harmonica Learning Tool
 
-[👉 Try the Live Demo](https://izabala033.github.io/NoteBender/#/harmonica)
+[👉 Try the Live Demo](https://shafranek-js.github.io/HarpTrainer/)
 
-NoteBender is a real-time pitch detection tool designed for harmonica players. It helps visualize what note you're playing, how accurately you're hitting it (in cents), and maps it to the blow/draw layout of a diatonic harmonica in various keys.
-
----
-
-## 🧩 Features
-
-- 🎙 Real-time pitch detection using microphone input
-- 🔍 Visual feedback on **which hole** you're playing
-- 🎯 Cents-level pitch accuracy with animated indicators
-- 🎼 Support for **multiple harmonica keys** (C, A, D, etc.)
-- 🔄 Automatically detects and highlights the closest matching note
-  
-- 📄 Load and visualize MusicXML files with harmonica tablature annotations
-- 🔄 Automatic transposition with filters to avoid overblow, overdraw, or bend notes
-- 🎹 Choose harmonica key and customize transposition semitones
-- 📂 Upload your own MusicXML files for viewing and tabbing
-
-- 🌀 Interactive Circle of Fifths visualization for exploring scales, modes, and chords
-
-- 📦 Lightweight, fast loading — built with **Vite**
-
+HarpTrainer is a comprehensive interactive application designed for harmonica players of all levels. It combines real-time pitch detection, music theory visualization, and a gamified learning experience to help you master the harmonica.
 
 ---
 
-## 🛠️ Running Locally
+## 🧩 Key Features
 
-This project uses [Vite](https://vitejs.dev/) for fast development.
+### 🎙️ Real-Time Pitch Detection & Visualizer
+- **Interactive Layout:** See exactly which hole and action (blow, draw, bend) you are playing on a virtual harmonica.
+- **High Precision:** Uses advanced frequency estimation to show your accuracy in cents — perfect for mastering precise bends.
+- **Multi-Key Support:** Instantly switch between any harmonica key (C, G, A, D, Bb, etc.) and the layout updates automatically.
 
-### 📦 Install dependencies
+### 🛣️ Note Highway (MusicXML Interactive Practice)
+- **Gamified Learning:** Practice songs with a "Note Highway" interface. Play the notes in real-time as they approach the target zone.
+- **MusicXML Support:** Load any MusicXML file to see standard notation synced with harmonica tablature.
+- **Smart Transposition:** Automatically transpose songs to fit your harmonica's key, with filters to avoid impossible notes (like overblows or specific bends).
+- **Scoring System:** Get instant feedback on your performance with hit detection, streaks, and overall accuracy percentages.
 
-```bash
-npm ci
-```
+### 🌀 Circle of Fifths & Music Theory
+- **Interactive Theory:** Explore scales, modes, and chords visually.
+- **Harmonica Integration:** Understand how positions and scales map to your instrument.
 
-🚀 Start development server
+### 🎯 Practice Mode
+- **Targeted Training:** Dedicated mode for practicing specific intervals, bends, and accuracy targets to build muscle memory.
 
-```bash
-npm run dev
-```
+---
 
-### ✅ Validate changes
+## 🛠️ Technical Stack
 
-```bash
-npm test
-npm run lint
-npm run build
-```
+- **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool:** [Vite](https://vitejs.dev/)
+- **Audio Engine:** [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) + [SpessaSynth](https://github.com/spessas/SpessaSynth) (SoundFont synthesis)
+- **Pitch Detection:** [pitchy](https://www.npmjs.com/package/pitchy)
+- **Notation:** [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/)
+- **Animations:** [GSAP](https://greensock.com/gsap/)
+- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (Latest LTS recommended)
+- A microphone (for pitch detection features)
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/shafranek-js/HarpTrainer.git
+   cd HarpTrainer
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 📖 Related Documentation
+
+- [Pitch Detection Logic](./PITCH_DETECTION_LOGIC.md) - Detailed technical explanation of the audio processing pipeline.
+- [App Improvement Plan](./APP_IMPROVEMENT_PLAN.md) - Roadmap and planned future enhancements.
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

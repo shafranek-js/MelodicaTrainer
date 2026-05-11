@@ -1,4 +1,4 @@
 interface:
-  display_name: "NoteBender MusicXML"
+  display_name: "HarpTrainer MusicXML"
   short_description: "MusicXML tabs, playback, OSMD, and highway guidance"
   default_prompt: "Use $notebender-musicxml when changing MusicXML loading, transforms, tab injection, playback parsing, OSMD cursor sync, or note-highway scoring."

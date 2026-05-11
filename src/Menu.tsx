@@ -139,7 +139,7 @@ const Menu: React.FC<MenuProps> = ({
             <NotationSwitch />
           </div>
           <a
-            href="https://github.com/izabala033/NoteBender"
+            href="https://github.com/shafranek-js/HarpTrainer"
             target="_blank"
             rel="noopener noreferrer"
             className="text-white transition-colors hover:text-green-400"

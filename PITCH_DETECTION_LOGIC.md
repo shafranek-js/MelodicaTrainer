@@ -1,4 +1,4 @@
-# Harmonica Pitch Detection Logic in NoteBender
+# Harmonica Pitch Detection Logic in HarpTrainer
 
 This document explains the technical principles and the pipeline used to recognize harmonica notes in real-time.
 
@@ -8,7 +8,7 @@ The process begins with the **Web Audio API**. The application requests access t
 - **Sample Rate:** The system typically operates at the hardware's native sample rate (e.g., 44.1kHz or 48kHz).
 
 ## 2. Frequency Estimation (`pitchy` library)
-NoteBender uses the **pitchy** library for high-accuracy pitch estimation. Unlike simple FFT (Fast Fourier Transform), which can be imprecise for musical notes, `pitchy` implements algorithms designed to find the fundamental frequency ($f_0$) even in complex harmonic signals.
+HarpTrainer uses the **pitchy** library for high-accuracy pitch estimation. Unlike simple FFT (Fast Fourier Transform), which can be imprecise for musical notes, `pitchy` implements algorithms designed to find the fundamental frequency ($f_0$) even in complex harmonic signals.
 
 ## 3. Signal Filtering & Quality Control
 Harmonicas produce a "bright" sound with many overtones, which can confuse standard tuners. To ensure stability, the following filters are applied:

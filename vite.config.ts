@@ -8,7 +8,7 @@ const isNodeModulePackage = (id: string, packageName: string) =>
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: "/NoteBender/",
+  base: "/HarpTrainer/",
   build: {
     rollupOptions: {
       output: {

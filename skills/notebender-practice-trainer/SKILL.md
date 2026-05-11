@@ -1,9 +1,9 @@
 ---
 name: notebender-practice-trainer
-description: NoteBender Practice trainer guidance for the Practice route, harmonica key and position controls, scale selection, explore mode, note practice targets, bend trainer targets, 12-bar blues chord highlighting, microphone hit detection, and trainer UI behavior. Use when Codex changes src/Practice/Practice.tsx or shared helpers specifically for practice workflows.
+description: HarpTrainer Practice trainer guidance for the Practice route, harmonica key and position controls, scale selection, explore mode, note practice targets, bend trainer targets, 12-bar blues chord highlighting, microphone hit detection, and trainer UI behavior. Use when Codex changes src/Practice/Practice.tsx or shared helpers specifically for practice workflows.
 ---
 
-# NoteBender Practice Trainer
+# HarpTrainer Practice Trainer
 
 ## Start Here
 

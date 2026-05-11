@@ -1,4 +1,4 @@
 interface:
-  display_name: "NoteBender Harmonica Core"
+  display_name: "HarpTrainer Harmonica Core"
   short_description: "Harmonica layout and pitch detection guidance"
   default_prompt: "Use $notebender-harmonica-core when changing harmonica layouts, hole mapping, tuning feedback, or microphone pitch detection."

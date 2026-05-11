@@ -1,9 +1,9 @@
 ---
 name: notebender-harmonica-core
-description: NoteBender harmonica domain guidance for diatonic harmonica layouts, hole mapping, blow and draw notation, bends, overblows, overdraws, frequency-to-note conversion, microphone pitch detection, tuning cents feedback, and shared harmonica utilities. Use when Codex changes src/utils/utils.ts, src/hooks/usePitchDetector.tsx, the Harmonica route, or shared pitch and layout behavior used by Practice or MusicXML.
+description: HarpTrainer harmonica domain guidance for diatonic harmonica layouts, hole mapping, blow and draw notation, bends, overblows, overdraws, frequency-to-note conversion, microphone pitch detection, tuning cents feedback, and shared harmonica utilities. Use when Codex changes src/utils/utils.ts, src/hooks/usePitchDetector.tsx, the Harmonica route, or shared pitch and layout behavior used by Practice or MusicXML.
 ---
 
-# NoteBender Harmonica Core
+# HarpTrainer Harmonica Core
 
 ## Start Here
 

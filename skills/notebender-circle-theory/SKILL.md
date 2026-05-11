@@ -1,9 +1,9 @@
 ---
 name: notebender-circle-theory
-description: NoteBender Circle route guidance for circle of fifths rendering, harmonica positions, modal degree mapping, scale selection, Tonal scale and chord calculations, triad quality display, responsive circle sizing, color semantics, and translated note labels. Use when Codex changes src/Circle/Circle.tsx or shared theory data for the circle-of-fifths experience.
+description: HarpTrainer Circle route guidance for circle of fifths rendering, harmonica positions, modal degree mapping, scale selection, Tonal scale and chord calculations, triad quality display, responsive circle sizing, color semantics, and translated note labels. Use when Codex changes src/Circle/Circle.tsx or shared theory data for the circle-of-fifths experience.
 ---
 
-# NoteBender Circle Theory
+# HarpTrainer Circle Theory
 
 ## Start Here
 

@@ -1,9 +1,9 @@
 ---
 name: notebender-app-shell
-description: NoteBender app shell guidance for routing, Vite configuration, Tailwind styling, navigation, GitHub Pages deployment, React Router routes, notation language switching, and i18n behavior. Use when Codex changes App.tsx, Menu.tsx, NotationSwitch.tsx, i18n.js, styles.css, Vite or TypeScript config, or any cross-route UI shell behavior.
+description: HarpTrainer app shell guidance for routing, Vite configuration, Tailwind styling, navigation, GitHub Pages deployment, React Router routes, notation language switching, and i18n behavior. Use when Codex changes App.tsx, Menu.tsx, NotationSwitch.tsx, i18n.js, styles.css, Vite or TypeScript config, or any cross-route UI shell behavior.
 ---
 
-# NoteBender App Shell
+# HarpTrainer App Shell
 
 ## Start Here
 
@@ -25,7 +25,7 @@ Preserve `HashRouter` unless the deployment target changes. GitHub Pages refresh
 
 Keep the default route pointed at `/harmonica` unless the product flow is intentionally changed. Register new route pages in `src/App.tsx` and add matching navigation in `src/Menu.tsx` when the page should be user-accessible.
 
-Keep `vite.config.ts` base as `/NoteBender/` while deploying to `https://izabala033.github.io/NoteBender/`. Use `import.meta.env.BASE_URL` for public assets so previews and GitHub Pages both work.
+Keep `vite.config.ts` base as `/HarpTrainer/` while deploying to `https://izabala033.github.io/HarpTrainer/`. Use `import.meta.env.BASE_URL` for public assets so previews and GitHub Pages both work.
 
 ## UI Shell Patterns
 
