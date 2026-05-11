@@ -97,6 +97,22 @@ export const NoteHighway = ({
             const isDraw = tab.startsWith("-");
             const isBlow = /^\d/.test(tab);
 
+            const isOverblow = tab.toLowerCase().endsWith("o");
+            let bendDepth = 0;
+            const bendMatch = tab.match(/('+|"+)$/);
+            if (bendMatch) {
+                bendDepth = bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
+            }
+            
+            let blockWidthPct = 84; // Natural note
+            if (isOverblow) blockWidthPct = 110;
+            else if (bendDepth === 1) blockWidthPct = 65;
+            else if (bendDepth === 2) blockWidthPct = 48;
+            else if (bendDepth >= 3) blockWidthPct = 30;
+            
+            const laneLeftPercent = laneIndex * 10;
+            const horizontalOffsetPercent = (100 - blockWidthPct) / 20;
+
             return (
               <div
                 key={`${index}-${note.name}-${noteIndex}`}
@@ -116,9 +132,9 @@ export const NoteHighway = ({
                           : "border border-black bg-gray-800 text-gray-100"
                 }`}
                 style={{
-                  left: `${laneIndex * 10}%`,
+                  left: `${laneLeftPercent + horizontalOffsetPercent}%`,
                   top: `${topPercent}%`,
-                  width: `10%`,
+                  width: `${blockWidthPct / 10}%`,
                   height: `${heightPercent}%`,
                   borderBottomWidth: wasHit ? "2px" : "2px", // Maintain separation
                   borderTopWidth: wasHit ? "2px" : "0px",
