@@ -1,65 +1,165 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Coffee, Github } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Gauge, Github, Pause, Play, RotateCcw } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
 
-const Menu: React.FC = () => (
-  <nav className="flex flex-wrap items-center gap-3 border-b border-gray-400 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 p-3 sm:flex-nowrap sm:justify-between sm:p-4">
-    <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 sm:w-auto sm:flex-1 sm:gap-6">
-      <Link
-        to="/circle"
-        className="whitespace-nowrap text-sm font-semibold text-white transition-colors duration-300 hover:text-green-400 sm:text-base"
-      >
-        Circle
-      </Link>
-      <Link
-        to="/harmonica"
-        className="whitespace-nowrap text-sm font-semibold text-white transition-colors duration-300 hover:text-green-400 sm:text-base"
-      >
-        Harmonica
-      </Link>
-      <Link
-        to="/musicxml"
-        className="whitespace-nowrap text-sm font-semibold text-white transition-colors duration-300 hover:text-green-400 sm:text-base"
-      >
-        Tabs
-      </Link>
-      <Link
-        to="/practice"
-        className="whitespace-nowrap text-sm font-semibold text-white transition-colors duration-300 hover:text-green-400 sm:text-base"
-      >
-        Practice
-      </Link>
-    </div>
+type GameStats = {
+  hits: number;
+  misses: number;
+  streak: number;
+};
 
-    {/* Right-side controls (GitHub + NotationSwitch) */}
-    <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end sm:gap-4">
-      <div className="shrink-0 rounded bg-cyan-700 px-3 py-1 text-xs text-white shadow hover:bg-cyan-600">
-        <NotationSwitch />
+type MenuProps = {
+  isPlaying?: boolean;
+  onTogglePlayback?: () => void;
+  onRestartPlayback?: () => void;
+  tempo?: number;
+  setTempo?: (tempo: number) => void;
+  progress?: number;
+  gameStats?: GameStats;
+  accuracy?: number;
+  canPlayback?: boolean;
+};
+
+const Menu: React.FC<MenuProps> = ({
+  isPlaying,
+  onTogglePlayback,
+  onRestartPlayback,
+  tempo,
+  setTempo,
+  progress,
+  gameStats,
+  accuracy,
+  canPlayback,
+}) => {
+  const location = useLocation();
+  const isTabsPage = location.pathname === "/musicxml";
+
+  return (
+    <nav className="flex flex-col border-b border-gray-700 bg-gray-900 shadow-lg shrink-0 z-50">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-2 sm:px-6">
+        {/* Navigation Links */}
+        <div className="flex items-center gap-4 sm:gap-6">
+          <Link
+            to="/circle"
+            className={`whitespace-nowrap text-sm font-bold transition-colors ${
+              location.pathname === "/circle" ? "text-green-400" : "text-white hover:text-green-400"
+            }`}
+          >
+            Circle
+          </Link>
+          <Link
+            to="/harmonica"
+            className={`whitespace-nowrap text-sm font-bold transition-colors ${
+              location.pathname === "/harmonica" ? "text-green-400" : "text-white hover:text-green-400"
+            }`}
+          >
+            Harmonica
+          </Link>
+          <Link
+            to="/musicxml"
+            className={`whitespace-nowrap text-sm font-bold transition-colors ${
+              location.pathname === "/musicxml" ? "text-green-400" : "text-white hover:text-green-400"
+            }`}
+          >
+            Tabs
+          </Link>
+          <Link
+            to="/practice"
+            className={`whitespace-nowrap text-sm font-bold transition-colors ${
+              location.pathname === "/practice" ? "text-green-400" : "text-white hover:text-green-400"
+            }`}
+          >
+            Practice
+          </Link>
+        </div>
+
+        {/* Global Controls & Stats (Only on Tabs page) */}
+        {isTabsPage && onTogglePlayback && (
+          <div className="flex flex-1 flex-wrap items-center justify-center gap-4">
+            {/* Playback Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onTogglePlayback}
+                disabled={!canPlayback}
+                className="flex h-8 items-center gap-2 rounded bg-emerald-600 px-3 text-xs font-bold text-white transition hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400"
+              >
+                {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                {isPlaying ? "Pause" : "Play"}
+              </button>
+              <button
+                onClick={onRestartPlayback}
+                disabled={!canPlayback}
+                className="flex h-8 w-8 items-center justify-center rounded border border-gray-600 bg-gray-800 text-white transition hover:bg-gray-700 disabled:text-gray-500"
+                title="Restart"
+              >
+                <RotateCcw size={14} />
+              </button>
+            </div>
+
+            {/* Tempo Slider */}
+            {tempo !== undefined && setTempo && (
+              <div className="flex items-center gap-2 rounded bg-gray-800/50 px-2 py-1 border border-gray-700/50">
+                <Gauge size={12} className="text-gray-400" />
+                <input
+                  type="range"
+                  min="40"
+                  max="180"
+                  value={tempo}
+                  onChange={(e) => setTempo(Number(e.target.value))}
+                  className="w-20 h-1 accent-emerald-500"
+                />
+                <span className="min-w-[45px] text-[10px] font-mono text-emerald-400">{tempo} BPM</span>
+              </div>
+            )}
+
+            {/* Stats Display */}
+            {gameStats && (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                <span className="rounded bg-emerald-950/50 px-1.5 py-0.5 text-emerald-400 border border-emerald-900/50">
+                  Hits {gameStats.hits}
+                </span>
+                <span className="rounded bg-red-950/50 px-1.5 py-0.5 text-red-400 border border-red-900/50">
+                  Miss {gameStats.misses}
+                </span>
+                <span className="rounded bg-cyan-950/50 px-1.5 py-0.5 text-cyan-400 border border-cyan-900/50">
+                  Streak {gameStats.streak}
+                </span>
+                <span className="rounded bg-gray-800 px-1.5 py-0.5 text-white border border-gray-700">
+                  {accuracy}% ACC
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Right-side Utils */}
+        <div className="flex items-center gap-4">
+          <div className="shrink-0 rounded bg-cyan-800/50 px-2 py-0.5 text-[10px] text-white border border-cyan-700/50">
+            <NotationSwitch />
+          </div>
+          <a
+            href="https://github.com/izabala033/NoteBender"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white transition-colors hover:text-green-400"
+          >
+            <Github size={18} />
+          </a>
+        </div>
       </div>
-      <a
-        href="https://buymeacoffee.com/ikzzet"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex shrink-0 items-center gap-2 rounded bg-yellow-500 px-2.5 py-1.5 text-sm font-semibold text-gray-950 shadow transition hover:bg-yellow-400 sm:px-3"
-        title="Buy me a coffee"
-        aria-label="Buy me a coffee"
-      >
-        <Coffee className="h-4 w-4" />
-        <span className="hidden sm:inline">Buy me a coffee</span>
-      </a>
-      <a
-        href="https://github.com/izabala033/NoteBender"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 text-white transition-colors duration-300 hover:text-green-400"
-        title="GitHub Repository"
-        aria-label="GitHub Repository"
-      >
-        <Github className="w-6 h-6" />
-      </a>
-    </div>
-  </nav>
-);
+
+      {/* Progress Bar (Always visible at the bottom of nav on Tabs page) */}
+      {isTabsPage && progress !== undefined && (
+        <div className="h-1 w-full bg-gray-800">
+          <div
+            className="h-full bg-emerald-500 transition-[width] duration-300 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+    </nav>
+  );
+};
 
 export default Menu;

@@ -20,10 +20,10 @@ export const getPitchNoteName = (pitch: Element): string | null => {
 };
 
 export const getTabHole = (tab: string) => {
-  const match = tab.match(/^-?\d+/);
+  const match = tab.match(/(\d+)/);
   if (!match) return null;
 
-  return Math.abs(Number(match[0]));
+  return parseInt(match[1], 10);
 };
 
 const getChildNumber = (parent: Element, tagName: string, fallback: number) => {

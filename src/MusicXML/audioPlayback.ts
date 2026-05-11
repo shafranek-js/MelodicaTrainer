@@ -1,86 +1,109 @@
 import { Note } from "tonal";
 import type { PlaybackNote } from "./types";
+import { WorkletSynthesizer } from "spessasynth_lib";
+
+let synth: WorkletSynthesizer | null = null;
+let currentSfName: string | null = null;
 
 export const ensureAudioContext = (audioContext: AudioContext | null) => {
   if (audioContext) return audioContext;
-
   return new AudioContext();
 };
 
-const disconnectAudioNode = (node: AudioNode) => {
-  try {
-    node.disconnect();
-  } catch {
-    // Already disconnected.
+/**
+ * Initializes the synthesizer and loads the SoundFont if not already loaded.
+ */
+export const initSynthesizer = async (audioContext: AudioContext, sfName: string = "MS_Basic.sf3") => {
+  // If synth exists and soundfont is the same, just return
+  if (synth && currentSfName === sfName) return synth;
+
+  console.log(`Loading SoundFont: ${sfName}...`);
+  const response = await fetch(`${import.meta.env.BASE_URL}${sfName}`);
+  if (!response.ok) throw new Error(`Failed to load SoundFont ${sfName}`);
+  
+  const sfArrayBuffer = await response.arrayBuffer();
+  
+  if (!synth) {
+    // Load the worklet processor (REQUIRED for SpessaSynth v4+)
+    console.log("Loading SpessaSynth Worklet...");
+    const workletUrl = `${import.meta.env.BASE_URL}spessasynth_processor.min.js`;
+    await audioContext.audioWorklet.addModule(workletUrl);
+    
+    // Create synthesizer
+    synth = new WorkletSynthesizer(audioContext);
+    
+    // Connect to output
+    synth.connect(audioContext.destination);
+  } else {
+    // If synth exists but we are changing SF, clear old ones
+    (synth as any).soundBankManager.soundBankList.forEach((_sb: any, id: number) => {
+        (synth as any).soundBankManager.deleteSoundBank(id);
+    });
   }
+
+  console.log("Adding soundbank via soundBankManager...");
+  await (synth as any).soundBankManager.addSoundBank(sfArrayBuffer);
+
+  // SpessaSynth v4 might still need a moment to index presets
+  console.log("Soundbank added, waiting for preset list...");
+  let presets: any[] = [];
+  for (let i = 0; i < 50; i++) {
+    presets = (synth as any).presetList || [];
+    if (presets.length > 0) break;
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  currentSfName = sfName;
+  console.log(`SoundFont ${sfName} loaded. Presets: ${presets.length}`);
+  return synth;
 };
 
-const trackAudioNode = (
-  activeAudioNodes: Set<AudioScheduledSourceNode>,
-  node: AudioScheduledSourceNode,
-  onEnded: () => void
-) => {
-  activeAudioNodes.add(node);
-  node.addEventListener(
-    "ended",
-    () => {
-      activeAudioNodes.delete(node);
-      disconnectAudioNode(node);
-      onEnded();
-    },
-    { once: true }
-  );
+export const getAvailablePresets = () => {
+    if (!synth) return [];
+    return ((synth as any).presetList || []).map((p: any) => ({
+        bank: p.bank,
+        program: p.program,
+        name: p.presetName || p.name
+    }));
 };
 
-export const stopAudioNodes = (nodes: Set<AudioScheduledSourceNode>) => {
-  Array.from(nodes).forEach((node) => {
-    try {
-      node.stop();
-    } catch {
-      // Already stopped.
-    }
-    disconnectAudioNode(node);
-  });
-  nodes.clear();
+export const changeInstrument = (program: number, bank: number = 0) => {
+    if (!synth) return;
+    console.log(`Changing instrument to ${bank}:${program}`);
+    synth.programChange(0, program, bank);
+};
+
+export const stopAudioNodes = (_nodes: Set<AudioScheduledSourceNode>) => {
+  // SpessaSynth handles its own nodes, we tell it to stop all notes
+  if (synth) {
+    synth.stopAll();
+  }
 };
 
 export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
   if (!audioContext) return 0;
-
-  const contextWithLatency = audioContext as AudioContext & {
-    outputLatency?: number;
-  };
-  const latencySeconds =
-    (audioContext.baseLatency || 0) + (contextWithLatency.outputLatency || 0);
-
+  const contextWithLatency = audioContext as AudioContext & { outputLatency?: number };
+  const latencySeconds = (audioContext.baseLatency || 0) + (contextWithLatency.outputLatency || 0);
   return Math.max(0, latencySeconds * 1000);
 };
 
 export const playPlaybackNotes = (
   audioContext: AudioContext,
-  activeAudioNodes: Set<AudioScheduledSourceNode>,
+  _activeAudioNodes: Set<AudioScheduledSourceNode>,
   notes: PlaybackNote[],
   tempoBpm: number
 ) => {
+  if (!synth) {
+    console.warn("Synthesizer not initialized yet.");
+    return;
+  }
+
   notes.forEach((note) => {
     if (!note.shouldPlay) return;
 
-    const frequency = Note.freq(note.name);
-    if (!frequency) return;
+    const midiNote = Note.midi(note.name);
+    if (midiNote === null) return;
 
-    const mainOscillator = audioContext.createOscillator();
-    const bodyOscillator = audioContext.createOscillator();
-    const filter = audioContext.createBiquadFilter();
-    const gain = audioContext.createGain();
-    let endedSourceCount = 0;
-    const cleanupSharedAudioNodes = () => {
-      endedSourceCount += 1;
-      if (endedSourceCount < 2) return;
-
-      disconnectAudioNode(filter);
-      disconnectAudioNode(gain);
-    };
-    const now = audioContext.currentTime;
     const durationMs = Math.max(80, (60000 / tempoBpm) * note.durationBeats);
     const articulationRatio = note.tieStart
       ? 1
@@ -89,35 +112,23 @@ export const playPlaybackNotes = (
         : note.articulation === "tenuto"
           ? 0.98
           : 0.86;
-    const accentBoost = note.articulation === "accent" ? 1.18 : 1;
-    const noteSeconds = Math.max(0.08, (durationMs / 1000) * articulationRatio);
-    const peakGain = Math.min(0.2, 0.045 * note.velocity * accentBoost);
-    const attack = note.tieStop ? 0.004 : 0.018;
+    
+    const soundDurationMs = durationMs * articulationRatio;
+    const velocity = Math.min(127, Math.max(0, Math.floor(note.velocity * 127)));
 
-    mainOscillator.type = "triangle";
-    bodyOscillator.type = "sine";
-    mainOscillator.frequency.setValueAtTime(frequency, now);
-    bodyOscillator.frequency.setValueAtTime(frequency * 2, now);
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(2400 + note.velocity * 1800, now);
-    filter.Q.setValueAtTime(0.9, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(peakGain, now + attack);
-    gain.gain.setTargetAtTime(peakGain * 0.72, now + attack, 0.08);
-    gain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      now + Math.max(0.05, noteSeconds)
-    );
+    // SpessaSynth play note
+    // noteOn(channel, midiNote, velocity)
+    synth!.noteOn(0, midiNote, velocity);
 
-    mainOscillator.connect(filter);
-    bodyOscillator.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioContext.destination);
-    mainOscillator.start(now);
-    bodyOscillator.start(now);
-    mainOscillator.stop(now + noteSeconds + 0.02);
-    bodyOscillator.stop(now + noteSeconds + 0.02);
-    trackAudioNode(activeAudioNodes, mainOscillator, cleanupSharedAudioNodes);
-    trackAudioNode(activeAudioNodes, bodyOscillator, cleanupSharedAudioNodes);
+    // Ensure channel volume is up (GM default is usually fine, but let's be safe)
+    // Channel Message: 7 is Main Volume
+    synth!.controllerChange(0, 7, 100);
+
+    // Schedule noteOff
+    setTimeout(() => {
+        if (synth) {
+            synth.noteOff(0, midiNote);
+        }
+    }, soundDurationMs);
   });
 };
