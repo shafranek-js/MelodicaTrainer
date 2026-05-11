@@ -75,6 +75,11 @@ export const NoteHighway = ({
           const targetWidth = getTargetWidthPct(tab);
           let bottomWidth = targetWidth;
           const topWidth = targetWidth;
+          
+          let yBottom = topPercent;
+          const yTop = topPercent - heightPercent;
+          
+          let isScoop = false;
 
           // Check for contiguous previous note on the same lane to create trapezoid scoop
           if (globalEventIndex > 0) {
@@ -84,9 +89,18 @@ export const NoteHighway = ({
                   const prevEvent = playbackEvents[globalEventIndex - 1];
                   const prevNoteIndex = prevEvent.tabs.findIndex(t => getTabHole(t) === hole);
                   if (prevNoteIndex !== -1) {
-                      bottomWidth = getTargetWidthPct(prevEvent.tabs[prevNoteIndex]);
+                      const prevTab = prevEvent.tabs[prevNoteIndex];
+                      if (prevTab !== tab) {
+                          bottomWidth = getTargetWidthPct(prevTab);
+                          isScoop = true;
+                      }
                   }
               }
+          }
+
+          // If it's a repeated identical note, we want a tiny gap so they don't merge into one infinite pill
+          if (!isScoop) {
+              yBottom -= 0.4; 
           }
 
           const isHitWindow = visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS && visualPlayheadMs <= timing.endMs + NOTE_HIT_WINDOW_MS;
@@ -113,15 +127,30 @@ export const NoteHighway = ({
           }
 
           const centerX = laneIndex * 10 + 5;
-          const yBottom = topPercent;
-          const yTop = topPercent - heightPercent;
           
           const tlX = centerX - topWidth / 2;
           const trX = centerX + topWidth / 2;
           const brX = centerX + bottomWidth / 2;
           const blX = centerX - bottomWidth / 2;
 
-          const points = `${tlX},${yTop} ${trX},${yTop} ${brX},${yBottom} ${blX},${yBottom}`;
+          // Generate SVG Path with rounded corners
+          const actualRY = Math.min(1.5, Math.max(0, yBottom - yTop) / 2);
+          const actualRXTop = Math.min(2.5, topWidth / 2);
+          const actualRXBot = Math.min(2.5, bottomWidth / 2);
+
+          const pathD = `
+            M ${tlX + actualRXTop},${yTop}
+            L ${trX - actualRXTop},${yTop}
+            Q ${trX},${yTop} ${trX},${yTop + actualRY}
+            L ${brX},${yBottom - actualRY}
+            Q ${brX},${yBottom} ${brX - actualRXBot},${yBottom}
+            L ${blX + actualRXBot},${yBottom}
+            Q ${blX},${yBottom} ${blX},${yBottom - actualRY}
+            L ${tlX},${yTop + actualRY}
+            Q ${tlX},${yTop} ${tlX + actualRXTop},${yTop}
+            Z
+          `;
+
           const isVisible = !(yBottom < -10 || yTop > 110);
 
           // We also want a slightly inset box for the HTML overlays so they perfectly center inside the polygon
@@ -130,7 +159,7 @@ export const NoteHighway = ({
 
           return {
               key: `${globalEventIndex}-${note.name}-${noteIndex}`,
-              points,
+              pathD,
               color,
               wasHit,
               isVisible,
@@ -169,15 +198,15 @@ export const NoteHighway = ({
           {/* MASTER SVG CANVAS FOR POLygons */}
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none">
               {renderData.map(data => data.isVisible && (
-                  <polygon 
+                  <path 
                       key={data.key}
-                      points={data.points}
+                      d={data.pathD}
                       fill={data.color}
                       stroke={data.wasHit ? "white" : "black"}
                       strokeWidth={data.wasHit ? 0.3 : 0.15}
                       strokeLinejoin="round"
                       vectorEffect="non-scaling-stroke"
-                      className={data.wasHit ? "drop-shadow-[0_0_8px_rgba(52,211,153,1)]" : ""}
+                      className={data.wasHit ? "drop-shadow-[0_0_8px_rgba(52,211,153,1)]" : "drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"}
                   />
               ))}
           </svg>
