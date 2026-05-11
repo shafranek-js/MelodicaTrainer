@@ -95,7 +95,7 @@ export const NoteHighway = ({
             return (
               <div
                 key={`${index}-${note.name}-${noteIndex}`}
-                className={`absolute box-border flex items-center justify-center border-black text-xs font-bold overflow-hidden ${
+                className={`absolute box-border flex items-center justify-center rounded-md border-black text-xs font-bold overflow-hidden ${
                   wasHit
                     ? "scale-105 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
                     : isActive
