@@ -117,7 +117,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   
   const visualPlayheadMs = isPlaying ? currentGameTimeMs : currentEventIndex >= playbackEvents.length ? playbackEndMs : playbackTimeline[currentEventIndex]?.startMs ?? 0;
   const progress = playbackEvents.length > 0 ? Math.min(100, Math.round((currentEventIndex / playbackEvents.length) * 100)) : 0;
-  const visibleGameEvents = useMemo(() => getVisibleGameEvents(playbackEvents, playbackTimeline, visualPlayheadMs), [playbackEvents, playbackTimeline, visualPlayheadMs]);
+  const visibleGameEvents = useMemo(() => getVisibleGameEvents(playbackEvents, playbackTimeline, visualPlayheadMs, shortestNoteDurationMs), [playbackEvents, playbackTimeline, visualPlayheadMs, shortestNoteDurationMs]);
   const targetEventIndex = useMemo(() => getTargetEventIndex(visibleGameEvents, visualPlayheadMs), [visibleGameEvents, visualPlayheadMs]);
   const currentGameEvent = playbackEvents[targetEventIndex ?? currentEventIndex];
   

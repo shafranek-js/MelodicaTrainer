@@ -55,9 +55,18 @@ export const getLaneKeys = (events: PlaybackEvent[]) => {
 export const getVisibleGameEvents = (
   events: PlaybackEvent[],
   timeline: PlaybackTiming[],
-  visualPlayheadMs: number
-): VisibleGameEvent[] =>
-  events
+  visualPlayheadMs: number,
+  shortestNoteDurationMs: number = 250
+): VisibleGameEvent[] => {
+  const containerHeightPx = 520;
+  const msPerPx = shortestNoteDurationMs / 40;
+  const dynamicLookaheadMs = containerHeightPx * msPerPx;
+  
+  // The trail needs to cover the distance from the target line (78%) to the bottom (100%).
+  // We use a generous 50% of the lookahead window to ensure long notes aren't unmounted prematurely.
+  const dynamicTrailMs = dynamicLookaheadMs * 0.5;
+
+  return events
     .map((event, index) => ({
       event,
       index,
@@ -66,10 +75,11 @@ export const getVisibleGameEvents = (
     .filter(({ timing }) => {
       if (!timing) return false;
       return (
-        timing.endMs >= visualPlayheadMs - NOTE_HIGHWAY_TRAIL_MS &&
-        timing.startMs <= visualPlayheadMs + NOTE_HIGHWAY_LOOKAHEAD_MS
+        timing.endMs >= visualPlayheadMs - dynamicTrailMs &&
+        timing.startMs <= visualPlayheadMs + dynamicLookaheadMs
       );
     });
+};
 
 export const getTargetEventIndex = (
   visibleGameEvents: VisibleGameEvent[],
