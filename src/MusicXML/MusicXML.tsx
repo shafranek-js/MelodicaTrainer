@@ -115,14 +115,16 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     stopAudioNodes(activeAudioNodesRef.current);
   }, []);
 
-  const stopPlayback = useCallback((reset = false) => {
+  const stopPlayback = useCallback((reset = false, shouldResetScoring = true) => {
     playbackRunRef.current += 1;
     clearPlaybackResources();
     setIsPlaying(false);
     if (reset) {
       setCurrentEventIndex(0);
       setCurrentGameTimeMs(0);
-      resetScoring();
+      if (shouldResetScoring) {
+        resetScoring();
+      }
       cursorEventIndexRef.current = null;
       osmdInstance.current?.cursor?.reset();
       osmdInstance.current?.cursor?.hide();
@@ -180,7 +182,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const schedulePlayback = useCallback((startIndex: number, runId: number) => {
     const event = playbackEvents[startIndex];
     if (!event) { 
-      setTimeout(() => stopPlayback(true), 500); 
+      // End of melody reached: Reset position but KEEP scoring visible
+      setTimeout(() => stopPlayback(true, false), 500); 
       return; 
     }
     const effTempo = Math.max(20, event.tempoBpm * tempoScale);
