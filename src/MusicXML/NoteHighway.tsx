@@ -146,20 +146,20 @@ export const NoteHighway = ({
                 {/* Advanced Notation External Arrows */}
                 {isOverblow && (
                   <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
-                    <div className="absolute right-full mr-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[8px] font-black">◀</div>
-                    <div className="absolute left-full ml-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[8px] font-black">▶</div>
+                    <div className="absolute right-full mr-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
+                    <div className="absolute left-full ml-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">▶</div>
                   </div>
                 )}
                 {bendDepth > 0 && (
                   <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
                     <div className="flex flex-col gap-[1px] absolute right-full mr-[1px]">
                       {Array.from({ length: bendDepth }).map((_, i) => (
-                        <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[8px] font-black">▶</div>
+                        <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">▶</div>
                       ))}
                     </div>
                     <div className="flex flex-col gap-[1px] absolute left-full ml-[1px]">
                       {Array.from({ length: bendDepth }).map((_, i) => (
-                        <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[8px] font-black">◀</div>
+                        <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
                       ))}
                     </div>
                   </div>
