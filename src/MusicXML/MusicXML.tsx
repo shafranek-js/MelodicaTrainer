@@ -200,8 +200,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const schedulePlayback = useCallback((startIndex: number, runId: number) => {
     const event = playbackEvents[startIndex];
     if (!event) { 
-      // End of melody reached: Reset position but KEEP scoring visible
-      setTimeout(() => stopPlayback(true, false), 500); 
+      // Calculate how long it takes for the last note to visually fall off the screen
+      const msPerPx = shortestNoteDurationMs / 40;
+      const trailMs = (520 * msPerPx) * 0.5;
+      
+      // End of melody reached: Reset position but KEEP scoring visible after notes clear screen
+      setTimeout(() => stopPlayback(true, false), trailMs / tempoScaleRef.current); 
       return; 
     }
     const effTempo = Math.max(20, event.tempoBpm * tempoScaleRef.current);
@@ -215,7 +219,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       if (playbackRunRef.current !== runId) return;
       schedulePlayback(startIndex + 1, runId);
     }, durMs);
-  }, [playbackEvents, playbackTimeline, moveCursorThroughEvent, playNotes, stopPlayback]);
+  }, [playbackEvents, playbackTimeline, moveCursorThroughEvent, playNotes, stopPlayback, shortestNoteDurationMs]);
 
   const togglePlayback = useCallback(async () => {
     if (isPlayingRef.current) {
@@ -475,6 +479,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                 showNoteNames={showNoteNames}
                 visibleGameEvents={visibleGameEvents}
                 visualPlayheadMs={visualPlayheadMs}
+                playbackEvents={playbackEvents}
+                playbackTimeline={playbackTimeline}
               />
             </div>
           </div>
