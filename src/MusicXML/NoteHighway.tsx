@@ -63,13 +63,14 @@ export const NoteHighway = ({
             const laneIndex = hole - 1;
             const timeToHitMs = timing.startMs - visualPlayheadMs;
             
-            const highwayHeight = 520; 
-            const msToPx = (highwayHeight * (NOTE_TARGET_LINE_PERCENT / 100)) / NOTE_HIGHWAY_LOOKAHEAD_MS;
-
-            const top = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * msToPx / highwayHeight * 100);
+            // Calculate everything in pure percentages so it scales perfectly with any container height.
+            const percentPerMs = NOTE_TARGET_LINE_PERCENT / NOTE_HIGHWAY_LOOKAHEAD_MS;
             
-            // Visual height is strictly the full duration to create a seamless punch-card grid.
-            const height = timing.durationMs * msToPx;
+            // The bottom edge of the note approaches from 0% (top of screen) downwards.
+            const topPercent = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * percentPerMs);
+            
+            // Visual height is strictly the full duration in percentages.
+            const heightPercent = timing.durationMs * percentPerMs;
 
             const isActive =
               visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS &&
@@ -103,15 +104,15 @@ export const NoteHighway = ({
                 }`}
                 style={{
                   left: `${laneIndex * 10}%`,
-                  top: `${top}%`,
+                  top: `${topPercent}%`,
                   width: `10%`,
-                  height: `${height}px`,
+                  height: `${heightPercent}%`,
                   borderBottomWidth: "2px", // Creates a visual separation between contiguous blocks
                   borderLeftWidth: "1px",
                   borderRightWidth: "1px",
                   borderTopWidth: "0px",
                   transform: "translateY(-100%)",
-                  opacity: top < -4 || top > 105 ? 0 : 1,
+                  opacity: topPercent < -10 || topPercent > 110 ? 0 : 1,
                   zIndex: 10,
                 }}
               >
