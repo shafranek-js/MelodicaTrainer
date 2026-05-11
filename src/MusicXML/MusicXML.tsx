@@ -61,7 +61,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const [noBend, setNoBend] = usePersistentState<boolean>("harptrainer_no_bend", false);
   const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("harptrainer_show_note_names", true);
   const [tempo, setTempo] = usePersistentState<number>("harptrainer_tempo", 90);
-  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "MS_Basic.sf3");
+  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "022_Florestan_Harmonica.sf2");
   const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22"); // Default to Harmonica
 
   // VOLATILE STATES
