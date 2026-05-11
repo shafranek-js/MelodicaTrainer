@@ -441,6 +441,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                       try {
                         const content = await readMusicXmlFile(file);
                         setFileName(file.name);
+                        setTranspose(0); // Reset transpose for new file
                         setRawFileContent(content);
                       } catch (err) {
                         console.error(err);
