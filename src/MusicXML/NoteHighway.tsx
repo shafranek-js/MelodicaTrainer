@@ -80,13 +80,18 @@ export const NoteHighway = ({
             // Visual height is strictly the full duration in percentages.
             const heightPercent = timing.durationMs * percentPerMs;
 
-            const isActive =
+            const isHitWindow =
               visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS &&
               visualPlayheadMs <= timing.endMs + NOTE_HIT_WINDOW_MS;
-            const wasHit = lastHitIndex === index && isActive;
+            
+            const isStrictlyActive =
+              visualPlayheadMs >= timing.startMs &&
+              visualPlayheadMs <= timing.endMs;
+
+            const wasHit = lastHitIndex === index && isHitWindow;
 
             // Only show clarity indicator on the specific target event note
-            const showClarityOnThisNote = isActive && !wasHit && clarity;
+            const showClarityOnThisNote = isHitWindow && !wasHit && clarity;
             const clarityValue = showClarityOnThisNote ? parseFloat(clarity || "0") : 0;
 
             const isDraw = tab.startsWith("-");
@@ -98,7 +103,7 @@ export const NoteHighway = ({
                 className={`absolute box-border flex items-center justify-center rounded-[20px] border-black text-xs font-bold overflow-hidden ${
                   wasHit
                     ? "scale-105 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
-                    : isActive
+                    : isStrictlyActive
                       ? isDraw
                         ? "bg-blue-400 text-black"
                         : isBlow
