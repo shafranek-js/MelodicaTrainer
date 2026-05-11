@@ -7,7 +7,7 @@ import {
   NOTE_TARGET_LINE_PERCENT,
 } from "./constants";
 import { getTabHole } from "./playbackParser";
-import type { VisibleGameEvent } from "./types";
+import type { VisibleGameEvent, PlaybackEvent, PlaybackTiming } from "./types";
 
 type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
 
@@ -21,6 +21,24 @@ type NoteHighwayProps = {
   showNoteNames: boolean;
   visibleGameEvents: VisibleGameEvent[];
   visualPlayheadMs: number;
+  playbackEvents: PlaybackEvent[];
+  playbackTimeline: PlaybackTiming[];
+};
+
+const getTargetWidthPct = (tab: string) => {
+    const isOverblow = tab.toLowerCase().endsWith("o");
+    let bendDepth = 0;
+    const bendMatch = tab.match(/('+|"+)$/);
+    if (bendMatch) {
+        bendDepth = bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
+    }
+    
+    // Widths are percentages of the total screen width (100 = full screen, 10 = one lane)
+    if (isOverblow) return 11;
+    if (bendDepth === 1) return 6.5;
+    if (bendDepth === 2) return 4.8;
+    if (bendDepth >= 3) return 3.0;
+    return 8.4;
 };
 
 export const NoteHighway = ({
@@ -33,236 +51,260 @@ export const NoteHighway = ({
   showNoteNames,
   visibleGameEvents,
   visualPlayheadMs,
-}: NoteHighwayProps) => (
-  <div className="flex h-full w-full min-w-0 flex-col rounded-lg border border-gray-700 bg-gray-900 p-4 shadow overflow-hidden">
-    <div className="flex-1 w-full overflow-hidden">
-      <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950" id="highway-container">
-        {/* Lane tracks with alternating backgrounds */}
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={`lane-track-${i}`}
-            className={`absolute bottom-0 top-0 border-x border-gray-800/20 ${
-              i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"
-            }`}
-            style={{
-              left: `${(i / 10) * 100}%`,
-              width: "10%",
-            }}
-          >
-            <div className="mt-2 text-center text-[10px] font-bold text-gray-700">
-              {i + 1}
-            </div>
-          </div>
-        ))}
+  playbackEvents,
+  playbackTimeline,
+}: NoteHighwayProps) => {
 
-        {/* Falling Notes */}
-        {visibleGameEvents.flatMap(({ event, index, timing }) =>
-          event.notes.map((note, noteIndex) => {
-            const tab = event.tabs[noteIndex] || event.tabs[0] || "";
-            const hole = getTabHole(tab);
-            if (hole === null || hole < 1 || hole > 10) return null;
+  const renderData = visibleGameEvents.flatMap(({ event, index: globalEventIndex, timing }) => {
+      return event.notes.map((note, noteIndex) => {
+          const tab = event.tabs[noteIndex] || event.tabs[0] || "";
+          const hole = getTabHole(tab);
+          if (hole === null || hole < 1 || hole > 10) return null;
 
-            const laneIndex = hole - 1;
-            const timeToHitMs = timing.startMs - visualPlayheadMs;
-            
-            // To ensure the shortest note is exactly 40px high, we determine how many MS equal 40px,
-            // then find how many MS fit into the total height (assuming a typical 520px height for reference).
-            // This defines our dynamic lookahead window so that 40px = shortestNoteDurationMs.
-            const containerHeightPx = 520; // We use a reference height to calculate the percentage ratio.
-            const msPerPx = shortestNoteDurationMs / 40;
-            const dynamicLookaheadMs = containerHeightPx * msPerPx;
-
-            const percentPerMs = NOTE_TARGET_LINE_PERCENT / dynamicLookaheadMs;
-            
-            // The bottom edge of the note approaches from 0% (top of screen) downwards.
-            const topPercent = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * percentPerMs);
-            
-            // Visual height is strictly the full duration in percentages.
-            const heightPercent = timing.durationMs * percentPerMs;
-
-            const isHitWindow =
-              visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS &&
-              visualPlayheadMs <= timing.endMs + NOTE_HIT_WINDOW_MS;
-            
-            const isStrictlyActive =
-              visualPlayheadMs >= timing.startMs &&
-              visualPlayheadMs <= timing.endMs;
-
-            const wasHit = lastHitIndex === index && isHitWindow;
-
-            // Only show clarity indicator on the specific target event note
-            const showClarityOnThisNote = isHitWindow && !wasHit && clarity;
-            const clarityValue = showClarityOnThisNote ? parseFloat(clarity || "0") : 0;
-
-            const isDraw = tab.startsWith("-");
-            const isBlow = /^\d/.test(tab);
-
-            const isOverblow = tab.toLowerCase().endsWith("o");
-            let bendDepth = 0;
-            const bendMatch = tab.match(/('+|"+)$/);
-            if (bendMatch) {
-                bendDepth = bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
-            }
-            
-            let blockWidthPct = 84; // Natural note
-            if (isOverblow) blockWidthPct = 110;
-            else if (bendDepth === 1) blockWidthPct = 65;
-            else if (bendDepth === 2) blockWidthPct = 48;
-            else if (bendDepth >= 3) blockWidthPct = 30;
-            
-            const laneLeftPercent = laneIndex * 10;
-            const horizontalOffsetPercent = (100 - blockWidthPct) / 20;
-
-            return (
-              <div
-                key={`${index}-${note.name}-${noteIndex}`}
-                className={`absolute box-border flex items-center justify-center rounded-[20px] text-xs font-bold transition-[background-color,border-color,box-shadow,transform] duration-75 ${
-                  wasHit
-                    ? "scale-110 border-2 border-white bg-emerald-400 text-black shadow-[0_0_12px_3px_rgba(255,255,255,1),0_0_24px_6px_rgba(52,211,153,0.8)] z-[60]"
-                    : isStrictlyActive
-                      ? isDraw
-                        ? "border border-black bg-blue-400 text-black"
-                        : isBlow
-                          ? "border border-black bg-red-400 text-black"
-                          : "border border-black bg-cyan-400 text-black"
-                      : isDraw
-                        ? "border border-black bg-blue-900 text-blue-100"
-                        : isBlow
-                          ? "border border-black bg-red-900 text-red-100"
-                          : "border border-black bg-gray-800 text-gray-100"
-                }`}
-                style={{
-                  left: `${laneLeftPercent + horizontalOffsetPercent}%`,
-                  top: `${topPercent}%`,
-                  width: `${blockWidthPct / 10}%`,
-                  height: `${heightPercent}%`,
-                  borderBottomWidth: wasHit ? "2px" : "2px", // Maintain separation
-                  borderTopWidth: wasHit ? "2px" : "0px",
-                  transform: "translateY(-100%)",
-                  opacity: topPercent < -10 || (topPercent - heightPercent) > 110 ? 0 : 1,
-                  zIndex: 10,
-                }}
-              >
-                {/* Advanced Notation External Arrows */}
-                {isOverblow && (
-                  <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
-                    <div className="absolute right-full mr-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
-                    <div className="absolute left-full ml-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">▶</div>
-                  </div>
-                )}
-                {bendDepth > 0 && (
-                  <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
-                    <div className="flex flex-col gap-[1px] absolute right-full mr-[1px]">
-                      {Array.from({ length: bendDepth }).map((_, i) => (
-                        <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">▶</div>
-                      ))}
-                    </div>
-                    <div className="flex flex-col gap-[1px] absolute left-full ml-[1px]">
-                      {Array.from({ length: bendDepth }).map((_, i) => (
-                        <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Internal wrapper for content to handle clipping without clipping the shadow */}
-                <div className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none flex items-center justify-center">
-                    {/* Clarity Indicator (Progress bar at the top of active note) */}
-                    {showClarityOnThisNote && (
-                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40">
-                        <div 
-                          className={`h-full transition-[width] duration-75 ${
-                            clarityValue >= 0.82 ? "bg-emerald-400" : "bg-yellow-400"
-                          }`}
-                          style={{ width: `${clarityValue * 100}%` }}
-                        />
-                      </div>
-                    )}
-                    {showNoteNames && Note.pitchClass(note.name)}
-                </div>
-              </div>
-            );
-          })
-        )}
-
-        {/* Harmonica Body Visual - SVG with transparent holes */}
-        <div
-          className="pointer-events-none absolute left-0 right-0 h-20 -translate-y-1/2 z-20"
-          style={{ top: `${NOTE_TARGET_LINE_PERCENT}%` }}
-        >
-          <svg width="100%" height="100%" preserveAspectRatio="none" className="drop-shadow-2xl">
-            <defs>
-              <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4b5563" />
-                <stop offset="50%" stopColor="#1f2937" />
-                <stop offset="100%" stopColor="#111827" />
-              </linearGradient>
-              <mask id="holeMask">
-                <rect width="100%" height="100%" fill="white" />
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <circle 
-                    key={i} 
-                    cx={`${(i / 10) * 100 + 5}%`} 
-                    cy="50%" 
-                    r="20" 
-                    fill="black" 
-                  />
-                ))}
-              </mask>
-            </defs>
-            <rect 
-              width="100%" 
-              height="100%" 
-              fill="url(#bodyGrad)" 
-              mask="url(#holeMask)"
-            />
-          </svg>
-        </div>
+          const laneIndex = hole - 1;
+          const timeToHitMs = timing.startMs - visualPlayheadMs;
           
-        {/* Gray Target Line - Visible only through holes, on top of notes */}
-        <div
-          className="absolute left-0 right-0 h-[1px] -translate-y-1/2 bg-gray-600/60 pointer-events-none"
-          style={{ 
-            top: `${NOTE_TARGET_LINE_PERCENT}%`,
-            zIndex: 15 
-          }}
-        />
+          const containerHeightPx = 520; 
+          const msPerPx = shortestNoteDurationMs / 40;
+          const dynamicLookaheadMs = containerHeightPx * msPerPx;
+          const percentPerMs = NOTE_TARGET_LINE_PERCENT / dynamicLookaheadMs;
+          
+          const topPercent = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * percentPerMs);
+          const heightPercent = timing.durationMs * percentPerMs;
 
-        {/* Numbers inside the holes - Top layer (z-50) */}
-        {Array.from({ length: 10 }).map((_, i) => (
+          const targetWidth = getTargetWidthPct(tab);
+          let bottomWidth = targetWidth;
+          const topWidth = targetWidth;
+
+          // Check for contiguous previous note on the same lane to create trapezoid scoop
+          if (globalEventIndex > 0) {
+              const prevTiming = playbackTimeline[globalEventIndex - 1];
+              // Use a small tolerance for "contiguous" due to float math
+              if (prevTiming && Math.abs(prevTiming.endMs - timing.startMs) < 10) {
+                  const prevEvent = playbackEvents[globalEventIndex - 1];
+                  const prevNoteIndex = prevEvent.tabs.findIndex(t => getTabHole(t) === hole);
+                  if (prevNoteIndex !== -1) {
+                      bottomWidth = getTargetWidthPct(prevEvent.tabs[prevNoteIndex]);
+                  }
+              }
+          }
+
+          const isHitWindow = visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS && visualPlayheadMs <= timing.endMs + NOTE_HIT_WINDOW_MS;
+          const isStrictlyActive = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= timing.endMs;
+          const wasHit = lastHitIndex === globalEventIndex && isHitWindow;
+          
+          const isDraw = tab.startsWith("-");
+          const isBlow = /^\d/.test(tab);
+          
+          let color = "#374151"; // gray-800
+          if (wasHit) {
+              color = "#34d399"; // emerald-400
+          } else if (isStrictlyActive) {
+              color = isDraw ? "#60a5fa" : (isBlow ? "#f87171" : "#22d3ee"); 
+          } else {
+              color = isDraw ? "#1e3a8a" : (isBlow ? "#7f1d1d" : "#1f2937"); 
+          }
+
+          const isOverblow = tab.toLowerCase().endsWith("o");
+          let bendDepth = 0;
+          const bendMatch = tab.match(/('+|"+)$/);
+          if (bendMatch) {
+              bendDepth = bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
+          }
+
+          const centerX = laneIndex * 10 + 5;
+          const yBottom = topPercent;
+          const yTop = topPercent - heightPercent;
+          
+          const tlX = centerX - topWidth / 2;
+          const trX = centerX + topWidth / 2;
+          const brX = centerX + bottomWidth / 2;
+          const blX = centerX - bottomWidth / 2;
+
+          const points = `${tlX},${yTop} ${trX},${yTop} ${brX},${yBottom} ${blX},${yBottom}`;
+          const isVisible = !(yBottom < -10 || yTop > 110);
+
+          // We also want a slightly inset box for the HTML overlays so they perfectly center inside the polygon
+          // We'll use the max width of the trapezoid for the HTML container.
+          const maxHtmlWidth = Math.max(topWidth, bottomWidth);
+
+          return {
+              key: `${globalEventIndex}-${note.name}-${noteIndex}`,
+              points,
+              color,
+              wasHit,
+              isVisible,
+              showClarity: isHitWindow && !wasHit && clarity,
+              clarityValue: clarity ? parseFloat(clarity) : 0,
+              noteName: Note.pitchClass(note.name),
+              isOverblow,
+              bendDepth,
+              laneIndex,
+              htmlLeft: centerX - maxHtmlWidth / 2,
+              htmlTop: yTop,
+              htmlHeight: heightPercent,
+              htmlWidth: maxHtmlWidth
+          };
+      }).filter(n => n !== null);
+  });
+
+  return (
+    <div className="flex h-full w-full min-w-0 flex-col rounded-lg border border-gray-700 bg-gray-900 p-4 shadow overflow-hidden">
+      <div className="flex-1 w-full overflow-hidden">
+        <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950" id="highway-container">
+          
+          {/* Lane tracks with alternating backgrounds */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={`lane-track-${i}`}
+              className={`absolute bottom-0 top-0 border-x border-gray-800/20 ${
+                i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"
+              }`}
+              style={{ left: `${(i / 10) * 100}%`, width: "10%" }}
+            >
+              <div className="mt-2 text-center text-[10px] font-bold text-gray-700">{i + 1}</div>
+            </div>
+          ))}
+
+          {/* MASTER SVG CANVAS FOR POLygons */}
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none">
+              {renderData.map(data => data.isVisible && (
+                  <polygon 
+                      key={data.key}
+                      points={data.points}
+                      fill={data.color}
+                      stroke={data.wasHit ? "white" : "black"}
+                      strokeWidth={data.wasHit ? 0.3 : 0.15}
+                      strokeLinejoin="round"
+                      vectorEffect="non-scaling-stroke"
+                      className={data.wasHit ? "drop-shadow-[0_0_8px_rgba(52,211,153,1)]" : ""}
+                  />
+              ))}
+          </svg>
+
+          {/* HTML OVERLAYS (Labels, Clarity, Arrows) */}
+          {renderData.map(data => data.isVisible && (
+              <div
+                  key={`overlay-${data.key}`}
+                  className={`absolute box-border flex items-center justify-center text-xs font-bold ${data.wasHit ? "z-[60]" : "z-20"}`}
+                  style={{
+                      left: `${data.htmlLeft}%`,
+                      top: `${data.htmlTop}%`,
+                      width: `${data.htmlWidth}%`,
+                      height: `${data.htmlHeight}%`,
+                  }}
+              >
+                  {/* Advanced Notation External Arrows */}
+                  {data.isOverblow && (
+                    <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
+                      <div className="absolute right-full mr-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
+                      <div className="absolute left-full ml-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">▶</div>
+                    </div>
+                  )}
+                  {data.bendDepth > 0 && (
+                    <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
+                      <div className="flex flex-col gap-[1px] absolute right-full mr-[1px]">
+                        {Array.from({ length: data.bendDepth }).map((_, i) => (
+                          <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">▶</div>
+                        ))}
+                      </div>
+                      <div className="flex flex-col gap-[1px] absolute left-full ml-[1px]">
+                        {Array.from({ length: data.bendDepth }).map((_, i) => (
+                          <div key={i} className="text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Clarity Indicator (Progress bar at the top of active note) */}
+                  {data.showClarity && (
+                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40 overflow-hidden rounded-t-[20px]">
+                      <div 
+                        className={`h-full transition-[width] duration-75 ${
+                          data.clarityValue >= 0.82 ? "bg-emerald-400" : "bg-yellow-400"
+                        }`}
+                        style={{ width: `${data.clarityValue * 100}%` }}
+                      />
+                    </div>
+                  )}
+                  
+                  {data.showNoteNames && <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,1)] text-white pointer-events-none">{data.noteName}</span>}
+              </div>
+          ))}
+
+          {/* Harmonica Body Visual - SVG with transparent holes */}
           <div
-            key={`hole-label-${i}`}
-            className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-50 pointer-events-none"
-            style={{ 
-              left: `${(i / 10) * 100 + 5}%`,
-              top: `${NOTE_TARGET_LINE_PERCENT}%`
-            }}
+            className="pointer-events-none absolute left-0 right-0 h-20 -translate-y-1/2 z-[40]"
+            style={{ top: `${NOTE_TARGET_LINE_PERCENT}%` }}
           >
-             <span className="text-lg font-extrabold leading-none text-white drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
-              {i + 1}
+            <svg width="100%" height="100%" preserveAspectRatio="none" className="drop-shadow-2xl">
+              <defs>
+                <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#4b5563" />
+                  <stop offset="50%" stopColor="#1f2937" />
+                  <stop offset="100%" stopColor="#111827" />
+                </linearGradient>
+                <mask id="holeMask">
+                  <rect width="100%" height="100%" fill="white" />
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <circle 
+                      key={i} 
+                      cx={`${(i / 10) * 100 + 5}%`} 
+                      cy="50%" 
+                      r="20" 
+                      fill="black" 
+                    />
+                  ))}
+                </mask>
+              </defs>
+              <rect 
+                width="100%" 
+                height="100%" 
+                fill="url(#bodyGrad)" 
+                mask="url(#holeMask)"
+              />
+            </svg>
+          </div>
+            
+          {/* Gray Target Line - Visible only through holes, on top of notes */}
+          <div
+            className="absolute left-0 right-0 h-[1px] -translate-y-1/2 bg-gray-600/60 pointer-events-none"
+            style={{ top: `${NOTE_TARGET_LINE_PERCENT}%`, zIndex: 35 }}
+          />
+
+          {/* Numbers inside the holes - Top layer (z-[50]) */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={`hole-label-${i}`}
+              className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-[50] pointer-events-none"
+              style={{ left: `${(i / 10) * 100 + 5}%`, top: `${NOTE_TARGET_LINE_PERCENT}%` }}
+            >
+               <span className="text-lg font-extrabold leading-none text-white drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
+                {i + 1}
+              </span>
+            </div>
+          ))}
+
+          {/* Mic / Clarity Stats Overlay */}
+          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
+            <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+              <Mic size={14} />
+              {pitchError
+                ? "Mic unavailable"
+                : detectedNote
+                  ? `${Note.pitchClass(detectedNote.note)} ${
+                      detectedNote.cents > 0 ? "+" : ""
+                    }${Math.round(detectedNote.cents)}c`
+                  : isPlaying
+                    ? "Listening"
+                    : "Press play"}
+            </span>
+            <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+              Clarity {clarity || "-"}
             </span>
           </div>
-        ))}
-
-        {/* Mic / Clarity Stats Overlay */}
-        <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none">
-          <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-            <Mic size={14} />
-            {pitchError
-              ? "Mic unavailable"
-              : detectedNote
-                ? `${Note.pitchClass(detectedNote.note)} ${
-                    detectedNote.cents > 0 ? "+" : ""
-                  }${Math.round(detectedNote.cents)}c`
-                : isPlaying
-                  ? "Listening"
-                  : "Press play"}
-          </span>
-          <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-            Clarity {clarity || "-"}
-          </span>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
