@@ -86,7 +86,7 @@ export const NoteHighway = ({
             return (
               <div
                 key={`${index}-${note.name}-${noteIndex}`}
-                className={`absolute box-border flex items-center justify-center rounded-sm border-black text-xs font-bold transition-transform overflow-hidden ${
+                className={`absolute box-border flex items-center justify-center border-black text-xs font-bold overflow-hidden ${
                   wasHit
                     ? "scale-105 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
                     : isActive
@@ -104,10 +104,12 @@ export const NoteHighway = ({
                 style={{
                   left: `${laneIndex * 10}%`,
                   top: `${top}%`,
-                  width: `calc(10% - 2px)`,
-                  margin: "0 1px",
+                  width: `10%`,
                   height: `${height}px`,
-                  borderWidth: "1px",
+                  borderBottomWidth: "2px", // Creates a visual separation between contiguous blocks
+                  borderLeftWidth: "1px",
+                  borderRightWidth: "1px",
+                  borderTopWidth: "0px",
                   transform: "translateY(-100%)",
                   opacity: top < -4 || top > 105 ? 0 : 1,
                   zIndex: 10,
