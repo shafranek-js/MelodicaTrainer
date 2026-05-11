@@ -156,21 +156,53 @@ export const NoteHighway = ({
           const brX = centerX + bottomWidth / 2;
           const blX = centerX - bottomWidth / 2;
 
-          // Generate SVG Path with rounded corners
-          const actualRY = Math.min(1.5, Math.max(0, yBottom - yTop) / 2);
-          const actualRXTop = Math.min(2.5, topWidth / 2);
-          const actualRXBot = Math.min(2.5, bottomWidth / 2);
+          // Target 20px corner radius, converted to percentage coordinates based on physical dimensions.
+          // Container height is assumed ~520px, width is measured dynamically. Fallback to 1000px if 0.
+          const effContainerWidth = containerWidth > 0 ? containerWidth : 1000;
+          const targetRadiusPx = 20;
+          
+          const idealRXPercent = (targetRadiusPx / effContainerWidth) * 100;
+          const idealRYPercent = (targetRadiusPx / containerHeightPx) * 100;
 
+          // Cap the radius so curves don't overlap on very narrow/short blocks
+          const heightPct = Math.max(0, yBottom - yTop);
+          const maxRY = heightPct / 2;
+          const maxRXTop = topWidth / 2;
+          const maxRXBot = bottomWidth / 2;
+
+          const actualRY = Math.min(idealRYPercent, maxRY);
+          // For a perfect circle visually, the percentage ratio RX/RY must equal (HeightPx/WidthPx).
+          // However, because we cap them, we scale RX proportionally if RY is capped, and vice-versa,
+          // to maintain the circular curve shape as long as possible.
+          let rxTop = idealRXPercent;
+          let ryTop = idealRYPercent;
+          if (idealRYPercent > maxRY || idealRXPercent > maxRXTop) {
+             const scale = Math.min(maxRY / idealRYPercent, maxRXTop / idealRXPercent);
+             rxTop = idealRXPercent * scale;
+             ryTop = idealRYPercent * scale;
+          }
+
+          let rxBot = idealRXPercent;
+          let ryBot = idealRYPercent;
+          if (idealRYPercent > maxRY || idealRXPercent > maxRXBot) {
+             const scale = Math.min(maxRY / idealRYPercent, maxRXBot / idealRXPercent);
+             rxBot = idealRXPercent * scale;
+             ryBot = idealRYPercent * scale;
+          }
+
+          // Use SVG Arc (A) command for perfect elliptical rendering. 
+          // Q (quadratic bezier) is only an approximation of a circle. 
+          // A rx ry x-axis-rotation large-arc-flag sweep-flag x y
           const pathD = `
-            M ${tlX + actualRXTop},${yTop}
-            L ${trX - actualRXTop},${yTop}
-            Q ${trX},${yTop} ${trX},${yTop + actualRY}
-            L ${brX},${yBottom - actualRY}
-            Q ${brX},${yBottom} ${brX - actualRXBot},${yBottom}
-            L ${blX + actualRXBot},${yBottom}
-            Q ${blX},${yBottom} ${blX},${yBottom - actualRY}
-            L ${tlX},${yTop + actualRY}
-            Q ${tlX},${yTop} ${tlX + actualRXTop},${yTop}
+            M ${tlX + rxTop},${yTop}
+            L ${trX - rxTop},${yTop}
+            A ${rxTop} ${ryTop} 0 0 1 ${trX},${yTop + ryTop}
+            L ${brX},${yBottom - ryBot}
+            A ${rxBot} ${ryBot} 0 0 1 ${brX - rxBot},${yBottom}
+            L ${blX + rxBot},${yBottom}
+            A ${rxBot} ${ryBot} 0 0 1 ${blX},${yBottom - ryBot}
+            L ${tlX},${yTop + ryTop}
+            A ${rxTop} ${ryTop} 0 0 1 ${tlX + rxTop},${yTop}
             Z
           `;
 
