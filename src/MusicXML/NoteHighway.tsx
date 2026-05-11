@@ -100,7 +100,7 @@ export const NoteHighway = ({
             return (
               <div
                 key={`${index}-${note.name}-${noteIndex}`}
-                className={`absolute box-border flex items-center justify-center rounded-[20px] text-xs font-bold transition-all duration-75 ${
+                className={`absolute box-border flex items-center justify-center rounded-[20px] text-xs font-bold transition-[background-color,border-color,box-shadow,transform] duration-75 ${
                   wasHit
                     ? "scale-110 border-2 border-white bg-emerald-400 text-black shadow-[0_0_12px_3px_rgba(255,255,255,1),0_0_24px_6px_rgba(52,211,153,0.8)] z-[60]"
                     : isStrictlyActive
