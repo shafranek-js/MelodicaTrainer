@@ -317,6 +317,19 @@ export const parsePlaybackEvents = (xml: string) => {
   });
 
   const events = expandRepeats(measuresWithEvents);
+  const resolvedEvents = resolveTiedNotes(events);
 
-  return { events: resolveTiedNotes(events), detectedTempo };
+  // Add a 4-beat lead-in (count-in) at the beginning of the song
+  // to give the player time to prepare before notes start falling.
+  if (resolvedEvents.length > 0) {
+    resolvedEvents.unshift({
+      durationBeats: 4,
+      tempoBpm: resolvedEvents[0].tempoBpm,
+      notes: [],
+      tabs: [],
+      sourceEventIndex: 0,
+    });
+  }
+
+  return { events: resolvedEvents, detectedTempo };
 };
