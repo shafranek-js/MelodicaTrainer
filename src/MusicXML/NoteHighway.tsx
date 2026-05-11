@@ -102,7 +102,7 @@ export const NoteHighway = ({
                 key={`${index}-${note.name}-${noteIndex}`}
                 className={`absolute box-border flex items-center justify-center rounded-[20px] border-black text-xs font-bold overflow-hidden ${
                   wasHit
-                    ? "scale-105 border-emerald-200 bg-emerald-400 text-black shadow-[0_0_22px_rgba(52,211,153,0.9)]"
+                    ? "scale-110 border-white bg-emerald-400 text-black shadow-[0_0_15px_rgba(255,255,255,1),_0_0_30px_rgba(52,211,153,0.8)] z-[60]"
                     : isStrictlyActive
                       ? isDraw
                         ? "bg-blue-400 text-black"
