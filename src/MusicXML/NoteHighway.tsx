@@ -312,7 +312,7 @@ export const NoteHighway = ({
                     </div>
                   )}
                   
-                  {data.showNoteNames && <span className="relative z-20 drop-shadow-[0_1px_1px_rgba(0,0,0,1)] text-white pointer-events-none">{data.noteName}</span>}
+                  {showNoteNames && <span className="relative z-20 drop-shadow-[0_1px_1px_rgba(0,0,0,1)] text-white pointer-events-none">{data.noteName}</span>}
               </div>
           ))}
 

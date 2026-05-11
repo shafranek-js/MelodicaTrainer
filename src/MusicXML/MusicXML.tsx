@@ -17,6 +17,7 @@ import {
   createFirstStaffDisplayXml,
   injectHarmonicaTabs,
   findAutoTransposeInterval,
+  exportHarpTabsText,
 } from "./musicXmlTransform";
 import { NoteHighway } from "./NoteHighway";
 import { parsePlaybackEvents } from "./playbackParser";
@@ -126,6 +127,33 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const { accuracy, gameStats, lastHitIndex, resetScoring } = useNoteHighwayScoring({ currentEventIndex, currentGameEvent, detectedNote, playbackEvents, targetEventIndex });
   const canUseProcessedScore = Boolean(fileContent) && isSheetReady && !hasSheetRenderError;
   const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
+
+  const downloadTransposedXml = useCallback(() => {
+    if (!fileContent) return;
+    const blob = new Blob([fileContent], { type: "application/vnd.recordare.musicxml+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName ? `transposed_${fileName}` : "transposed.musicxml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [fileContent, fileName]);
+
+  const downloadHarpTabs = useCallback(() => {
+    if (!fileContent) return;
+    const tabs = exportHarpTabsText(fileContent);
+    const blob = new Blob([tabs], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName ? `${fileName.replace(/\.[^/.]+$/, "")}_tabs.txt` : "tabs.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [fileContent, fileName]);
 
   const clearPlaybackResources = useCallback(() => {
     if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current);
@@ -458,6 +486,24 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                 </label>
                 {fileName && <p className="mt-1 text-[10px] text-gray-500 truncate text-center">Loaded: {fileName}</p>}
               </div>
+
+              <div className="pt-2 space-y-2">
+                <button
+                  onClick={downloadTransposedXml}
+                  disabled={!canUseProcessedScore}
+                  className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded transition w-full text-xs font-bold uppercase"
+                >
+                  💾 Transposed XML
+                </button>
+                <button
+                  onClick={downloadHarpTabs}
+                  disabled={!canUseProcessedScore}
+                  className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded transition w-full text-xs font-bold uppercase"
+                >
+                  📝 HarpTabs text
+                </button>
+              </div>
+
               <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
                 <p className="text-xs font-bold text-gray-400 uppercase">Auto transpose</p>
                 <div className="space-y-1.5">
