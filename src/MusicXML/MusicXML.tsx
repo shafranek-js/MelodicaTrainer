@@ -92,14 +92,19 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const playback = useMemo(() => (displayFileContent ? parsePlaybackEvents(displayFileContent) : null), [displayFileContent]);
   const playbackEvents = useMemo(() => playback?.events ?? [], [playback]);
   const playableMidiNumbers = useMemo(() => getPlayableMidiNumbers(playbackEvents), [playbackEvents]);
+  
   const tempoScale = tempo / (playback?.detectedTempo || tempo || 90);
-  const playbackTimeline = useMemo(() => createPlaybackTimeline(playbackEvents, tempoScale), [playbackEvents, tempoScale]);
+  const tempoScaleRef = useRef(tempoScale);
+  useEffect(() => { tempoScaleRef.current = tempoScale; }, [tempoScale]);
+
+  // Compute the timeline at a fixed 1x tempo to create a static 'punch card' geometry
+  const playbackTimeline = useMemo(() => createPlaybackTimeline(playbackEvents, 1), [playbackEvents]);
   const playbackEndMs = playbackTimeline[playbackTimeline.length - 1]?.endMs ?? 0;
   const laneKeys = useMemo(() => getLaneKeys(playbackEvents), [playbackEvents]);
   
   const visualPlayheadMs = isPlaying ? currentGameTimeMs : currentEventIndex >= playbackEvents.length ? playbackEndMs : playbackTimeline[currentEventIndex]?.startMs ?? 0;
   const progress = playbackEvents.length > 0 ? Math.min(100, Math.round((currentEventIndex / playbackEvents.length) * 100)) : 0;
-  const visibleGameEvents = useMemo(() => getVisibleGameEvents(playbackEvents, playbackTimeline, visualPlayheadMs, tempoScale), [playbackEvents, playbackTimeline, visualPlayheadMs, tempoScale]);
+  const visibleGameEvents = useMemo(() => getVisibleGameEvents(playbackEvents, playbackTimeline, visualPlayheadMs), [playbackEvents, playbackTimeline, visualPlayheadMs]);
   const targetEventIndex = useMemo(() => getTargetEventIndex(visibleGameEvents, visualPlayheadMs), [visibleGameEvents, visualPlayheadMs]);
   const currentGameEvent = playbackEvents[targetEventIndex ?? currentEventIndex];
   
@@ -186,9 +191,9 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       setTimeout(() => stopPlayback(true, false), 500); 
       return; 
     }
-    const effTempo = Math.max(20, event.tempoBpm * tempoScale);
+    const effTempo = Math.max(20, event.tempoBpm * tempoScaleRef.current);
     const durMs = Math.max(80, (60000 / effTempo) * event.durationBeats);
-    gameClockOffsetMsRef.current = (playbackTimeline[startIndex]?.startMs ?? 0) - getAudioOutputLatencyMs(audioContextRef.current);
+    gameClockOffsetMsRef.current = (playbackTimeline[startIndex]?.startMs ?? 0) - getAudioOutputLatencyMs(audioContextRef.current) * tempoScaleRef.current;
     gameClockStartMsRef.current = performance.now();
     setCurrentEventIndex(startIndex);
     moveCursorThroughEvent(startIndex, durMs);
@@ -197,7 +202,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       if (playbackRunRef.current !== runId) return;
       schedulePlayback(startIndex + 1, runId);
     }, durMs);
-  }, [playbackEvents, playbackTimeline, tempoScale, moveCursorThroughEvent, playNotes, stopPlayback]);
+  }, [playbackEvents, playbackTimeline, moveCursorThroughEvent, playNotes, stopPlayback]);
 
   const togglePlayback = useCallback(async () => {
     if (isPlayingRef.current) {
@@ -232,7 +237,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       }
       gameClockOffsetMsRef.current =
         (playbackTimeline[startIndex]?.startMs ?? 0) -
-        getAudioOutputLatencyMs(audioContextRef.current);
+        getAudioOutputLatencyMs(audioContextRef.current) * tempoScaleRef.current;
       gameClockStartMsRef.current = performance.now();
       setCurrentGameTimeMs(gameClockOffsetMsRef.current);
       const runId = playbackRunRef.current + 1;
@@ -287,7 +292,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   useEffect(() => {
     if (!isPlaying) return;
     const updateClock = () => {
-      setCurrentGameTimeMs(gameClockOffsetMsRef.current + (performance.now() - gameClockStartMsRef.current));
+      setCurrentGameTimeMs(gameClockOffsetMsRef.current + (performance.now() - gameClockStartMsRef.current) * tempoScaleRef.current);
       gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
     };
     gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
@@ -453,7 +458,6 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                 lastHitIndex={lastHitIndex}
                 pitchError={pitchError}
                 showNoteNames={showNoteNames}
-                tempoScale={tempoScale}
                 visibleGameEvents={visibleGameEvents}
                 visualPlayheadMs={visualPlayheadMs}
               />

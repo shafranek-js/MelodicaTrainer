@@ -18,7 +18,6 @@ type NoteHighwayProps = {
   lastHitIndex: number | null;
   pitchError: string | null;
   showNoteNames: boolean;
-  tempoScale: number;
   visibleGameEvents: VisibleGameEvent[];
   visualPlayheadMs: number;
 };
@@ -30,7 +29,6 @@ export const NoteHighway = ({
   lastHitIndex,
   pitchError,
   showNoteNames,
-  tempoScale,
   visibleGameEvents,
   visualPlayheadMs,
 }: NoteHighwayProps) => (
@@ -66,8 +64,7 @@ export const NoteHighway = ({
             const timeToHitMs = timing.startMs - visualPlayheadMs;
             
             const highwayHeight = 520; 
-            const dynamicLookaheadMs = NOTE_HIGHWAY_LOOKAHEAD_MS / tempoScale;
-            const msToPx = (highwayHeight * (NOTE_TARGET_LINE_PERCENT / 100)) / dynamicLookaheadMs;
+            const msToPx = (highwayHeight * (NOTE_TARGET_LINE_PERCENT / 100)) / NOTE_HIGHWAY_LOOKAHEAD_MS;
 
             const top = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * msToPx / highwayHeight * 100);
             
