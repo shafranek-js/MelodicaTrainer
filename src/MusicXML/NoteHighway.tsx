@@ -24,6 +24,7 @@ type NoteHighwayProps = {
   visualPlayheadMs: number;
   playbackEvents: PlaybackEvent[];
   playbackTimeline: PlaybackTiming[];
+  isGp?: boolean;
 };
 
 const getTargetWidthPct = (tab: string, containerWidthPx: number) => {
@@ -34,18 +35,14 @@ const getTargetWidthPct = (tab: string, containerWidthPx: number) => {
         bendDepth = bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
     }
     
-    // Calculate the percentage of the full container that represents 40px
-    // If containerWidthPx is 0 (not yet measured), use a safe fallback (e.g. assuming a 1000px wide screen)
     const minWidthPct = containerWidthPx > 0 ? (40 / containerWidthPx) * 100 : 4.0;
     
-    // Widths are percentages of the total screen width (100 = full screen, 10 = one lane)
     let targetPct = 8.4; // Natural note
     if (isOverblow) targetPct = 11;
     else if (bendDepth === 1) targetPct = 6.5;
     else if (bendDepth === 2) targetPct = 4.8;
     else if (bendDepth >= 3) targetPct = 3.0;
 
-    // Enforce minimum width of 40px
     return Math.max(targetPct, minWidthPct);
 };
 
@@ -61,6 +58,7 @@ export const NoteHighway = ({
   visualPlayheadMs,
   playbackEvents,
   playbackTimeline,
+  isGp = false
 }: NoteHighwayProps) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,10 +102,8 @@ export const NoteHighway = ({
           
           let isScoop = false;
 
-          // Check for contiguous previous note on the same lane to create trapezoid scoop
           if (globalEventIndex > 0) {
               const prevTiming = playbackTimeline[globalEventIndex - 1];
-              // Use a small tolerance for "contiguous" due to float math
               if (prevTiming && Math.abs(prevTiming.endMs - timing.startMs) < 10) {
                   const prevEvent = playbackEvents[globalEventIndex - 1];
                   const prevNoteIndex = prevEvent.tabs.findIndex(t => getTabHole(t) === hole);
@@ -121,7 +117,6 @@ export const NoteHighway = ({
               }
           }
 
-          // If it's a repeated identical note, we want a tiny gap so they don't merge into one infinite pill
           if (!isScoop) {
               yBottom -= 0.4; 
           }
@@ -133,9 +128,9 @@ export const NoteHighway = ({
           const isDraw = tab.startsWith("-");
           const isBlow = /^\d/.test(tab);
           
-          let color = "#374151"; // gray-800
+          let color = "#374151"; 
           if (wasHit) {
-              color = "#34d399"; // emerald-400
+              color = "#34d399"; 
           } else if (isStrictlyActive) {
               color = isDraw ? "#60a5fa" : (isBlow ? "#f87171" : "#22d3ee"); 
           } else {
@@ -156,24 +151,18 @@ export const NoteHighway = ({
           const brX = centerX + bottomWidth / 2;
           const blX = centerX - bottomWidth / 2;
 
-          // Target 20px corner radius, converted to percentage coordinates based on physical dimensions.
-          // Container height is assumed ~520px, width is measured dynamically. Fallback to 1000px if 0.
           const effContainerWidth = containerWidth > 0 ? containerWidth : 1000;
           const targetRadiusPx = 20;
           
           const idealRXPercent = (targetRadiusPx / effContainerWidth) * 100;
           const idealRYPercent = (targetRadiusPx / containerHeightPx) * 100;
 
-          // Cap the radius so curves don't overlap on very narrow/short blocks
           const heightPct = Math.max(0, yBottom - yTop);
           const maxRY = heightPct / 2;
           const maxRXTop = topWidth / 2;
           const maxRXBot = bottomWidth / 2;
 
           const actualRY = Math.min(idealRYPercent, maxRY);
-          // For a perfect circle visually, the percentage ratio RX/RY must equal (HeightPx/WidthPx).
-          // However, because we cap them, we scale RX proportionally if RY is capped, and vice-versa,
-          // to maintain the circular curve shape as long as possible.
           let rxTop = idealRXPercent;
           let ryTop = idealRYPercent;
           if (idealRYPercent > maxRY || idealRXPercent > maxRXTop) {
@@ -190,9 +179,6 @@ export const NoteHighway = ({
              ryBot = idealRYPercent * scale;
           }
 
-          // Use SVG Arc (A) command for perfect elliptical rendering. 
-          // Q (quadratic bezier) is only an approximation of a circle. 
-          // A rx ry x-axis-rotation large-arc-flag sweep-flag x y
           const pathD = `
             M ${tlX + rxTop},${yTop}
             L ${trX - rxTop},${yTop}
@@ -207,9 +193,6 @@ export const NoteHighway = ({
           `;
 
           const isVisible = !(yBottom < -10 || yTop > 110);
-
-          // We also want a slightly inset box for the HTML overlays so they perfectly center inside the polygon
-          // We'll use the max width of the trapezoid for the HTML container.
           const maxHtmlWidth = Math.max(topWidth, bottomWidth);
 
           return {
@@ -237,7 +220,6 @@ export const NoteHighway = ({
       <div className="flex-1 w-full overflow-hidden">
         <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950" id="highway-container">
           
-          {/* Lane tracks with alternating backgrounds */}
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={`lane-track-${i}`}
@@ -250,7 +232,6 @@ export const NoteHighway = ({
             </div>
           ))}
 
-          {/* MASTER SVG CANVAS FOR POLygons */}
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none">
               {renderData.map(data => data.isVisible && (
                   <path 
@@ -266,7 +247,6 @@ export const NoteHighway = ({
               ))}
           </svg>
 
-          {/* HTML OVERLAYS (Labels, Clarity, Arrows) */}
           {renderData.map(data => data.isVisible && (
               <div
                   key={`overlay-${data.key}`}
@@ -278,7 +258,6 @@ export const NoteHighway = ({
                       height: `${data.htmlHeight}%`,
                   }}
               >
-                  {/* Advanced Notation External Arrows */}
                   {data.isOverblow && (
                     <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between pointer-events-none w-full z-10">
                       <div className="absolute right-full mr-[1px] text-white drop-shadow-[0_1px_1px_rgba(0,0,0,1)] leading-none text-[12px] font-black">◀</div>
@@ -300,7 +279,6 @@ export const NoteHighway = ({
                     </div>
                   )}
 
-                  {/* Clarity Indicator (Progress bar at the top of active note) */}
                   {data.showClarity && (
                     <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/40 overflow-hidden rounded-t-[20px] z-10">
                       <div 
@@ -316,14 +294,13 @@ export const NoteHighway = ({
               </div>
           ))}
 
-          {/* Harmonica Body Visual - SVG with transparent holes */}
           <div
             className="pointer-events-none absolute left-0 right-0 h-20 -translate-y-1/2 z-[40]"
             style={{ top: `${NOTE_TARGET_LINE_PERCENT}%` }}
           >
             <svg width="100%" height="100%" preserveAspectRatio="none" className="drop-shadow-2xl">
               <defs>
-                <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="bodyGrad" x1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#4b5563" />
                   <stop offset="50%" stopColor="#1f2937" />
                   <stop offset="100%" stopColor="#111827" />
@@ -350,13 +327,11 @@ export const NoteHighway = ({
             </svg>
           </div>
             
-          {/* Gray Target Line - Visible only through holes, on top of notes */}
           <div
             className="absolute left-0 right-0 h-[1px] -translate-y-1/2 bg-gray-600/60 pointer-events-none"
             style={{ top: `${NOTE_TARGET_LINE_PERCENT}%`, zIndex: 35 }}
           />
 
-          {/* Numbers inside the holes - Top layer (z-[50]) */}
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={`hole-label-${i}`}
@@ -369,7 +344,6 @@ export const NoteHighway = ({
             </div>
           ))}
 
-          {/* Mic / Clarity Stats Overlay */}
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
             <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
               <Mic size={14} />

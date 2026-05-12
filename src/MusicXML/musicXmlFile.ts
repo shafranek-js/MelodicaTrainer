@@ -105,11 +105,20 @@ const extractCompressedMusicXml = async (file: File) => {
 export const readMusicXmlFile = async (file: File) => {
   assertUploadSize(file);
 
-  const content = await (/\.mxl$/i.test(file.name)
+  const isMxl = /\.mxl$/i.test(file.name);
+  const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name);
+
+  if (isGp) {
+    return new Uint8Array(await file.arrayBuffer());
+  }
+
+  const content = await (isMxl
     ? extractCompressedMusicXml(file)
     : file.text());
 
-  parseMusicXmlDocument(content);
+  if (!isGp) {
+    parseMusicXmlDocument(content);
+  }
   return content;
 };
 

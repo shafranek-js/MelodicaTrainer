@@ -4,3 +4,12 @@
 .vf-text {
   transform: translateY(15px);
 }
+
+/* alphaTab Cursor Styles */
+.at-cursor-beat {
+    background: rgba(16, 185, 129, 0.5); /* Emerald color matching the theme */
+    width: 3px;
+}
+.at-cursor-bar {
+    background: rgba(16, 185, 129, 0.15);
+}

@@ -311,46 +311,82 @@ type AutoTransposeOptions = {
   noBend: boolean;
 };
 
-export const findAutoTransposeInterval = (
+export const findBestTransposeIntervals = (
+    midiNumbers: number[],
+    { selectedKey, noOverblowOrDraw, noBend }: AutoTransposeOptions
+): number[] => {
+    const uniqueMidi = Array.from(new Set(midiNumbers));
+    if (uniqueMidi.length === 0) return [];
+
+    const results: { interval: number, score: number }[] = [];
+    let minInvalidCount = Number.POSITIVE_INFINITY;
+
+    // Search range +/- 36 semitones
+    for (let interval = -36; interval <= 36; interval += 1) {
+        let invalidCount = 0;
+
+        for (const midi of uniqueMidi) {
+            const transposedMidi = midi + interval;
+            const transposedNoteName = Note.fromMidi(transposedMidi);
+            const tab = getHarmonicaHoleForNote(selectedKey, transposedNoteName);
+
+            if (!tab) {
+                invalidCount += 100;
+                continue;
+            }
+
+            if (noOverblowOrDraw && tab.toLowerCase().includes("o")) {
+                invalidCount += 1;
+            }
+
+            if (noBend && tab.includes("'")) {
+                invalidCount += 1;
+            }
+        }
+
+        results.push({ interval, score: invalidCount });
+        if (invalidCount < minInvalidCount) minInvalidCount = invalidCount;
+    }
+
+    // Return all intervals that share the lowest score found
+    return results
+        .filter(r => r.score === minInvalidCount)
+        .map(r => r.interval)
+        .sort((a, b) => Math.abs(a) - Math.abs(b)); // Sort by proximity to zero (original)
+};
+
+export const findBestTransposeInterval = (
+    midiNumbers: number[],
+    options: AutoTransposeOptions
+) => {
+    const bests = findBestTransposeIntervals(midiNumbers, options);
+    return bests.length > 0 ? bests[0] : null;
+};
+
+export const findAutoTransposeIntervals = (
   xml: string,
-  { selectedKey, noOverblowOrDraw, noBend }: AutoTransposeOptions
+  options: AutoTransposeOptions
 ) => {
   const xmlDoc = parseMusicXmlDocument(xml);
   const noteElements = getFirstStaffNoteElements(xmlDoc);
-
-  for (let interval = -36; interval <= 36; interval += 1) {
-    let hasInvalidNotes = false;
-
-    for (const note of noteElements) {
+  
+  const midiNumbers: number[] = [];
+  noteElements.forEach(note => {
       const pitch = note.getElementsByTagName("pitch")[0];
-      if (!pitch) continue;
-
-      const originalNote = getPitchNoteName(pitch);
-      if (!originalNote) continue;
-
-      const transposed = transposeNoteName(originalNote, interval);
-      if (!transposed) continue;
-
-      const tab = getHarmonicaHoleForNote(selectedKey, transposed);
-
-      if (!tab) {
-        hasInvalidNotes = true;
-        break;
+      if (pitch) {
+          const name = getPitchNoteName(pitch);
+          const midi = name ? Note.midi(name) : null;
+          if (midi !== null) midiNumbers.push(midi);
       }
+  });
 
-      if (noOverblowOrDraw && tab.endsWith("o")) {
-        hasInvalidNotes = true;
-        break;
-      }
+  return findBestTransposeIntervals(midiNumbers, options);
+};
 
-      if (noBend && tab.endsWith("'")) {
-        hasInvalidNotes = true;
-        break;
-      }
-    }
-
-    if (!hasInvalidNotes) return interval;
-  }
-
-  return null;
+export const findAutoTransposeInterval = (
+  xml: string,
+  options: AutoTransposeOptions
+) => {
+  const bests = findAutoTransposeIntervals(xml, options);
+  return bests.length > 0 ? bests[0] : null;
 };
