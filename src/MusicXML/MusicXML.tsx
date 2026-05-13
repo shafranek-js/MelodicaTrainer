@@ -241,8 +241,14 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
 
   const scrollSheetToCursor = useCallback(() => {
     const sheet = sheetScrollRef.current;
-    const cursorElement = osmdInstance.current?.cursor?.cursorElement;
-    if (!sheet || !cursorElement) return;
+    if (!sheet) return;
+
+    const cursorElement = isGpFile 
+        ? alphaTabRef.current?.getCursorElement() 
+        : osmdInstance.current?.cursor?.cursorElement;
+
+    if (!cursorElement) return;
+
     window.requestAnimationFrame(() => {
       const sheetRect = sheet.getBoundingClientRect();
       const cursorRect = cursorElement.getBoundingClientRect();
@@ -250,7 +256,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       const offset = cursorRect.left - sheetRect.left - targetLeft;
       sheet.scrollTo({ left: Math.max(0, sheet.scrollLeft + offset), behavior: "smooth" });
     });
-  }, []);
+  }, [isGpFile]);
 
   const moveCursorInstantlyToEvent = useCallback((eventIndex: number) => {
     const cursor = osmdInstance.current?.cursor;
@@ -640,7 +646,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       <div className="w-full shrink-0 border-b border-gray-800 bg-white shadow-2xl overflow-hidden max-w-full">
         <div
           ref={sheetScrollRef}
-          className={`${isGpFile ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black`}
+          className={`${isGpFile ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black scrollbar-hide`}
           style={isGpFile ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
         >
           {!isGpFile ? (
@@ -681,6 +687,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
               }}
               onReadyChange={setIsGpPlaybackReady}
               onTimeUpdate={(tickOrMs) => {
+                  scrollSheetToCursor();
                   if (isPlayingRef.current) return;
                   
                   if (isGpFile) {
