@@ -72,6 +72,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const [noBend, setNoBend] = usePersistentState<boolean>("harptrainer_no_bend", false);
   const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("harptrainer_show_note_names", true);
   const [tempo, setTempo] = usePersistentState<number>("harptrainer_tempo", 90);
+  const [isManualTempo, setIsManualTempo] = usePersistentState<boolean>("harptrainer_is_manual_tempo", false);
+
+  const handleSetTempo = useCallback((newTempo: number) => {
+    setTempo(newTempo);
+    setIsManualTempo(true);
+  }, [setTempo, setIsManualTempo]);
   const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "022_Florestan_Harmonica.sf2");
   const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22"); // Default to Harmonica
   const harmonicaKey = normalizeHarmonicaKey(selectedKey);
@@ -122,7 +128,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     if (isGpFile || !displayFileContent) return;
     const playback = parsePlaybackEvents(displayFileContent);
     setPlaybackEvents(playback.events);
-    if (playback.detectedTempo) {
+    if (playback.detectedTempo && !isManualTempo) {
         setTempo(playback.detectedTempo);
     }
   }, [displayFileContent, isGpFile, setTempo]);

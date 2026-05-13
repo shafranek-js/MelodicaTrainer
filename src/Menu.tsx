@@ -105,8 +105,8 @@ const Menu: React.FC<MenuProps> = ({
                 <Gauge size={12} className="text-gray-400" />
                 <input
                   type="range"
-                  min="40"
-                  max="180"
+                  min="20"
+                  max="240"
                   value={tempo}
                   onChange={(e) => setTempo(Number(e.target.value))}
                   className="w-20 h-1 accent-emerald-500"
