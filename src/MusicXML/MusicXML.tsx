@@ -143,7 +143,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     return minDuration === Number.POSITIVE_INFINITY ? 250 : minDuration;
   }, [playbackTimeline, playbackEvents, isGpFile]);
 
-  const visualPlayheadMs = isPlaying ? currentGameTimeMs : currentEventIndex >= playbackEvents.length ? playbackEndMs : playbackTimeline[currentEventIndex]?.startMs ?? 0;
+  const visualPlayheadMs = currentGameTimeMs;
   const progress = playbackEvents.length > 0 ? Math.min(100, Math.round((currentEventIndex / playbackEvents.length) * 100)) : 0;
   const visibleGameEvents = useMemo(() => getVisibleGameEvents(playbackEvents, playbackTimeline, visualPlayheadMs, shortestNoteDurationMs), [playbackEvents, playbackTimeline, visualPlayheadMs, shortestNoteDurationMs]);
   const targetEventIndex = useMemo(() => getTargetEventIndex(visibleGameEvents, visualPlayheadMs), [visibleGameEvents, visualPlayheadMs]);
@@ -289,6 +289,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     });
 
     if (isPlayingRef.current) {
+      if (isGpFile) {
+          // True PAUSE for GP files
+          alphaTabRef.current?.playPause();
+          setIsPlaying(false);
+          return;
+      }
       stopPlayback();
       return;
     }
@@ -338,11 +344,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       if (startIndex === 0) {
         resetScoring();
       }
-      gameClockOffsetMsRef.current =
-        (playbackTimeline[startIndex]?.startMs ?? 0) -
-        getAudioOutputLatencyMs(audioContextRef.current) * tempoScaleRef.current;
+      
+      // Calculate PRECISE resume point for MusicXML
+      const currentPosMs = currentGameTimeMs;
+      gameClockOffsetMsRef.current = currentPosMs;
       gameClockStartMsRef.current = performance.now();
-      setCurrentGameTimeMs(gameClockOffsetMsRef.current);
+      
       const runId = playbackRunRef.current + 1;
       playbackRunRef.current = runId;
       setIsPlaying(true);
@@ -353,6 +360,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     }
   }, [
     currentEventIndex,
+    currentGameTimeMs,
     canPlayback,
     playbackEvents.length,
     playbackTimeline,
@@ -456,11 +464,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     }
   }, [rawFileContent, selectedKey, transpose, isGpFile]);
 
-  useEffect(() => {
-    if (playbackEvents.length === 0) return;
-    stopPlayback(true);
-  }, [playbackEvents.length, stopPlayback]);
-
+  // Handle unmount only
   useEffect(() => () => stopPlayback(true), [stopPlayback]);
 
   useEffect(() => {
@@ -480,6 +484,29 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       setIsSheetReady(true);
     });
   }, [displayFileContent, isGpFile]);
+
+  const optimalVariantsCount = useMemo(() => {
+    if (!rawFileContent || playbackEvents.length === 0) return 0;
+    
+    let midiNumbers: number[] = [];
+    if (isGpFile) {
+        // Use original MIDI (remove current transpose)
+        const currentMidiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents));
+        midiNumbers = currentMidiNumbers.map(m => m - transpose);
+    } else {
+        // For MusicXML, we need to parse if possible, or use current events
+        midiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents)).map(m => m - transpose);
+    }
+    
+    if (midiNumbers.length === 0) return 0;
+    
+    const bests = findBestTransposeIntervals(midiNumbers, { 
+        selectedKey, 
+        noOverblowOrDraw, 
+        noBend 
+    });
+    return bests.length;
+  }, [rawFileContent, playbackEvents, selectedKey, noOverblowOrDraw, noBend, isGpFile]);
 
   const autoTransposeWithFilters = () => {
     if (!rawFileContent) return;
@@ -628,6 +655,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
+                        stopPlayback(true); // EXPLICIT RESET FOR NEW FILE
                         const content = await readMusicXmlFile(file);
                         setFileName(file.name);
                         setTranspose(0); // Reset transpose for new file
@@ -671,7 +699,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                     <label className="flex items-center gap-2 text-xs text-gray-300"><input type="checkbox" checked={noBend} onChange={(e) => setNoBend(e.target.checked)} />No Bends</label>
                     {!isGpFile && <label className="flex items-center gap-2 text-xs text-emerald-400 font-bold"><input type="checkbox" checked={showNoteNames} onChange={(e) => setShowNoteNames(e.target.checked)} />Show Note Names</label>}
                     </div>
-                    <button onClick={autoTransposeWithFilters} className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded transition w-full text-xs font-bold uppercase">🎯 Optimize</button>
+                    <button 
+                        onClick={autoTransposeWithFilters} 
+                        className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded transition w-full text-xs font-bold uppercase"
+                    >
+                        🎯 Optimize {optimalVariantsCount > 0 ? `(${optimalVariantsCount} variants)` : ''}
+                    </button>
                 </div>
               )}
               {isGpFile && (
