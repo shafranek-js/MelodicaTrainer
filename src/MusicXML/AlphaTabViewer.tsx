@@ -35,6 +35,7 @@ const hiddenScoreInfoElements = new Map<alphaTab.NotationElement, boolean>([
     [alphaTab.NotationElement.ChordDiagrams, false],
     [alphaTab.NotationElement.EffectLyrics, false],
     [alphaTab.NotationElement.EffectText, false],
+    [alphaTab.NotationElement.EffectDynamics, false],
 ]);
 
 const MIN_AUTO_FIT_ZOOM = 0.65;
@@ -42,6 +43,53 @@ const AUTO_FIT_PADDING = 0.96;
 
 type HeaderFooterStyle = {
     isVisible?: boolean;
+};
+
+const isVisibleCanvasPixel = (data: Uint8ClampedArray, offset: number) => {
+    const red = data[offset];
+    const green = data[offset + 1];
+    const blue = data[offset + 2];
+    const alpha = data[offset + 3];
+
+    return alpha > 12 && !(red > 245 && green > 245 && blue > 245);
+};
+
+const getCanvasVisibleHeight = (canvas: HTMLCanvasElement) => {
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context || canvas.width <= 0 || canvas.height <= 0) return null;
+
+    try {
+        const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+        for (let y = canvas.height - 1; y >= 0; y -= 1) {
+            const rowOffset = y * canvas.width * 4;
+            for (let x = 0; x < canvas.width; x += 1) {
+                if (isVisibleCanvasPixel(data, rowOffset + x * 4)) {
+                    return y + 1;
+                }
+            }
+        }
+    } catch {
+        return null;
+    }
+
+    return null;
+};
+
+const measureRenderedContentHeight = (scoreElement: HTMLDivElement) => {
+    const scoreRect = scoreElement.getBoundingClientRect();
+    let bottom = 0;
+
+    scoreElement.querySelectorAll("canvas").forEach((canvas) => {
+        const visibleHeight = getCanvasVisibleHeight(canvas);
+        if (visibleHeight === null) return;
+
+        const canvasRect = canvas.getBoundingClientRect();
+        const scaleY = canvas.height > 0 ? canvasRect.height / canvas.height : 1;
+        const canvasTop = canvasRect.top - scoreRect.top;
+        bottom = Math.max(bottom, canvasTop + visibleHeight * scaleY);
+    });
+
+    return bottom > 0 ? bottom : scoreElement.scrollHeight;
 };
 
 const setTrackTranspositionPitch = (
@@ -60,6 +108,16 @@ const setTrackTranspositionPitch = (
     api.settings.notation.transpositionPitches = transpositionPitches;
 };
 
+const applyHarmonicaNotationView = (track: alphaTab.model.Track) => {
+    track.staves.forEach((staff) => {
+        staff.showStandardNotation = true;
+        staff.showTablature = false;
+        if (!staff.standardNotationLineCount) {
+            staff.standardNotationLineCount = 5;
+        }
+    });
+};
+
 export interface AlphaTabViewerRef {
     playPause: () => void;
     stop: () => void;
@@ -76,6 +134,7 @@ interface AlphaTabViewerProps {
     onScoreLoaded: (events: PlaybackEvent[], score: alphaTab.model.Score, tracks: TrackInfo[], tempo: number) => void;
     onTimeUpdate: (currentTimeMs: number) => void;
     onPlaybackFinished: () => void;
+    onRenderedHeightChange?: (heightPx: number) => void;
     onReadyChange?: (isReady: boolean) => void;
 }
 
@@ -87,6 +146,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
     onScoreLoaded, 
     onTimeUpdate, 
     onPlaybackFinished,
+    onRenderedHeightChange,
     onReadyChange
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -97,6 +157,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
     const onScoreLoadedRef = useRef(onScoreLoaded);
     const onTimeUpdateRef = useRef(onTimeUpdate);
     const onPlaybackFinishedRef = useRef(onPlaybackFinished);
+    const onRenderedHeightChangeRef = useRef(onRenderedHeightChange);
     const onReadyChangeRef = useRef(onReadyChange);
     const harmonicaKeyRef = useRef(harmonicaKey);
     const trackIndexRef = useRef(trackIndex);
@@ -112,11 +173,12 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
         onScoreLoadedRef.current = onScoreLoaded;
         onTimeUpdateRef.current = onTimeUpdate;
         onPlaybackFinishedRef.current = onPlaybackFinished;
+        onRenderedHeightChangeRef.current = onRenderedHeightChange;
         onReadyChangeRef.current = onReadyChange;
         harmonicaKeyRef.current = harmonicaKey;
         trackIndexRef.current = trackIndex;
         transposeRef.current = transpose;
-    }, [harmonicaKey, onPlaybackFinished, onReadyChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
+    }, [harmonicaKey, onPlaybackFinished, onReadyChange, onRenderedHeightChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
 
     useImperativeHandle(ref, () => ({
         playPause: () => {
@@ -183,6 +245,15 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 },
                 display: {
                     layoutMode: alphaTab.LayoutMode.Horizontal,
+                    padding: [8, 0, 8, 0],
+                    firstSystemPaddingTop: 0,
+                    systemPaddingTop: 0,
+                    systemPaddingBottom: 0,
+                    lastSystemPaddingBottom: 0,
+                    firstNotationStaffPaddingTop: 0,
+                    lastNotationStaffPaddingBottom: 0,
+                    notationStaffPaddingTop: 0,
+                    notationStaffPaddingBottom: 0,
                 },
                 notation: {
                     elements: hiddenScoreInfoElements,
@@ -208,15 +279,6 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             const getTracksInfo = (score: alphaTab.model.Score): TrackInfo[] =>
                 score.tracks.map((t, i) => ({ index: i, name: t.name }));
 
-            const ensureStandardNotationVisible = (track: alphaTab.model.Track) => {
-                track.staves.forEach((staff) => {
-                    staff.showStandardNotation = true;
-                    if (!staff.standardNotationLineCount) {
-                        staff.standardNotationLineCount = 5;
-                    }
-                });
-            };
-
             const hideScoreHeaderFooter = (score: alphaTab.model.Score) => {
                 score.style?.headerAndFooter?.forEach((style: HeaderFooterStyle) => {
                     style.isVisible = false;
@@ -230,7 +292,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 if (!selection) return;
                 const { track } = selection;
 
-                ensureStandardNotationVisible(track);
+                applyHarmonicaNotationView(track);
                 setTrackTranspositionPitch(currentApi, track, semitones);
                 currentApi.changeTrackSolo([track], true);
                 currentApi.score.tracks.forEach(t => currentApi.changeTrackMute([t], t !== track));
@@ -253,7 +315,10 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
 
                     resetAutoFitZoom();
                     const availableHeight = containerElement.clientHeight * AUTO_FIT_PADDING;
-                    const renderedHeight = scoreElement.scrollHeight;
+                    const renderedHeight = measureRenderedContentHeight(scoreElement);
+                    if (renderedHeight > 0) {
+                        onRenderedHeightChangeRef.current?.(renderedHeight);
+                    }
                     if (availableHeight <= 0 || renderedHeight <= availableHeight) {
                         return;
                     }
@@ -384,12 +449,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             if (!currentTrack) return;
 
             try {
-                currentTrack.staves.forEach((staff) => {
-                    staff.showStandardNotation = true;
-                    if (!staff.standardNotationLineCount) {
-                        staff.standardNotationLineCount = 5;
-                    }
-                });
+                applyHarmonicaNotationView(currentTrack);
                 setTrackTranspositionPitch(currentApi, currentTrack, transpose);
                 currentApi.changeTrackSolo([currentTrack], true);
                 currentApi.score.tracks.forEach(t => currentApi.changeTrackMute([t], t !== currentTrack));
@@ -432,8 +492,8 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
 
     return (
         <div ref={containerRef} className="h-full w-full bg-white overflow-y-hidden overflow-x-auto relative">
-            <div ref={scoreZoomRef} className="min-h-full w-full origin-top-left">
-                <div ref={alphaTabRef} className="min-h-full min-w-max" />
+            <div ref={scoreZoomRef} className="w-full origin-top-left">
+                <div ref={alphaTabRef} className="min-w-max" />
             </div>
         </div>
     );

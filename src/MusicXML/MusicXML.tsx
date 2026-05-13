@@ -53,6 +53,10 @@ const SOUNDFONTS = [
     { label: "Monsoons Harmonica (C)", value: "Monsoons Hohner C Harmonica.sf2" },
 ];
 
+const DEFAULT_GP_SCORE_HEIGHT_PX = 128;
+const MIN_GP_SCORE_HEIGHT_PX = 72;
+const GP_SCORE_BOTTOM_PADDING_PX = 2;
+
 type AvailablePreset = ReturnType<typeof getAvailablePresets>[number];
 type MusicXMLProps = { setGlobalState?: (state: MenuProps | null) => void; };
 
@@ -86,8 +90,13 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const [gpOriginalMidiNumbers, setGpOriginalMidiNumbers] = useState<number[]>([]);
   const [gpTracks, setGpTracks] = useState<{ index: number; name: string }[]>([]);
   const [selectedGpTrackIndex, setSelectedGpTrackIndex] = useState<number>(0);
+  const [gpScoreHeightPx, setGpScoreHeightPx] = useState(DEFAULT_GP_SCORE_HEIGHT_PX);
 
   const isGpFile = useMemo(() => fileName ? /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName) : false, [fileName]);
+  const gpScorePaneHeightPx = Math.max(
+    MIN_GP_SCORE_HEIGHT_PX,
+    Math.ceil(gpScoreHeightPx) + GP_SCORE_BOTTOM_PADDING_PX
+  );
 
   const osmdRef = useRef<HTMLDivElement>(null);
   const alphaTabRef = useRef<AlphaTabViewerRef>(null);
@@ -623,7 +632,11 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     <div className="h-full w-full flex flex-col bg-gray-950 text-white overflow-hidden max-w-full">
       {/* SECTION 1: Score Window */}
       <div className="w-full shrink-0 border-b border-gray-800 bg-white shadow-2xl overflow-hidden max-w-full">
-        <div ref={sheetScrollRef} className="h-48 min-h-[180px] w-full overflow-x-auto overflow-y-hidden bg-white text-black">
+        <div
+          ref={sheetScrollRef}
+          className={`${isGpFile ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black`}
+          style={isGpFile ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
+        >
           {!isGpFile ? (
             <div ref={osmdRef} className="h-full flex items-center min-w-max" />
           ) : (
@@ -678,6 +691,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                   }
               }}
               onPlaybackFinished={() => stopPlayback(true)}
+              onRenderedHeightChange={setGpScoreHeightPx}
             />
           )}
         </div>
@@ -753,6 +767,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                         setPlaybackEvents([]);
                         setGpTracks([]);
                         setSelectedGpTrackIndex(0);
+                        setGpScoreHeightPx(DEFAULT_GP_SCORE_HEIGHT_PX);
                         setIsSheetReady(false);
                         setIsGpPlaybackReady(false);
                         setFileName(file.name);
