@@ -292,59 +292,54 @@ export const NoteHighway = ({
           ))}
 
           <div
-            className="pointer-events-none absolute left-0 right-0 z-[40]"
-            style={{ top: `${NOTE_TARGET_LINE_PERCENT}%`, transform: 'translateY(-50%)' }}
+            className="pointer-events-none absolute left-0 right-0 h-20 -translate-y-1/2 z-[40]"
+            style={{ top: `${NOTE_TARGET_LINE_PERCENT}%` }}
           >
-            <div className="harmonica-cover-plate h-3 mb-0 relative overflow-hidden opacity-80">
-              <div className="absolute inset-0 bg-white/10 opacity-30 skew-x-12 translate-x-1/2" />
-            </div>
-
-            <div className="harmonica-comb py-1 px-0 border-y border-gray-800">
-              <div className="grid grid-cols-10 gap-0 px-2 sm:px-4">
-                {Array.from({ length: 10 }).map((_, i) => {
-                  const holeNumber = i + 1;
-                  const currentGlobalEvent = playbackEvents[targetEventIndex ?? -1];
-                  const currentTab = currentGlobalEvent?.tabs.find(t => getTabHole(t) === holeNumber);
-                  
-                  // Simple logic to check if this hole is being played in the current target event
-                  const isHoleTarget = Boolean(currentTab);
-                  
-                  // Realistic detection glow
-                  let isActive = false;
-                  let isBlow = false;
-                  if (detectedNote) {
-                      // Check if detected note matches any of the notes in this hole
-                      // For NoteHighway, we can just check if the detected note matches the current target note
-                      // to provide immediate feedback.
-                      const targetTab = currentTab;
-                      if (targetTab) {
-                          isActive = true; // For now just highlight the target hole if we have a detected note
-                          isBlow = !targetTab.startsWith("-");
-                      }
-                  }
-
-                  return (
-                    <div key={`realistic-hole-${i}`} className="flex flex-col items-center">
-                      <div className={`harmonica-hole w-full h-12 ${isActive ? (isBlow ? 'active-blow' : 'active-draw') : ''} ${isHoleTarget ? 'border-emerald-500/50' : 'border-transparent'} border-[0.5px]`}>
-                        <span className="text-lg font-black leading-none text-white/90 drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
-                          {holeNumber}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="harmonica-cover-plate harmonica-cover-plate-bottom h-3 mt-0 relative overflow-hidden opacity-80">
-              <div className="absolute inset-0 bg-black/10 opacity-30 -skew-x-12 -translate-x-1/2" />
-            </div>
+            <svg width="100%" height="100%" preserveAspectRatio="none" className="drop-shadow-2xl">
+              <defs>
+                <linearGradient id="bodyGrad" x1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#4b5563" />
+                  <stop offset="50%" stopColor="#1f2937" />
+                  <stop offset="100%" stopColor="#111827" />
+                </linearGradient>
+                <mask id="holeMask">
+                  <rect width="100%" height="100%" fill="white" />
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <circle 
+                      key={i} 
+                      cx={`${(i / 10) * 100 + 5}%`} 
+                      cy="50%" 
+                      r="20" 
+                      fill="black" 
+                    />
+                  ))}
+                </mask>
+              </defs>
+              <rect 
+                width="100%" 
+                height="100%" 
+                fill="url(#bodyGrad)" 
+                mask="url(#holeMask)"
+              />
+            </svg>
           </div>
             
           <div
-            className="absolute left-0 right-0 h-[1px] -translate-y-1/2 bg-emerald-500/30 pointer-events-none"
+            className="absolute left-0 right-0 h-[1px] -translate-y-1/2 bg-gray-600/60 pointer-events-none"
             style={{ top: `${NOTE_TARGET_LINE_PERCENT}%`, zIndex: 35 }}
           />
+
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={`hole-label-${i}`}
+              className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-[50] pointer-events-none"
+              style={{ left: `${(i / 10) * 100 + 5}%`, top: `${NOTE_TARGET_LINE_PERCENT}%` }}
+            >
+               <span className="text-lg font-extrabold leading-none text-white drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
+                {i + 1}
+              </span>
+            </div>
+          ))}
 
           <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
             <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
