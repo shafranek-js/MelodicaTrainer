@@ -22,3 +22,16 @@
 .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
 }
+
+/* alphaTab Dark Theme */
+.alpha-tab-dark canvas {
+    filter: invert(90%) hue-rotate(180deg) brightness(1.2);
+}
+
+.alpha-tab-dark .at-cursor-beat {
+    background: rgba(52, 211, 153, 0.7) !important; /* Brighter emerald for dark theme */
+}
+
+.alpha-tab-dark .at-cursor-bar {
+    background: rgba(52, 211, 153, 0.2) !important;
+}

@@ -124,6 +124,7 @@ export interface AlphaTabViewerRef {
     setTempo: (tempo: number) => void;
     setTickPosition: (tick: number) => void;
     isReadyForPlayback: () => boolean;
+    getCursorElement: () => HTMLElement | null;
 }
 
 interface AlphaTabViewerProps {
@@ -214,7 +215,10 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 apiRef.current.tickPosition = Math.max(0, Math.round(tick));
             }
         },
-        isReadyForPlayback: () => apiRef.current?.isReadyForPlayback ?? false
+        isReadyForPlayback: () => apiRef.current?.isReadyForPlayback ?? false,
+        getCursorElement: () => {
+            return alphaTabRef.current?.querySelector(".at-cursor-beat") as HTMLElement || null;
+        }
     }));
 
     useEffect(() => {
@@ -382,6 +386,19 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 if (args.currentTick !== undefined) {
                     lastTickRef.current = args.currentTick;
                     onTimeUpdateRef.current(args.currentTick);
+
+                    // Internal Centered Scrolling
+                    const container = containerRef.current;
+                    const cursor = alphaTabRef.current?.querySelector(".at-cursor-beat") as HTMLElement;
+                    if (container && cursor) {
+                        const containerRect = container.getBoundingClientRect();
+                        const cursorRect = cursor.getBoundingClientRect();
+                        const targetLeft = containerRect.width * 0.4;
+                        const offset = cursorRect.left - containerRect.left - targetLeft;
+                        
+                        // We use direct manipulation for speed during playback
+                        container.scrollLeft = Math.max(0, container.scrollLeft + offset);
+                    }
                 }
             });
             safeOn(api.playerFinished as AlphaTabEvent, () => onPlaybackFinishedRef.current());
@@ -491,9 +508,9 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
     }, []);
 
     return (
-        <div ref={containerRef} className="h-full w-full bg-white overflow-y-hidden overflow-x-auto relative">
+        <div ref={containerRef} className="h-full w-full bg-gray-900 overflow-y-hidden overflow-x-auto relative scrollbar-hide">
             <div ref={scoreZoomRef} className="w-full origin-top-left">
-                <div ref={alphaTabRef} className="min-w-max" />
+                <div ref={alphaTabRef} className="min-w-max alpha-tab-dark" />
             </div>
         </div>
     );
