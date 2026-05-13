@@ -473,7 +473,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
         onTogglePlayback: togglePlayback,
         onRestartPlayback: () => stopPlayback(true),
         tempo,
-        setTempo,
+        setTempo: handleSetTempo,
         progress,
         gameStats,
         accuracy,
@@ -670,7 +670,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
 
                   setPlaybackEvents(events);
                   setGpTracks(tracks || []);
-                  if (scoreTempo) {
+                  if (scoreTempo && !isManualTempo) {
                       setTempo(scoreTempo);
                   }
                   setCurrentEventIndex(0);
