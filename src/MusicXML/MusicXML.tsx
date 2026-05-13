@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { freqToNoteAndCents, harmonicaKeys, normalizeHarmonicaKey } from "../utils/utils";
 import { useTranslation } from "react-i18next";
+import { FolderOpen, RotateCcw } from "lucide-react";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import {
   ensureAudioContext,
@@ -711,60 +712,74 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       </div>
       <div className="flex-1 w-full overflow-hidden bg-gray-950">
         <div className="h-full max-w-screen-2xl mx-auto p-4 sm:p-6 overflow-hidden flex flex-col">
-          <div className="flex flex-col lg:flex-row gap-6 h-full items-start w-full">
-            <div className="w-full lg:w-80 shrink-0 bg-gray-900 rounded-lg shadow-xl p-5 space-y-4 border border-gray-700 overflow-y-auto max-h-full">
-              {routeStatus && <div className={`rounded border px-3 py-2 text-sm ${routeStatusClassNames[routeStatus.tone]}`}>{routeStatus.message}</div>}
-              <div>
-                <label className="block mb-1 text-gray-300 font-medium text-sm">Harmonica Key:</label>
-                <select value={harmonicaKey} onChange={(e) => setSelectedKey(e.target.value)} className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm">
-                  {harmonicaKeys.map((k) => <option key={k.value} value={k.value}>{t(k.label)}</option>)}
-                </select>
-              </div>
-
-              <div>
-                  <label className="block mb-1 text-gray-300 font-medium text-sm">SoundFont:</label>
-                  <select 
-                      value={selectedSf} 
-                      onChange={(e) => {
-                          setSelectedSf(e.target.value);
-                          stopPlayback(); // Changing SF requires re-init
-                      }} 
-                      className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm"
-                  >
-                  {SOUNDFONTS.map((sf) => <option key={sf.value} value={sf.value}>{sf.label}</option>)}
+          <div className="flex flex-col lg:flex-row gap-4 h-full items-start w-full">
+            {/* COLUMN 1: Score & Track Settings (Left) */}
+            <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar">
+              {routeStatus && <div className={`rounded-lg border px-3 py-2 text-sm font-medium ${routeStatusClassNames[routeStatus.tone]}`}>{routeStatus.message}</div>}
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Harmonica Key</label>
+                  <select value={harmonicaKey} onChange={(e) => setSelectedKey(e.target.value)} className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                    {harmonicaKeys.map((k) => <option key={k.value} value={k.value}>{t(k.label)}</option>)}
                   </select>
-              </div>
+                </div>
 
-              {availablePresets.length > 0 && (
-                  <div>
-                      <label className="block mb-1 text-gray-300 font-medium text-sm">Instrument:</label>
+                <div>
+                    <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">SoundFont</label>
+                    <select 
+                        value={selectedSf} 
+                        onChange={(e) => {
+                            setSelectedSf(e.target.value);
+                            stopPlayback();
+                        }} 
+                        className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    >
+                    {SOUNDFONTS.map((sf) => <option key={sf.value} value={sf.value}>{sf.label}</option>)}
+                    </select>
+                </div>
+
+                {availablePresets.length > 0 && (
+                    <div>
+                        <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Instrument</label>
+                        <select 
+                            value={selectedPreset} 
+                            onChange={(e) => setSelectedPreset(e.target.value)} 
+                            className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        >
+                        {availablePresets.map((p, idx) => (
+                            <option key={`${p.bank}:${p.program}:${idx}`} value={`${p.bank}:${p.program}`}>
+                                {p.name}
+                            </option>
+                        ))}
+                        </select>
+                    </div>
+                )}
+
+                {isGpFile && gpTracks.length > 0 && (
+                    <div>
+                      <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">GP Track</label>
                       <select 
-                          value={selectedPreset} 
-                          onChange={(e) => setSelectedPreset(e.target.value)} 
-                          className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm"
+                          value={selectedGpTrackIndex} 
+                          onChange={(e) => {
+                              shouldAutoTransposeGpRef.current = true;
+                              setSelectedGpTrackIndex(Number(e.target.value));
+                              stopPlayback(true);
+                          }} 
+                          className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                       >
-                      {availablePresets.map((p, idx) => (
-                          <option key={`${p.bank}:${p.program}:${idx}`} value={`${p.bank}:${p.program}`}>
-                              {p.name} ({p.bank}:{p.program})
-                          </option>
-                      ))}
+                          {gpTracks.map((t) => (
+                              <option key={t.index} value={t.index}>{t.name}</option>
+                          ))}
                       </select>
-                  </div>
-              )}
-
-              <div>
-                  <label className="block mb-1 text-gray-300 font-medium text-sm">Transpose:</label>
-                  <input
-                    type="number"
-                    value={transpose}
-                    onChange={(e) => handleTransposeChange(e.target.value)}
-                    className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm"
-                  />
+                    </div>
+                )}
               </div>
 
               <div className="pt-2">
-                <label className="inline-block cursor-pointer text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-full text-sm font-bold">
-                  📂 Load XML/GP
+                <label className="group relative flex items-center justify-center gap-2 cursor-pointer px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all w-full text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95">
+                  <FolderOpen size={16} />
+                  Load XML/GP
                   <input
                     type="file"
                     accept=".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx"
@@ -772,7 +787,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        stopPlayback(true); // EXPLICIT RESET FOR NEW FILE
+                        stopPlayback(true);
                         const content = await readMusicXmlFile(file);
                         const nextIsGpFile = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name);
                         shouldAutoTransposeGpRef.current = nextIsGpFile;
@@ -784,7 +799,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                         setIsSheetReady(false);
                         setIsGpPlaybackReady(false);
                         setFileName(file.name);
-                        setTranspose(0); // Reset transpose for new file
+                        setTranspose(0);
                         setRawFileContent(content);
                       } catch (err) {
                         console.error(err);
@@ -795,74 +810,33 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                     className="hidden"
                   />
                 </label>
-                {fileName && <p className="mt-1 text-[10px] text-gray-500 truncate text-center">Loaded: {fileName}</p>}
+                {fileName && <p className="mt-2 text-[10px] text-gray-500 font-bold truncate text-center uppercase tracking-tighter">Loaded: {fileName}</p>}
               </div>
 
               {!isGpFile && (
-                <div className="pt-2 space-y-2">
+                <div className="pt-2 grid grid-cols-2 gap-2">
                     <button
-                    onClick={downloadTransposedXml}
-                    disabled={!canUseProcessedScore}
-                    className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded transition w-full text-xs font-bold uppercase"
+                        onClick={downloadTransposedXml}
+                        disabled={!canUseProcessedScore}
+                        className="bg-gray-800 border border-gray-700 hover:bg-gray-750 disabled:opacity-30 text-gray-400 px-3 py-2 rounded-lg transition-all w-full text-[10px] font-black uppercase tracking-tighter"
+                        title="Transposed XML"
                     >
-                    💾 Transposed XML
+                        💾 XML
                     </button>
                     <button
-                    onClick={downloadHarpTabs}
-                    disabled={!canUseProcessedScore}
-                    className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded transition w-full text-xs font-bold uppercase"
+                        onClick={downloadHarpTabs}
+                        disabled={!canUseProcessedScore}
+                        className="bg-gray-800 border border-gray-700 hover:bg-gray-750 disabled:opacity-30 text-gray-400 px-3 py-2 rounded-lg transition-all w-full text-[10px] font-black uppercase tracking-tighter"
+                        title="HarpTabs text"
                     >
-                    📝 HarpTabs text
+                        📝 Text
                     </button>
                 </div>
-              )}
-
-              {(isGpFile || !isGpFile) && (
-                <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
-                    <p className="text-xs font-bold text-gray-400 uppercase">Auto transpose</p>
-                    <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-xs text-gray-300"><input type="checkbox" checked={noOverblowOrDraw} onChange={(e) => setNoOverblowOrDraw(e.target.checked)} />No Overblow/Draw</label>
-                    <label className="flex items-center gap-2 text-xs text-gray-300"><input type="checkbox" checked={noBend} onChange={(e) => setNoBend(e.target.checked)} />No Bends</label>
-                    {!isGpFile && <label className="flex items-center gap-2 text-xs text-emerald-400 font-bold"><input type="checkbox" checked={showNoteNames} onChange={(e) => setShowNoteNames(e.target.checked)} />Show Note Names</label>}
-                    </div>
-                    <button 
-                        onClick={autoTransposeWithFilters} 
-                        className="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded transition w-full text-xs font-bold uppercase"
-                    >
-                        🎯 Optimize {optimalVariantsCount > 0 ? `(${optimalVariantsCount} variants)` : ''}
-                    </button>
-                </div>
-              )}
-              {isGpFile && (
-                  <div className="rounded border border-gray-700 bg-gray-950 p-3 space-y-3">
-                      <p className="text-xs font-bold text-gray-400 uppercase mb-2">GP Features</p>
-                      
-                      {gpTracks.length > 0 && (
-                          <div>
-                            <label className="block mb-1 text-gray-300 font-medium text-sm">Select Track:</label>
-                            <select 
-                                value={selectedGpTrackIndex} 
-                                onChange={(e) => {
-                                    shouldAutoTransposeGpRef.current = true;
-                                    setSelectedGpTrackIndex(Number(e.target.value));
-                                    stopPlayback(true);
-                                }} 
-                                className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm"
-                            >
-                                {gpTracks.map((t) => (
-                                    <option key={t.index} value={t.index}>
-                                        {t.name}
-                                    </option>
-                                ))}
-                            </select>
-                          </div>
-                      )}
-
-                      <label className="flex items-center gap-2 text-xs text-emerald-400 font-bold"><input type="checkbox" checked={showNoteNames} onChange={(e) => setShowNoteNames(e.target.checked)} />Show Note Names</label>
-                  </div>
               )}
             </div>
-            <div className="flex-1 w-full h-full overflow-hidden flex flex-col min-w-0">
+
+            {/* COLUMN 2: Note Highway (Center) */}
+            <div className="flex-1 w-full h-full overflow-hidden flex flex-col min-w-0 order-first lg:order-none">
               <NoteHighway
                 clarity={clarity}
                 detectedNote={detectedNote}
@@ -876,7 +850,75 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                 playbackEvents={playbackEvents}
                 playbackTimeline={playbackTimeline}
                 isGp={isGpFile}
+                targetEventIndex={currentEventIndex}
               />
+            </div>
+
+            {/* COLUMN 3: Transpose & Optimizer (Right) */}
+            <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar">
+                <div>
+                    <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Transpose</label>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            value={transpose}
+                            onChange={(e) => handleTransposeChange(e.target.value)}
+                            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 w-full text-white text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        />
+                        <button onClick={() => setTranspose(0)} className="bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-400 p-2 rounded-lg transition-all" title="Reset transpose">
+                            <RotateCcw size={16} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-gray-950/50 rounded-xl p-4 border border-gray-800 space-y-4">
+                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Auto Optimizer</p>
+                    
+                    <div className="space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                checked={noOverblowOrDraw} 
+                                onChange={(e) => setNoOverblowOrDraw(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-950" 
+                            />
+                            <span className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors uppercase tracking-tight">No Overblow/Draw</span>
+                        </label>
+                        
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                checked={noBend} 
+                                onChange={(e) => setNoBend(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-950" 
+                            />
+                            <span className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors uppercase tracking-tight">No Bends</span>
+                        </label>
+
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                checked={showNoteNames} 
+                                onChange={(e) => setShowNoteNames(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-950" 
+                            />
+                            <span className="text-xs font-bold text-emerald-500/80 group-hover:text-emerald-400 transition-colors uppercase tracking-tight">Show Note Names</span>
+                        </label>
+                    </div>
+
+                    <button 
+                        onClick={autoTransposeWithFilters} 
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest py-3 px-4 rounded-xl transition-all w-full shadow-lg shadow-emerald-900/20 active:scale-95"
+                    >
+                        🎯 Optimize {optimalVariantsCount > 0 ? `(${optimalVariantsCount} v)` : ''}
+                    </button>
+                </div>
+
+                <div className="bg-emerald-900/10 border border-emerald-500/10 rounded-lg p-3">
+                    <p className="text-[9px] text-gray-500 font-bold leading-tight uppercase tracking-tighter">
+                        Optimization uses advanced pitch analysis to find the best key for your harmonica model.
+                    </p>
+                </div>
             </div>
           </div>
         </div>

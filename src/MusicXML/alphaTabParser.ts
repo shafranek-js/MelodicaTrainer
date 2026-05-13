@@ -2,6 +2,7 @@ import * as alphaTab from "@coderline/alphatab";
 import { getHarmonicaHoleForNote } from "../utils/utils";
 import type { PlaybackEvent, PlaybackNote } from "./types";
 import { Note } from "tonal";
+import { resolveTiedNotes } from "./playbackParser";
 
 type AlphaTabTrackWithStaffs = alphaTab.model.Track & {
     staffs?: alphaTab.model.Staff[];
@@ -14,7 +15,8 @@ type AlphaTabStaffWithTransposition = alphaTab.model.Staff & {
 type AlphaTabPlaybackNote = {
     realValue?: number;
     velocity?: number;
-    isTieStart?: boolean;
+    isTieOrigin?: boolean;
+    isTieDestination?: boolean;
 };
 
 type AlphaTabPlaybackBeat = {
@@ -237,17 +239,45 @@ export function parseAlphaTabScore(
             
             const beatNotes = beat.notes || [];
             if (beatNotes.length > 0 && !beat.isRest) {
-                beatNotes.forEach((note) => {
+                beatNotes.forEach((playbackNote) => {
+                    const note = playbackNote as unknown as alphaTab.model.Note;
                     if (note.realValue === undefined || note.realValue === 0) return;
                     const midi = note.realValue + missingManualTranspose;
+                    
+                    // Map AlphaTab dynamics to velocity
+                    // PPP=0, PP=1, P=2, MP=3, MF=4, F=5, FF=6, FFF=7
+                    let velocity = 0.68; // MF default
+                    switch (note.dynamics) {
+                        case alphaTab.model.DynamicValue.PPP: velocity = 0.25; break;
+                        case alphaTab.model.DynamicValue.PP: velocity = 0.32; break;
+                        case alphaTab.model.DynamicValue.P: velocity = 0.42; break;
+                        case alphaTab.model.DynamicValue.MP: velocity = 0.52; break;
+                        case alphaTab.model.DynamicValue.MF: velocity = 0.68; break;
+                        // F is usually 5 but the enum is omitted in our brief look, default it around 0.82
+                        case alphaTab.model.DynamicValue.FF: velocity = 0.94; break;
+                        case alphaTab.model.DynamicValue.FFF: velocity = 1; break;
+                        default: 
+                            if (note.dynamics === 5) velocity = 0.82; // F
+                            break;
+                    }
+
+                    // Map articulation
+                    let articulation: PlaybackNote["articulation"] = "normal";
+                    if (note.isStaccato) {
+                        articulation = "staccato";
+                    } else if (note.accentuated === alphaTab.model.AccentuationType.Heavy || note.accentuated === alphaTab.model.AccentuationType.Normal) {
+                        articulation = "accent";
+                    } else if (note.accentuated === alphaTab.model.AccentuationType.Tenuto) {
+                        articulation = "tenuto";
+                    }
                     
                     notes.push({
                         name: Note.fromMidi(midi),
                         durationBeats: beat.playbackDuration / res,
-                        velocity: (note.velocity || 100) / 127,
-                        articulation: "normal",
-                        tieStart: note.isTieStart || false,
-                        tieStop: false, 
+                        velocity: velocity,
+                        articulation: articulation,
+                        tieStart: note.isTieOrigin || false,
+                        tieStop: note.isTieDestination || false,
                         shouldPlay: true
                     });
                 });
@@ -273,6 +303,7 @@ export function parseAlphaTabScore(
         currentPlaybackCursor = eventStartTick + eventDurationTicks;
     });
 
-    console.log(`AlphaTab Parser: Success! Parsed ${events.length} events.`);
-    return { events, tempo: initialTempo };
+    const resolvedEvents = resolveTiedNotes(events);
+    console.log(`AlphaTab Parser: Success! Parsed ${resolvedEvents.length} events.`);
+    return { events: resolvedEvents, tempo: initialTempo };
 }

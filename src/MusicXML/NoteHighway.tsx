@@ -76,6 +76,8 @@ export const NoteHighway = ({
 
   const renderData = visibleGameEvents.flatMap(({ event, index: globalEventIndex, timing }) => {
       return event.notes.map((note, noteIndex) => {
+          if (!note.shouldPlay) return null;
+
           const tab = event.tabs[noteIndex] || event.tabs[0] || "";
           const hole = getTabHole(tab);
           if (hole === null || hole < 1 || hole > 10) return null;
@@ -88,8 +90,13 @@ export const NoteHighway = ({
           const dynamicLookaheadMs = containerHeightPx * msPerPx;
           const percentPerMs = NOTE_TARGET_LINE_PERCENT / dynamicLookaheadMs;
           
+          // Compute true duration for tied notes
+          const noteDurationRatio = event.durationBeats > 0 ? (note.durationBeats / event.durationBeats) : 1;
+          const noteDurationMs = timing.durationMs * noteDurationRatio;
+          const noteEndMs = timing.startMs + noteDurationMs;
+
           const topPercent = NOTE_TARGET_LINE_PERCENT - (timeToHitMs * percentPerMs);
-          const heightPercent = timing.durationMs * percentPerMs;
+          const heightPercent = noteDurationMs * percentPerMs;
 
           const targetWidth = getTargetWidthPct(tab, containerWidth);
           let bottomWidth = targetWidth;
@@ -119,8 +126,8 @@ export const NoteHighway = ({
               yBottom -= 0.4; 
           }
 
-          const isHitWindow = visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS && visualPlayheadMs <= timing.endMs + NOTE_HIT_WINDOW_MS;
-          const isStrictlyActive = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= timing.endMs;
+          const isHitWindow = visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS && visualPlayheadMs <= noteEndMs + NOTE_HIT_WINDOW_MS;
+          const isStrictlyActive = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= noteEndMs;
           const wasHit = lastHitIndex === globalEventIndex && isHitWindow;
           
           const isDraw = tab.startsWith("-");

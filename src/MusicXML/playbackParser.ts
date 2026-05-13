@@ -121,7 +121,7 @@ const getTies = (note: Element) => {
   };
 };
 
-const resolveTiedNotes = (events: PlaybackEvent[]) => {
+export const resolveTiedNotes = (events: PlaybackEvent[]) => {
   events.forEach((event, eventIndex) => {
     event.notes.forEach((note) => {
       if (note.tieStop) {
