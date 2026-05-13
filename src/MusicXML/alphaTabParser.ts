@@ -118,8 +118,11 @@ export function parseAlphaTabScore(
         const bar = staff.bars[barIndex];
         if (!bar || !bar.voices) return;
         
-        bar.voices.forEach((voice) => {
-            if (!voice.beats) return;
+        // To maintain a linear timeline, we only extract the primary voice (Voice 0).
+        // GP files often contain rests or chords in other voices that would break 
+        // the sequential playback event accumulation.
+        const voice = bar.voices[0];
+        if (voice && voice.beats) {
             voice.beats.forEach((beat) => {
                 const playbackBeat = beat as unknown as AlphaTabPlaybackBeat;
                 if (playbackBeat.playbackDuration > 0) {
@@ -133,7 +136,7 @@ export function parseAlphaTabScore(
                     });
                 }
             });
-        });
+        }
 
         if (tempoAutomations.length > 0) {
             currentTempo = tempoAutomations[tempoAutomations.length - 1].tempo;
