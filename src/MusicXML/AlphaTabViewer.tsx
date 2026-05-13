@@ -238,6 +238,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 core: {
                     logLevel: alphaTab.LogLevel.Info,
                     fontDirectory: baseUrl + "font/",
+                    engine: 'svg'
                 },
                 player: {
                     playerMode: alphaTab.PlayerMode.EnabledSynthesizer,

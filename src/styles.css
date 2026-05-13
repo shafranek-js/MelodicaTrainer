@@ -24,12 +24,13 @@
 }
 
 /* alphaTab Dark Theme */
-.alpha-tab-dark canvas {
+.alpha-tab-dark {
     filter: invert(90%) hue-rotate(180deg) brightness(1.2);
 }
 
 .alpha-tab-dark .at-cursor-beat {
-    background: rgba(52, 211, 153, 0.7) !important; /* Brighter emerald for dark theme */
+    filter: invert(100%) hue-rotate(180deg); /* Counter-invert cursor to keep emerald */
+    background: rgba(52, 211, 153, 0.7) !important;
 }
 
 .alpha-tab-dark .at-cursor-bar {
