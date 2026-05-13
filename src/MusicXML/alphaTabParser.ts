@@ -14,30 +14,93 @@ export function parseAlphaTabScore(
     if (!score.tracks || score.tracks.length === 0) return [];
 
     const track = score.tracks[trackIndex] || score.tracks[0];
+    const staff = track.staves[0] || (track as any).staffs?.[0];
+    if (!staff || !staff.bars) return [];
+
     console.log(`AlphaTab Parser: Extracting track ${trackIndex} (${track.name})`);
     
+    const masterBars = score.masterBars;
     const allBeats: any[] = [];
-    
-    // Exhaustive collection with absolute tick calculation
-    const staves = track.staves || (track as any).staffs || [];
-    staves.forEach((staff: any) => {
-        if (!staff.bars) return;
-        staff.bars.forEach((bar: any) => {
-            const barStart = bar.masterBar?.start || 0;
-            if (!bar.voices) return;
-            bar.voices.forEach((voice: any) => {
-                if (!voice.beats) return;
-                voice.beats.forEach((beat: any) => {
-                    if (beat.playbackDuration > 0) {
-                        allBeats.push({
-                            ...beat,
-                            absoluteStart: barStart + beat.playbackStart
-                        });
-                    }
-                });
+
+    const getBarLengthTicks = (barIdx: number) => {
+        const mb = masterBars[barIdx];
+        if (masterBars[barIdx + 1]) {
+            return masterBars[barIdx + 1].start - mb.start;
+        }
+        // Fallback for last bar
+        const resolution = score.midiTickResolution || 960;
+        return (mb.timeSignatureNumerator / mb.timeSignatureDenominator) * 4 * resolution;
+    };
+
+    const collectBeatsFromBar = (barIndex: number, tickOffset: number, originalTickOffset: number) => {
+        const bar = staff.bars[barIndex];
+        if (!bar || !bar.voices) return;
+        
+        bar.voices.forEach((voice: any) => {
+            if (!voice.beats) return;
+            voice.beats.forEach((beat: any) => {
+                if (beat.playbackDuration > 0) {
+                    // In AlphaTab model, playbackStart is relative to the bar start
+                    const relativeStart = beat.playbackStart; 
+                    allBeats.push({
+                        ...beat,
+                        absoluteStart: tickOffset + relativeStart,
+                        originalTick: originalTickOffset + relativeStart
+                    });
+                }
             });
         });
+    };
+
+    // 1. Build the playback path (list of bar indices and their absolute tick offsets)
+    const playbackPath: { barIndex: number, offset: number, originalOffset: number }[] = [];
+    let absoluteTickCursor = 0;
+    let repeatStartBarIndex = 0;
+
+    for (let i = 0; i < masterBars.length; i++) {
+        const mb = masterBars[i];
+        if (mb.isRepeatStart) {
+            repeatStartBarIndex = i;
+        }
+
+        const barLength = getBarLengthTicks(i);
+        
+        // Add the first (or only) pass of this bar
+        playbackPath.push({ barIndex: i, offset: absoluteTickCursor, originalOffset: mb.start });
+        
+        if (mb.repeatCount > 1) {
+            // This bar marks the end of a repeated section.
+            // Calculate the length of the section that will be repeated
+            let sectionLength = 0;
+            for (let j = repeatStartBarIndex; j <= i; j++) {
+                sectionLength += getBarLengthTicks(j);
+            }
+
+            // Add additional passes
+            for (let r = 1; r < mb.repeatCount; r++) {
+                const passStartOffset = absoluteTickCursor + barLength + (r - 1) * sectionLength;
+                let innerOffset = 0;
+                for (let j = repeatStartBarIndex; j <= i; j++) {
+                    playbackPath.push({ 
+                        barIndex: j, 
+                        offset: passStartOffset + innerOffset, 
+                        originalOffset: masterBars[j].start 
+                    });
+                    innerOffset += getBarLengthTicks(j);
+                }
+            }
+            // Advance cursor by the additional passes
+            absoluteTickCursor += (mb.repeatCount - 1) * sectionLength;
+        }
+        
+        absoluteTickCursor += barLength;
+    }
+
+    // 2. Collect beats based on the playback path
+    playbackPath.forEach(step => {
+        collectBeatsFromBar(step.barIndex, step.offset, step.originalOffset);
     });
+
 
     if (allBeats.length === 0) return [];
 
@@ -58,23 +121,29 @@ export function parseAlphaTabScore(
     });
 
     const sortedStarts = Array.from(groupedBeats.keys()).sort((a, b) => a - b);
-    let currentTick = 0;
+    let currentPlaybackCursor = 0;
+    const res = score.midiTickResolution || 960;
 
     sortedStarts.forEach((start) => {
         const beatsAtTime = groupedBeats.get(start)!;
         const firstBeat = beatsAtTime[0];
         const tempoBpm = firstBeat.playbackTempo || 90;
 
-        if (start > currentTick) {
+        // 1. Handle Silent Gaps (Rests)
+        if (start > currentPlaybackCursor) {
+            const gapTicks = start - currentPlaybackCursor;
             events.push({
-                durationBeats: start - currentTick,
+                durationBeats: gapTicks / res,
                 tempoBpm,
                 notes: [],
                 tabs: [],
-                sourceEventIndex: events.length
+                sourceEventIndex: events.length,
+                tick: currentPlaybackCursor,
+                originalTick: firstBeat.originalTick - gapTicks 
             });
         }
 
+        // 2. Handle Beats with Notes
         let maxDur = 0;
         const notes: PlaybackNote[] = [];
         
@@ -84,13 +153,12 @@ export function parseAlphaTabScore(
             const beatNotes = beat.notes || [];
             if (beatNotes.length > 0 && !beat.isRest) {
                 beatNotes.forEach((note: any) => {
-                    // APPLY MANUAL TRANSPOSE HERE
                     const midi = note.realValue + manualTranspose;
                     if (midi === undefined || midi === 0) return;
                     
                     notes.push({
                         name: Note.fromMidi(midi),
-                        durationBeats: beat.playbackDuration,
+                        durationBeats: beat.playbackDuration / res,
                         velocity: (note.velocity || 100) / 127,
                         articulation: "normal",
                         tieStart: note.isTieStart || false,
@@ -103,15 +171,21 @@ export function parseAlphaTabScore(
 
         const tabs = notes.map(n => getHarmonicaHoleForNote(harmonicaKey, n.name) || "");
 
+        // Ensure we don't create overlapping events in our linear playbackEvents list
+        const eventStartTick = Math.max(start, currentPlaybackCursor);
+        const eventDurationTicks = Math.max(10, maxDur); // Minimum 10 ticks duration
+
         events.push({
-            durationBeats: maxDur,
+            durationBeats: eventDurationTicks / res,
             tempoBpm,
             notes,
             tabs,
-            sourceEventIndex: events.length
+            sourceEventIndex: events.length,
+            tick: eventStartTick,
+            originalTick: firstBeat.originalTick
         });
 
-        currentTick = start + maxDur;
+        currentPlaybackCursor = eventStartTick + eventDurationTicks;
     });
 
     console.log(`AlphaTab Parser: Success! Parsed ${events.length} events.`);

@@ -9,6 +9,7 @@ export interface AlphaTabViewerRef {
     setTempo: (tempo: number) => void;
     unlockAudio: () => void;
     transpose: (interval: number) => void;
+    setTickPosition: (tick: number) => void;
 }
 
 interface AlphaTabViewerProps {
@@ -93,6 +94,11 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
         },
         transpose: (_interval: number) => {
             console.log("AlphaTab: Transpose handled via props");
+        },
+        setTickPosition: (tick: number) => {
+            if (apiRef.current) {
+                apiRef.current.tickPosition = tick;
+            }
         }
     }));
 
@@ -117,6 +123,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                     enablePlayer: true,
                     soundFont: sfPath,
                     scrollElement: containerRef.current,
+                    isLooping: false,
                 },
                 display: {
                     layoutMode: alphaTab.LayoutMode.Horizontal,

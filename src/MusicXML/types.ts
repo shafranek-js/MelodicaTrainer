@@ -14,6 +14,8 @@ export type PlaybackEvent = {
   notes: PlaybackNote[];
   tabs: string[];
   sourceEventIndex: number;
+  tick?: number;
+  originalTick?: number;
 };
 
 export type GameStats = {

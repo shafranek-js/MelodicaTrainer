@@ -18,25 +18,16 @@ export const getPlayableMidiNumbers = (events: PlaybackEvent[]) => {
 
 export const createPlaybackTimeline = (
   events: PlaybackEvent[],
-  tempoScale: number,
-  isGp: boolean = false
+  tempoScale: number
 ) => {
   let cursor = 0;
 
   return events.map((event): PlaybackTiming => {
-    let duration: number;
-    
-    if (isGp) {
-        // In GP mode, durationBeats is already in TICKS.
-        // We use Ticks as our absolute coordinate system.
-        duration = event.durationBeats;
-    } else {
-        const effectiveTempo = Math.max(20, event.tempoBpm * tempoScale);
-        duration = Math.max(
-          80,
-          (60000 / effectiveTempo) * event.durationBeats
-        );
-    }
+    const effectiveTempo = Math.max(20, event.tempoBpm * tempoScale);
+    const duration = Math.max(
+      80,
+      (60000 / effectiveTempo) * event.durationBeats
+    );
 
     const timing = {
       startMs: cursor,

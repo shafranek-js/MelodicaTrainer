@@ -73,6 +73,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [routeStatus, setRouteStatus] = useState<RouteStatus | null>({ tone: "info", message: "Ready." });
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
   const [isSheetReady, setIsSheetReady] = useState(false);
@@ -114,14 +115,13 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const tempoScaleRef = useRef(tempoScale);
   useEffect(() => { tempoScaleRef.current = tempoScale; }, [tempoScale]);
 
-  // Compute the timeline. Pass isGp flag for absolute tick-based logic.
-  const playbackTimeline = useMemo(() => createPlaybackTimeline(playbackEvents, 1, isGpFile), [playbackEvents, isGpFile]);
+  // Compute the timeline.
+  const playbackTimeline = useMemo(() => createPlaybackTimeline(playbackEvents, 1), [playbackEvents]);
   const playbackEndMs = playbackTimeline[playbackTimeline.length - 1]?.endMs ?? 0;
   
-  // Find the shortest note duration to scale the highway grid. 
-  // For GP, this is in Ticks. For MusicXML, it's in ms.
+  // Find the shortest note duration to scale the highway grid.
   const shortestNoteDurationMs = useMemo(() => {
-    if (playbackTimeline.length === 0) return isGpFile ? 480 : 250; 
+    if (playbackTimeline.length === 0) return 250; 
     let minDuration = Number.POSITIVE_INFINITY;
     
     playbackTimeline.forEach((timing, idx) => {
@@ -134,14 +134,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
         }
     });
     
-    if (isGpFile) {
-        // Enforce a minimum of 480 ticks (Quarter note) as the standard 'unit' for visual scaling
-        // to keep blocks at a playable size.
-        return Math.max(480, minDuration === Number.POSITIVE_INFINITY ? 480 : minDuration);
-    }
-    
     return minDuration === Number.POSITIVE_INFINITY ? 250 : minDuration;
-  }, [playbackTimeline, playbackEvents, isGpFile]);
+  }, [playbackTimeline, playbackEvents]);
 
   const visualPlayheadMs = currentGameTimeMs;
   const progress = playbackEvents.length > 0 ? Math.min(100, Math.round((currentEventIndex / playbackEvents.length) * 100)) : 0;
@@ -246,14 +240,23 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     const event = playbackEvents[eventIndex];
     if (!event) return;
     moveCursorInstantlyToEvent(event.sourceEventIndex);
+    
+    // AlphaTab Sync
+    if (isGpFile && alphaTabRef.current && event.originalTick !== undefined) {
+        alphaTabRef.current.setTickPosition(event.originalTick);
+    }
+
     const nextEvent = playbackEvents[eventIndex + 1];
     if (nextEvent && nextEvent.sourceEventIndex > event.sourceEventIndex) {
-        styleSheetCursor(osmdInstance.current!.cursor!.cursorElement, durationMs);
-        osmdInstance.current!.cursor!.next();
+        const cursor = osmdInstance.current?.cursor;
+        if (cursor) {
+            styleSheetCursor(cursor.cursorElement, durationMs);
+            cursor.next();
+        }
         cursorEventIndexRef.current = nextEvent.sourceEventIndex;
         scrollSheetToCursor();
     }
-  }, [playbackEvents, moveCursorInstantlyToEvent, scrollSheetToCursor]);
+  }, [playbackEvents, moveCursorInstantlyToEvent, scrollSheetToCursor, isGpFile, playbackTimeline]);
 
   const schedulePlayback = useCallback((startIndex: number, runId: number) => {
     const event = playbackEvents[startIndex];
@@ -289,12 +292,6 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     });
 
     if (isPlayingRef.current) {
-      if (isGpFile) {
-          // True PAUSE for GP files
-          alphaTabRef.current?.playPause();
-          setIsPlaying(false);
-          return;
-      }
       stopPlayback();
       return;
     }
@@ -305,19 +302,6 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
             hasEvents: playbackEvents.length > 0,
             hasAlphaTab: !!alphaTabRef.current
         });
-        return;
-    }
-
-    if (isGpFile) {
-        // IMPORTANT: Synchronous execution in click handler is vital for audio unlock
-        console.log("Starting GP playback...");
-        try {
-            alphaTabRef.current?.unlockAudio();
-            alphaTabRef.current?.playPause();
-            setIsPlaying(true);
-        } catch (e) {
-            console.error("Failed to start GP playback", e);
-        }
         return;
     }
 
@@ -345,7 +329,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
         resetScoring();
       }
       
-      // Calculate PRECISE resume point for MusicXML
+      // Calculate PRECISE resume point
       const currentPosMs = currentGameTimeMs;
       gameClockOffsetMsRef.current = currentPosMs;
       gameClockStartMsRef.current = performance.now();
@@ -408,6 +392,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     if (setGlobalState) {
       setGlobalState({
         isPlaying,
+        isPaused: !isPlaying && currentGameTimeMs > 0,
         onTogglePlayback: togglePlayback,
         onRestartPlayback: () => stopPlayback(true),
         tempo,
@@ -419,19 +404,19 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       });
     }
     return () => setGlobalState?.(null);
-  }, [setGlobalState, isPlaying, tempo, progress, gameStats, accuracy, canPlayback, togglePlayback, stopPlayback]);
+  }, [setGlobalState, isPlaying, currentGameTimeMs, tempo, progress, gameStats, accuracy, canPlayback, togglePlayback, stopPlayback]);
 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
 
   useEffect(() => {
-    if (!isPlaying || isGpFile) return;
+    if (!isPlaying) return;
     const updateClock = () => {
       setCurrentGameTimeMs(gameClockOffsetMsRef.current + (performance.now() - gameClockStartMsRef.current) * tempoScaleRef.current);
       gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
     };
     gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
     return () => { if (gameClockFrameRef.current !== null) window.cancelAnimationFrame(gameClockFrameRef.current); };
-  }, [isPlaying, isGpFile]);
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!rawFileContent) {
@@ -581,12 +566,24 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                   setIsSheetReady(true);
                   setRouteStatus({ tone: "success", message: "Guitar Pro score loaded." });
               }}
-              onTimeUpdate={(timeMs) => {
-                  setCurrentGameTimeMs(timeMs);
+              onTimeUpdate={(tickOrMs) => {
+                  if (isPlayingRef.current) return;
                   
-                  // Update currentEventIndex for progress and scoring
-                  const index = playbackTimeline.findIndex(t => timeMs >= t.startMs && timeMs <= t.endMs);
-                  if (index !== -1) setCurrentEventIndex(index);
+                  if (isGpFile) {
+                      // Find the playback event that most closely matches this tick.
+                      // Since ticks are unexpanded in AlphaTab visually, we'll pick the first match.
+                      const eventIdx = playbackEvents.findIndex(e => e.originalTick !== undefined && e.originalTick >= tickOrMs);
+                      const actualIdx = eventIdx !== -1 ? eventIdx : 0;
+                      const timing = playbackTimeline[actualIdx];
+                      if (timing) {
+                          setCurrentGameTimeMs(timing.startMs);
+                          setCurrentEventIndex(actualIdx);
+                      }
+                  } else {
+                      setCurrentGameTimeMs(tickOrMs);
+                      const index = playbackTimeline.findIndex(t => tickOrMs >= t.startMs && tickOrMs <= t.endMs);
+                      if (index !== -1) setCurrentEventIndex(index);
+                  }
               }}
               onPlaybackFinished={() => stopPlayback(true)}
             />
