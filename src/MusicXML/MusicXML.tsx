@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
-import { freqToNoteAndCents, harmonicaKeys } from "../utils/utils";
+import { freqToNoteAndCents, harmonicaKeys, normalizeHarmonicaKey } from "../utils/utils";
 import { useTranslation } from "react-i18next";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import {
@@ -16,8 +16,7 @@ import { readMusicXmlFile } from "./musicXmlFile";
 import {
   createFirstStaffDisplayXml,
   injectHarmonicaTabs,
-  findAutoTransposeInterval,
-  findBestTransposeInterval,
+  findAutoTransposeIntervals,
   findBestTransposeIntervals,
   exportHarpTabsText,
 } from "./musicXmlTransform";
@@ -28,13 +27,15 @@ import {
   getPlayableMidiNumbers,
   getTargetEventIndex,
   getVisibleGameEvents,
-  getLaneKeys,
 } from "./playbackTimeline";
 import { styleSheetCursor } from "./sheetCursor";
 import { useNoteHighwayScoring } from "./useNoteHighwayScoring";
+import { getGpEventIndexAtOriginalTick, getInterpolatedGpCursorTick } from "./gpCursor";
 import { usePersistentState } from "../hooks/usePersistentState";
 import AlphaTabViewer from "./AlphaTabViewer";
 import type { AlphaTabViewerRef } from "./AlphaTabViewer";
+import type { MenuProps } from "../Menu";
+import type { PlaybackEvent, PlaybackNote } from "./types";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string; };
@@ -52,7 +53,8 @@ const SOUNDFONTS = [
     { label: "Monsoons Harmonica (C)", value: "Monsoons Hohner C Harmonica.sf2" },
 ];
 
-type MusicXMLProps = { setGlobalState?: (state: any) => void; };
+type AvailablePreset = ReturnType<typeof getAvailablePresets>[number];
+type MusicXMLProps = { setGlobalState?: (state: MenuProps | null) => void; };
 
 const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const { t } = useTranslation();
@@ -68,18 +70,20 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const [tempo, setTempo] = usePersistentState<number>("harptrainer_tempo", 90);
   const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "022_Florestan_Harmonica.sf2");
   const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22"); // Default to Harmonica
+  const harmonicaKey = normalizeHarmonicaKey(selectedKey);
 
   // VOLATILE STATES
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [routeStatus, setRouteStatus] = useState<RouteStatus | null>({ tone: "info", message: "Ready." });
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
   const [isSheetReady, setIsSheetReady] = useState(false);
-  const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
-  const [availablePresets, setAvailablePresets] = useState<any[]>([]);
-  const [playbackEvents, setPlaybackEvents] = useState<any[]>([]);
+  const [hasSheetRenderError] = useState(false);
+  const [isGpPlaybackReady, setIsGpPlaybackReady] = useState(false);
+  const [availablePresets, setAvailablePresets] = useState<AvailablePreset[]>([]);
+  const [playbackEvents, setPlaybackEvents] = useState<PlaybackEvent[]>([]);
+  const [gpOriginalMidiNumbers, setGpOriginalMidiNumbers] = useState<number[]>([]);
   const [gpTracks, setGpTracks] = useState<{ index: number; name: string }[]>([]);
   const [selectedGpTrackIndex, setSelectedGpTrackIndex] = useState<number>(0);
 
@@ -97,8 +101,10 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   const gameClockFrameRef = useRef<number | null>(null);
   const gameClockStartMsRef = useRef( performance.now());
   const gameClockOffsetMsRef = useRef(0);
+  const gpCursorFrameRef = useRef<number | null>(null);
   const sheetRenderRunRef = useRef(0);
   const isPlayingRef = useRef(false);
+  const shouldAutoTransposeGpRef = useRef(false);
 
   const displayFileContent = useMemo(() => (fileContent ? createFirstStaffDisplayXml(fileContent) : null), [fileContent]);
   
@@ -107,7 +113,10 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     if (isGpFile || !displayFileContent) return;
     const playback = parsePlaybackEvents(displayFileContent);
     setPlaybackEvents(playback.events);
-  }, [displayFileContent, isGpFile]);
+    if (playback.detectedTempo) {
+        setTempo(playback.detectedTempo);
+    }
+  }, [displayFileContent, isGpFile, setTempo]);
 
   const playableMidiNumbers = useMemo(() => getPlayableMidiNumbers(playbackEvents), [playbackEvents]);
   
@@ -117,8 +126,6 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
 
   // Compute the timeline.
   const playbackTimeline = useMemo(() => createPlaybackTimeline(playbackEvents, 1), [playbackEvents]);
-  const playbackEndMs = playbackTimeline[playbackTimeline.length - 1]?.endMs ?? 0;
-  
   // Find the shortest note duration to scale the highway grid.
   const shortestNoteDurationMs = useMemo(() => {
     if (playbackTimeline.length === 0) return 250; 
@@ -145,8 +152,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   
   const { pitch, clarity, error: pitchError } = usePitchDetector(0.82, isPlaying && playbackEvents.length > 0, { allowedMidiNumbers: playableMidiNumbers, minRms: 0.012, stableFrames: 2 });
   const detectedNote = useMemo(() => pitch ? freqToNoteAndCents(Number(pitch)) : null, [pitch]);
-  const { accuracy, gameStats, lastHitIndex, resetScoring } = useNoteHighwayScoring({ currentEventIndex, currentGameEvent, detectedNote, playbackEvents, targetEventIndex });
-  const canUseProcessedScore = (Boolean(fileContent) || (isGpFile && rawFileContent)) && isSheetReady && !hasSheetRenderError;
+  const { accuracy, gameStats, lastHitIndex, resetScoring } = useNoteHighwayScoring({ currentGameTimeMs, currentGameEvent, detectedNote, playbackEvents, playbackTimeline, targetEventIndex });
+  const canUseProcessedScore = (Boolean(fileContent) || (isGpFile && Boolean(rawFileContent))) && isSheetReady && !hasSheetRenderError;
   const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
 
   const downloadTransposedXml = useCallback(() => {
@@ -176,11 +183,19 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     URL.revokeObjectURL(url);
   }, [fileContent, fileName]);
 
+  const stopGpCursorAnimation = useCallback(() => {
+    if (gpCursorFrameRef.current !== null) {
+      window.cancelAnimationFrame(gpCursorFrameRef.current);
+      gpCursorFrameRef.current = null;
+    }
+  }, []);
+
   const clearPlaybackResources = useCallback(() => {
     if (playbackTimerRef.current !== null) window.clearTimeout(playbackTimerRef.current);
     if (gameClockFrameRef.current !== null) window.cancelAnimationFrame(gameClockFrameRef.current);
+    stopGpCursorAnimation();
     stopAudioNodes(activeAudioNodesRef.current);
-  }, []);
+  }, [stopGpCursorAnimation]);
 
   const stopPlayback = useCallback((reset = false, shouldResetScoring = true) => {
     playbackRunRef.current += 1;
@@ -198,11 +213,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
       cursorEventIndexRef.current = null;
       osmdInstance.current?.cursor?.reset();
       osmdInstance.current?.cursor?.hide();
+      alphaTabRef.current?.setTickPosition(0);
       if (sheetScrollRef.current) sheetScrollRef.current.scrollLeft = 0;
     }
   }, [clearPlaybackResources, resetScoring, isGpFile]);
 
-  const playNotes = useCallback((notes: any[], tempoBpm: number) => {
+  const playNotes = useCallback((notes: PlaybackNote[], tempoBpm: number) => {
     const audioContext = ensureAudioContext(audioContextRef.current);
     audioContextRef.current = audioContext;
     playPlaybackNotes(audioContext, activeAudioNodesRef.current, notes, tempoBpm);
@@ -236,15 +252,58 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     scrollSheetToCursor();
   }, [scrollSheetToCursor]);
 
+  const animateGpCursorThroughEvent = useCallback((eventIndex: number, durationMs: number) => {
+    if (!isGpFile) return;
+
+    stopGpCursorAnimation();
+
+    const event = playbackEvents[eventIndex];
+    const startTick = event?.originalTick;
+    if (startTick === undefined) return;
+
+    const api = alphaTabRef.current;
+    if (!api) return;
+
+    const nextEvent = playbackEvents[eventIndex + 1];
+    if (nextEvent?.originalTick === undefined || nextEvent.originalTick <= startTick || durationMs <= 0) {
+      api.setTickPosition(startTick);
+      return;
+    }
+
+    const startedAt = performance.now();
+
+    const step = (now: number) => {
+      const elapsedMs = now - startedAt;
+      const tick = getInterpolatedGpCursorTick({
+        event,
+        nextEvent,
+        elapsedMs,
+        durationMs,
+      });
+
+      if (tick !== null) {
+        api.setTickPosition(tick);
+      }
+
+      const progress = Math.min(1, elapsedMs / durationMs);
+      if (progress < 1 && isPlayingRef.current) {
+        gpCursorFrameRef.current = window.requestAnimationFrame(step);
+      } else {
+        gpCursorFrameRef.current = null;
+      }
+    };
+
+    api.setTickPosition(startTick);
+    gpCursorFrameRef.current = window.requestAnimationFrame(step);
+  }, [isGpFile, playbackEvents, stopGpCursorAnimation]);
+
   const moveCursorThroughEvent = useCallback((eventIndex: number, durationMs: number) => {
     const event = playbackEvents[eventIndex];
     if (!event) return;
     moveCursorInstantlyToEvent(event.sourceEventIndex);
     
     // AlphaTab Sync
-    if (isGpFile && alphaTabRef.current && event.originalTick !== undefined) {
-        alphaTabRef.current.setTickPosition(event.originalTick);
-    }
+    animateGpCursorThroughEvent(eventIndex, durationMs);
 
     const nextEvent = playbackEvents[eventIndex + 1];
     if (nextEvent && nextEvent.sourceEventIndex > event.sourceEventIndex) {
@@ -256,7 +315,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
         cursorEventIndexRef.current = nextEvent.sourceEventIndex;
         scrollSheetToCursor();
     }
-  }, [playbackEvents, moveCursorInstantlyToEvent, scrollSheetToCursor, isGpFile, playbackTimeline]);
+  }, [playbackEvents, moveCursorInstantlyToEvent, scrollSheetToCursor, animateGpCursorThroughEvent]);
 
   const schedulePlayback = useCallback((startIndex: number, runId: number) => {
     const event = playbackEvents[startIndex];
@@ -280,7 +339,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   }, [playbackEvents, playbackTimeline, moveCursorThroughEvent, playNotes, stopPlayback, shortestNoteDurationMs]);
 
   const togglePlayback = useCallback(async () => {
-    const playbackReady = canPlayback && (isGpFile ? !!alphaTabRef.current : true);
+    const playbackReady = canPlayback && (isGpFile ? isGpPlaybackReady : true);
     
     console.log("Toggle playback triggered", { 
         isPlaying: isPlayingRef.current, 
@@ -288,7 +347,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
         isGpFile,
         isSheetReady,
         eventsCount: playbackEvents.length,
-        alphaTabRef: !!alphaTabRef.current
+        alphaTabRef: !!alphaTabRef.current,
+        isGpPlaybackReady
     });
 
     if (isPlayingRef.current) {
@@ -300,7 +360,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
         console.warn("Playback not ready", { 
             isSheetReady, 
             hasEvents: playbackEvents.length > 0,
-            hasAlphaTab: !!alphaTabRef.current
+            hasAlphaTab: !!alphaTabRef.current,
+            isGpPlaybackReady
         });
         return;
     }
@@ -354,7 +415,8 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     fileName,
     selectedSf,
     selectedPreset,
-    isGpFile
+    isGpFile,
+    isGpPlaybackReady
   ]);
 
   // Handle live instrument change
@@ -442,12 +504,12 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   useEffect(() => {
     if (!rawFileContent || isGpFile) return;
     try {
-      const injected = injectHarmonicaTabs(rawFileContent as string, { selectedKey, transpose });
+      const injected = injectHarmonicaTabs(rawFileContent as string, { selectedKey: harmonicaKey, transpose });
       setFileContent(injected);
     } catch (e) {
       console.error(e);
     }
-  }, [rawFileContent, selectedKey, transpose, isGpFile]);
+  }, [rawFileContent, harmonicaKey, transpose, isGpFile]);
 
   // Handle unmount only
   useEffect(() => () => stopPlayback(true), [stopPlayback]);
@@ -471,14 +533,13 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
   }, [displayFileContent, isGpFile]);
 
   const optimalVariantsCount = useMemo(() => {
-    if (!rawFileContent || playbackEvents.length === 0) return 0;
+    if (!rawFileContent) return 0;
     
     let midiNumbers: number[] = [];
     if (isGpFile) {
-        // Use original MIDI (remove current transpose)
-        const currentMidiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents));
-        midiNumbers = currentMidiNumbers.map(m => m - transpose);
+        midiNumbers = gpOriginalMidiNumbers;
     } else {
+        if (playbackEvents.length === 0) return 0;
         // For MusicXML, we need to parse if possible, or use current events
         midiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents)).map(m => m - transpose);
     }
@@ -486,27 +547,24 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     if (midiNumbers.length === 0) return 0;
     
     const bests = findBestTransposeIntervals(midiNumbers, { 
-        selectedKey, 
+        selectedKey: harmonicaKey,
         noOverblowOrDraw, 
         noBend 
     });
     return bests.length;
-  }, [rawFileContent, playbackEvents, selectedKey, noOverblowOrDraw, noBend, isGpFile]);
+  }, [rawFileContent, playbackEvents, harmonicaKey, noOverblowOrDraw, noBend, isGpFile, transpose, gpOriginalMidiNumbers]);
 
   const autoTransposeWithFilters = () => {
     if (!rawFileContent) return;
     
     if (isGpFile) {
         console.log("AutoTranspose: Analyzing GP track for optimization (Cycling)...");
-        // 1. Get ORIGINAL midi by removing current transpose
-        // Note: getPlayableMidiNumbers returns a Set, so we convert to Array
-        const currentMidiSet = getPlayableMidiNumbers(playbackEvents);
-        const currentMidiNumbers = Array.from(currentMidiSet);
-        const originalMidiNumbers = currentMidiNumbers.map(m => m - transpose);
+        const originalMidiNumbers = gpOriginalMidiNumbers;
+        if (originalMidiNumbers.length === 0) return;
 
         // 2. Find all absolute best intervals relative to ORIGINAL file
         const bestAbsoluteIntervals = findBestTransposeIntervals(originalMidiNumbers, { 
-            selectedKey, 
+            selectedKey: harmonicaKey,
             noOverblowOrDraw, 
             noBend 
         });
@@ -534,7 +592,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
     }
 
     // MusicXML Cycling
-    const bests = findAutoTransposeIntervals(rawFileContent as string, { selectedKey, noOverblowOrDraw, noBend });
+    const bests = findAutoTransposeIntervals(rawFileContent as string, { selectedKey: harmonicaKey, noOverblowOrDraw, noBend });
     if (bests.length > 0) {
         const currentIdx = bests.indexOf(transpose);
         const nextTranspose = (currentIdx !== -1 && bests.length > 1) 
@@ -542,6 +600,23 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
             : bests[0];
         setTranspose(nextTranspose);
     }
+  };
+
+  const findBestGpTranspose = (originalMidiNumbers: number[]) => {
+    if (originalMidiNumbers.length === 0) return null;
+
+    const intervals = findBestTransposeIntervals(originalMidiNumbers, {
+      selectedKey: harmonicaKey,
+      noOverblowOrDraw,
+      noBend,
+    });
+
+    return intervals[0] ?? null;
+  };
+
+  const handleTransposeChange = (value: string) => {
+    const semitones = Number.parseInt(value, 10);
+    setTranspose(Number.isFinite(semitones) ? semitones : 0);
   };
 
   return (
@@ -555,25 +630,42 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
             <AlphaTabViewer
               ref={alphaTabRef}
               fileData={rawFileContent as Uint8Array}
-              harmonicaKey={selectedKey}
+              harmonicaKey={harmonicaKey}
               trackIndex={selectedGpTrackIndex}
               transpose={transpose}
-              soundFont={selectedSf}
-              selectedPreset={selectedPreset}
-              onScoreLoaded={(events, score, tracks) => {
+              onScoreLoaded={(events, _score, tracks, scoreTempo) => {
+                  console.log(`MusicXML: Score loaded. Extracted tempo: ${scoreTempo}`);
+                  const originalMidiNumbers = Array.from(getPlayableMidiNumbers(events)).map(m => m - transpose);
+                  setGpOriginalMidiNumbers(originalMidiNumbers);
+
+                  if (shouldAutoTransposeGpRef.current) {
+                      shouldAutoTransposeGpRef.current = false;
+                      const bestTranspose = findBestGpTranspose(originalMidiNumbers);
+                      if (bestTranspose !== null && bestTranspose !== transpose) {
+                          console.log(`MusicXML: Auto-transposing GP score by ${bestTranspose} semitones.`);
+                          setTranspose(bestTranspose);
+                          setRouteStatus({ tone: "info", message: `Auto transposed Guitar Pro score by ${bestTranspose} semitones.` });
+                          return;
+                      }
+                  }
+
                   setPlaybackEvents(events);
                   setGpTracks(tracks || []);
+                  if (scoreTempo) {
+                      setTempo(scoreTempo);
+                  }
+                  setCurrentEventIndex(0);
+                  setCurrentGameTimeMs(0);
+                  cursorEventIndexRef.current = null;
                   setIsSheetReady(true);
                   setRouteStatus({ tone: "success", message: "Guitar Pro score loaded." });
               }}
+              onReadyChange={setIsGpPlaybackReady}
               onTimeUpdate={(tickOrMs) => {
                   if (isPlayingRef.current) return;
                   
                   if (isGpFile) {
-                      // Find the playback event that most closely matches this tick.
-                      // Since ticks are unexpanded in AlphaTab visually, we'll pick the first match.
-                      const eventIdx = playbackEvents.findIndex(e => e.originalTick !== undefined && e.originalTick >= tickOrMs);
-                      const actualIdx = eventIdx !== -1 ? eventIdx : 0;
+                      const actualIdx = getGpEventIndexAtOriginalTick(playbackEvents, tickOrMs);
                       const timing = playbackTimeline[actualIdx];
                       if (timing) {
                           setCurrentGameTimeMs(timing.startMs);
@@ -597,7 +689,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
               {routeStatus && <div className={`rounded border px-3 py-2 text-sm ${routeStatusClassNames[routeStatus.tone]}`}>{routeStatus.message}</div>}
               <div>
                 <label className="block mb-1 text-gray-300 font-medium text-sm">Harmonica Key:</label>
-                <select value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)} className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm">
+                <select value={harmonicaKey} onChange={(e) => setSelectedKey(e.target.value)} className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm">
                   {harmonicaKeys.map((k) => <option key={k.value} value={k.value}>{t(k.label)}</option>)}
                 </select>
               </div>
@@ -633,14 +725,15 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                   </div>
               )}
 
-              {!isGpFile && (
-                <>
-                <div>
-                    <label className="block mb-1 text-gray-300 font-medium text-sm">Transpose:</label>
-                    <input type="number" value={transpose} onChange={(e) => setTranspose(parseInt(e.target.value, 10) || 0)} className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm" />
-                </div>
-                </>
-              )}
+              <div>
+                  <label className="block mb-1 text-gray-300 font-medium text-sm">Transpose:</label>
+                  <input
+                    type="number"
+                    value={transpose}
+                    onChange={(e) => handleTransposeChange(e.target.value)}
+                    className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 w-full text-white text-sm"
+                  />
+              </div>
 
               <div className="pt-2">
                 <label className="inline-block cursor-pointer text-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-full text-sm font-bold">
@@ -654,6 +747,14 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                       try {
                         stopPlayback(true); // EXPLICIT RESET FOR NEW FILE
                         const content = await readMusicXmlFile(file);
+                        const nextIsGpFile = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name);
+                        shouldAutoTransposeGpRef.current = nextIsGpFile;
+                        setGpOriginalMidiNumbers([]);
+                        setPlaybackEvents([]);
+                        setGpTracks([]);
+                        setSelectedGpTrackIndex(0);
+                        setIsSheetReady(false);
+                        setIsGpPlaybackReady(false);
                         setFileName(file.name);
                         setTranspose(0); // Reset transpose for new file
                         setRawFileContent(content);
@@ -714,6 +815,7 @@ const TestFileLoader: React.FC<MusicXMLProps> = ({ setGlobalState }) => {
                             <select 
                                 value={selectedGpTrackIndex} 
                                 onChange={(e) => {
+                                    shouldAutoTransposeGpRef.current = true;
                                     setSelectedGpTrackIndex(Number(e.target.value));
                                     stopPlayback(true);
                                 }} 

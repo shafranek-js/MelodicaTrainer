@@ -1,9 +1,8 @@
 import { Mic } from "lucide-react";
 import { Note } from "tonal";
-import React, { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import type { freqToNoteAndCents } from "../utils/utils";
 import {
-  NOTE_HIGHWAY_LOOKAHEAD_MS,
   NOTE_HIT_WINDOW_MS,
   NOTE_TARGET_LINE_PERCENT,
 } from "./constants";
@@ -57,8 +56,7 @@ export const NoteHighway = ({
   visibleGameEvents,
   visualPlayheadMs,
   playbackEvents,
-  playbackTimeline,
-  isGp = false
+  playbackTimeline
 }: NoteHighwayProps) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +66,7 @@ export const NoteHighway = ({
       const el = containerRef.current;
       if (!el) return;
       const observer = new ResizeObserver(entries => {
-          for (let entry of entries) {
+          for (const entry of entries) {
               setContainerWidth(entry.contentRect.width);
           }
       });
@@ -162,7 +160,6 @@ export const NoteHighway = ({
           const maxRXTop = topWidth / 2;
           const maxRXBot = bottomWidth / 2;
 
-          const actualRY = Math.min(idealRYPercent, maxRY);
           let rxTop = idealRXPercent;
           let ryTop = idealRYPercent;
           if (idealRYPercent > maxRY || idealRXPercent > maxRXTop) {

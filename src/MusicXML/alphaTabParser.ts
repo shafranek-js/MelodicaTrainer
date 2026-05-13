@@ -3,24 +3,101 @@ import { getHarmonicaHoleForNote } from "../utils/utils";
 import type { PlaybackEvent, PlaybackNote } from "./types";
 import { Note } from "tonal";
 
+type AlphaTabTrackWithStaffs = alphaTab.model.Track & {
+    staffs?: alphaTab.model.Staff[];
+};
+
+type AlphaTabStaffWithTransposition = alphaTab.model.Staff & {
+    transpositionPitch?: number;
+};
+
+type AlphaTabPlaybackNote = {
+    realValue?: number;
+    velocity?: number;
+    isTieStart?: boolean;
+};
+
+type AlphaTabPlaybackBeat = {
+    absoluteStart: number;
+    originalTick: number;
+    playbackDuration: number;
+    playbackStart: number;
+    playbackTempo?: number;
+    isRest?: boolean;
+    notes?: AlphaTabPlaybackNote[];
+};
+
+type AlphaTabTempoAutomation = {
+    value?: number;
+    ratioPosition?: number;
+};
+
+const DEFAULT_GP_TEMPO = 90;
+
+const getMidiTickResolution = (score: alphaTab.model.Score) =>
+    (score as alphaTab.model.Score & { midiTickResolution?: number }).midiTickResolution ?? 960;
+
+const getValidTempo = (tempo: unknown) =>
+    typeof tempo === "number" && Number.isFinite(tempo) && tempo > 0
+        ? tempo
+        : null;
+
+const getScoreTempo = (score: alphaTab.model.Score) =>
+    getValidTempo(score.tempo) ?? DEFAULT_GP_TEMPO;
+
+const getTempoAutomations = (masterBar: alphaTab.model.MasterBar, barLengthTicks: number) =>
+    masterBar.tempoAutomations
+        .map((automation: AlphaTabTempoAutomation) => {
+            const tempo = getValidTempo(automation.value);
+            if (tempo === null) return null;
+
+            const ratioPosition = typeof automation.ratioPosition === "number"
+                ? Math.min(1, Math.max(0, automation.ratioPosition))
+                : 0;
+
+            return {
+                tick: ratioPosition * barLengthTicks,
+                tempo,
+            };
+        })
+        .filter((automation): automation is { tick: number; tempo: number } => automation !== null)
+        .sort((a, b) => a.tick - b.tick);
+
+const getTempoAtTick = (
+    relativeTick: number,
+    currentTempo: number,
+    tempoAutomations: { tick: number; tempo: number }[]
+) => {
+    let tempo = currentTempo;
+    for (const automation of tempoAutomations) {
+        if (automation.tick > relativeTick) break;
+        tempo = automation.tempo;
+    }
+    return tempo;
+};
+
 export function parseAlphaTabScore(
     score: alphaTab.model.Score, 
     harmonicaKey: string, 
     trackIndex: number = 0, 
     manualTranspose: number = 0
-): PlaybackEvent[] {
+): { events: PlaybackEvent[], tempo: number } {
     const events: PlaybackEvent[] = [];
     
-    if (!score.tracks || score.tracks.length === 0) return [];
+    if (!score.tracks || score.tracks.length === 0) return { events: [], tempo: DEFAULT_GP_TEMPO };
 
     const track = score.tracks[trackIndex] || score.tracks[0];
-    const staff = track.staves[0] || (track as any).staffs?.[0];
-    if (!staff || !staff.bars) return [];
+    const staff = track.staves[0] || (track as AlphaTabTrackWithStaffs).staffs?.[0];
+    if (!staff || !staff.bars) return { events: [], tempo: DEFAULT_GP_TEMPO };
+    const appliedStaffTranspose = -((staff as AlphaTabStaffWithTransposition).transpositionPitch ?? 0);
+    const missingManualTranspose = manualTranspose - appliedStaffTranspose;
 
     console.log(`AlphaTab Parser: Extracting track ${trackIndex} (${track.name})`);
     
     const masterBars = score.masterBars;
-    const allBeats: any[] = [];
+    const initialTempo = getScoreTempo(score);
+    let currentTempo = initialTempo;
+    const allBeats: AlphaTabPlaybackBeat[] = [];
 
     const getBarLengthTicks = (barIdx: number) => {
         const mb = masterBars[barIdx];
@@ -28,28 +105,37 @@ export function parseAlphaTabScore(
             return masterBars[barIdx + 1].start - mb.start;
         }
         // Fallback for last bar
-        const resolution = score.midiTickResolution || 960;
+        const resolution = getMidiTickResolution(score);
         return (mb.timeSignatureNumerator / mb.timeSignatureDenominator) * 4 * resolution;
     };
 
     const collectBeatsFromBar = (barIndex: number, tickOffset: number, originalTickOffset: number) => {
+        const masterBar = masterBars[barIndex];
+        const barLengthTicks = getBarLengthTicks(barIndex);
+        const tempoAutomations = getTempoAutomations(masterBar, barLengthTicks);
         const bar = staff.bars[barIndex];
         if (!bar || !bar.voices) return;
         
-        bar.voices.forEach((voice: any) => {
+        bar.voices.forEach((voice) => {
             if (!voice.beats) return;
-            voice.beats.forEach((beat: any) => {
-                if (beat.playbackDuration > 0) {
+            voice.beats.forEach((beat) => {
+                const playbackBeat = beat as unknown as AlphaTabPlaybackBeat;
+                if (playbackBeat.playbackDuration > 0) {
                     // In AlphaTab model, playbackStart is relative to the bar start
-                    const relativeStart = beat.playbackStart; 
+                    const relativeStart = playbackBeat.playbackStart;
                     allBeats.push({
-                        ...beat,
+                        ...playbackBeat,
                         absoluteStart: tickOffset + relativeStart,
-                        originalTick: originalTickOffset + relativeStart
+                        originalTick: originalTickOffset + relativeStart,
+                        playbackTempo: getTempoAtTick(relativeStart, currentTempo, tempoAutomations)
                     });
                 }
             });
         });
+
+        if (tempoAutomations.length > 0) {
+            currentTempo = tempoAutomations[tempoAutomations.length - 1].tempo;
+        }
     };
 
     // 1. Build the playback path (list of bar indices and their absolute tick offsets)
@@ -101,12 +187,11 @@ export function parseAlphaTabScore(
         collectBeatsFromBar(step.barIndex, step.offset, step.originalOffset);
     });
 
-
-    if (allBeats.length === 0) return [];
+    if (allBeats.length === 0) return { events: [], tempo: initialTempo };
 
     allBeats.sort((a, b) => a.absoluteStart - b.absoluteStart);
 
-    const groupedBeats: Map<number, any[]> = new Map();
+    const groupedBeats: Map<number, AlphaTabPlaybackBeat[]> = new Map();
     allBeats.forEach(beat => {
         const start = beat.absoluteStart;
         let found = false;
@@ -122,12 +207,12 @@ export function parseAlphaTabScore(
 
     const sortedStarts = Array.from(groupedBeats.keys()).sort((a, b) => a - b);
     let currentPlaybackCursor = 0;
-    const res = score.midiTickResolution || 960;
+    const res = getMidiTickResolution(score);
 
     sortedStarts.forEach((start) => {
         const beatsAtTime = groupedBeats.get(start)!;
         const firstBeat = beatsAtTime[0];
-        const tempoBpm = firstBeat.playbackTempo || 90;
+        const tempoBpm = getValidTempo(firstBeat.playbackTempo) ?? initialTempo;
 
         // 1. Handle Silent Gaps (Rests)
         if (start > currentPlaybackCursor) {
@@ -152,9 +237,9 @@ export function parseAlphaTabScore(
             
             const beatNotes = beat.notes || [];
             if (beatNotes.length > 0 && !beat.isRest) {
-                beatNotes.forEach((note: any) => {
-                    const midi = note.realValue + manualTranspose;
-                    if (midi === undefined || midi === 0) return;
+                beatNotes.forEach((note) => {
+                    if (note.realValue === undefined || note.realValue === 0) return;
+                    const midi = note.realValue + missingManualTranspose;
                     
                     notes.push({
                         name: Note.fromMidi(midi),
@@ -189,5 +274,5 @@ export function parseAlphaTabScore(
     });
 
     console.log(`AlphaTab Parser: Success! Parsed ${events.length} events.`);
-    return events;
+    return { events, tempo: initialTempo };
 }

@@ -58,6 +58,7 @@ describe("playback timeline helpers", () => {
     const visibleEvents = getVisibleGameEvents(events, timeline, 495);
 
     expect(getTargetEventIndex(visibleEvents, 495)).toBe(1);
-    expect(getTargetEventIndex(visibleEvents, 300)).toBeNull();
+    expect(getTargetEventIndex(visibleEvents, 300)).toBe(1);
+    expect(getTargetEventIndex(visibleEvents, 299)).toBeNull();
   });
 });

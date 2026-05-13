@@ -17,10 +17,17 @@ export const harmonicaKeys = [
   { label: "Bb", value: "Bb3" },
 ];
 
+export function normalizeHarmonicaKey(key: string) {
+  return harmonicaKeys.find((candidate) =>
+    candidate.value === key || candidate.label === key
+  )?.value ?? key;
+}
+
 const safeTranspose = (note: string | null, interval: string) =>
   note ? Note.get(Note.transpose(note, interval)) : null;
 
 export function generateLayout(key: string) {
+  const normalizedKey = normalizeHarmonicaKey(key);
   const blowDegrees = [
     "1P",
     "3M",
@@ -34,7 +41,7 @@ export function generateLayout(key: string) {
     "22P",
   ];
   const blowRoots = blowDegrees.map((interval) =>
-    Note.transpose(key, interval)
+    Note.transpose(normalizedKey, interval)
   );
   const drawDegrees = [
     "2M",
@@ -49,7 +56,7 @@ export function generateLayout(key: string) {
     "20M",
   ];
   const drawRoots = drawDegrees.map((interval) =>
-    Note.transpose(key, interval)
+    Note.transpose(normalizedKey, interval)
   );
   const blow = blowRoots.map(Note.get);
   const draw = drawRoots.map(Note.get);

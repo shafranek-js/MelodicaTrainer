@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import Menu from "./Menu";
+import type { MenuProps } from "./Menu";
 import Harmonica from "./Harmonica/Harmonica";
 
 const Circle = lazy(() => import("./Circle/Circle"));
@@ -13,13 +14,14 @@ const MusicXML = lazy(() => import("./MusicXML/MusicXML"));
 const Practice = lazy(() => import("./Practice/Practice"));
 
 function App() {
-  const [tabsState, setTabsState] = useState<any>(null);
+  const [tabsState, setTabsState] = useState<MenuProps | null>(null);
 
   return (
     <Router>
       <div className="grid h-screen w-full max-w-full grid-rows-[auto_1fr] bg-gray-950 overflow-hidden">
         <Menu 
           isPlaying={tabsState?.isPlaying}
+          isPaused={tabsState?.isPaused}
           onTogglePlayback={tabsState?.onTogglePlayback}
           onRestartPlayback={tabsState?.onRestartPlayback}
           tempo={tabsState?.tempo}

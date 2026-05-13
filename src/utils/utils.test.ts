@@ -6,6 +6,7 @@ import {
   getHarmonicaHoleForNote,
   getLayoutMidiNumbers,
   harmonicaLayoutDisplayRows,
+  normalizeHarmonicaKey,
 } from "./utils";
 import type { TonalNote } from "./utils";
 
@@ -19,6 +20,13 @@ const midi = (note: string) => {
 };
 
 describe("generateLayout", () => {
+  it("normalizes legacy key labels without octaves", () => {
+    expect(normalizeHarmonicaKey("C")).toBe("C4");
+    expect(normalizeHarmonicaKey("G")).toBe("G3");
+    expect(names(generateLayout("C").blow)).toEqual(names(generateLayout("C4").blow));
+    expect(names(generateLayout("C").draw)).toEqual(names(generateLayout("C4").draw));
+  });
+
   it("builds the C diatonic harmonica rows with stable hole positions", () => {
     const layout = generateLayout("C4");
 

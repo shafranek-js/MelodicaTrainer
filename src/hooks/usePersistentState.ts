@@ -21,7 +21,7 @@ export function usePersistentState<T>(key: string, defaultValue: T): [T, (value:
   });
 
   useEffect(() => {
-    let toSave: any = state;
+    let toSave: unknown = state;
     if (state instanceof Uint8Array) {
         toSave = { __type: 'Uint8Array', data: uint8ArrayToBase64(state) };
     }

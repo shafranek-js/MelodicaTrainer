@@ -1,10 +1,10 @@
 # Guitar Pro Reprise and Playback Synchronization
 
-This document details the technical implementation of repeat (reprise) expansion and audio-visual synchronization for Guitar Pro files within NoteBender.
+This document details the technical implementation of repeat (reprise) expansion and audio-visual synchronization for Guitar Pro files within NoteBender / HarpTrainer.
 
 ## 1. Architectural Overview
 
-NoteBender uses a unified playback engine for both MusicXML and Guitar Pro files. To ensure a consistent "Note Highway" experience, all scores are "linearized" (expanded) during parsing.
+The app uses a unified playback event model for both MusicXML and Guitar Pro files. To ensure a consistent "Note Highway" experience, all scores are "linearized" (expanded) during parsing.
 
 ### Core Principles:
 - **Linear Timeline:** Every repeated section is explicitly cloned in the internal `playbackEvents` list. The user sees a continuous stream of notes, even if the sheet music loops.

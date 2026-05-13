@@ -1,15 +1,71 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState } from "react";
+import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import * as alphaTab from "@coderline/alphatab";
 import { parseAlphaTabScore } from "./alphaTabParser";
 import type { PlaybackEvent } from "./types";
+
+type WindowWithAlphaTabDebug = Window & {
+    alphaTabApi?: alphaTab.AlphaTabApi;
+    alphaTabScore?: alphaTab.model.Score;
+};
+
+type AlphaTabEvent<T = void> = {
+    on: (callback: (args: T) => void) => void;
+};
+
+type PlayerPositionArgs = {
+    currentTick?: number;
+};
+
+type TrackInfo = {
+    index: number;
+    name: string;
+};
+
+const hiddenScoreInfoElements = new Map<alphaTab.NotationElement, boolean>([
+    [alphaTab.NotationElement.ScoreTitle, false],
+    [alphaTab.NotationElement.ScoreSubTitle, false],
+    [alphaTab.NotationElement.ScoreArtist, false],
+    [alphaTab.NotationElement.ScoreAlbum, false],
+    [alphaTab.NotationElement.ScoreWords, false],
+    [alphaTab.NotationElement.ScoreMusic, false],
+    [alphaTab.NotationElement.ScoreWordsAndMusic, false],
+    [alphaTab.NotationElement.ScoreCopyright, false],
+    [alphaTab.NotationElement.GuitarTuning, false],
+    [alphaTab.NotationElement.TrackNames, false],
+    [alphaTab.NotationElement.ChordDiagrams, false],
+    [alphaTab.NotationElement.EffectLyrics, false],
+    [alphaTab.NotationElement.EffectText, false],
+]);
+
+const MIN_AUTO_FIT_ZOOM = 0.65;
+const AUTO_FIT_PADDING = 0.96;
+
+type HeaderFooterStyle = {
+    isVisible?: boolean;
+};
+
+const setTrackTranspositionPitch = (
+    api: alphaTab.AlphaTabApi,
+    track: alphaTab.model.Track,
+    semitones: number
+) => {
+    const selectedTrackIndex = api.score?.tracks.indexOf(track) ?? -1;
+    if (selectedTrackIndex < 0) return;
+
+    const transpositionPitches = [...(api.settings.notation.transpositionPitches ?? [])];
+    while (transpositionPitches.length <= selectedTrackIndex) {
+        transpositionPitches.push(0);
+    }
+    transpositionPitches[selectedTrackIndex] = semitones;
+    api.settings.notation.transpositionPitches = transpositionPitches;
+};
 
 export interface AlphaTabViewerRef {
     playPause: () => void;
     stop: () => void;
     setTempo: (tempo: number) => void;
-    unlockAudio: () => void;
-    transpose: (interval: number) => void;
     setTickPosition: (tick: number) => void;
+    isReadyForPlayback: () => boolean;
 }
 
 interface AlphaTabViewerProps {
@@ -17,11 +73,10 @@ interface AlphaTabViewerProps {
     harmonicaKey: string;
     trackIndex?: number;
     transpose?: number;
-    soundFont?: string;
-    selectedPreset?: string;
-    onScoreLoaded: (events: PlaybackEvent[], score: alphaTab.model.Score, tracks: {index: number, name: string}[]) => void;
+    onScoreLoaded: (events: PlaybackEvent[], score: alphaTab.model.Score, tracks: TrackInfo[], tempo: number) => void;
     onTimeUpdate: (currentTimeMs: number) => void;
     onPlaybackFinished: () => void;
+    onReadyChange?: (isReady: boolean) => void;
 }
 
 const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({ 
@@ -29,51 +84,51 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
     harmonicaKey,
     trackIndex = 0,
     transpose = 0,
-    soundFont = "022_Florestan_Harmonica.sf2",
-    selectedPreset = "0:22",
     onScoreLoaded, 
     onTimeUpdate, 
-    onPlaybackFinished 
+    onPlaybackFinished,
+    onReadyChange
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const scoreZoomRef = useRef<HTMLDivElement>(null);
     const alphaTabRef = useRef<HTMLDivElement>(null);
     const apiRef = useRef<alphaTab.AlphaTabApi | null>(null);
-    const [isReady, setIsReady] = useState(false);
     const lastTickRef = useRef(0);
+    const onScoreLoadedRef = useRef(onScoreLoaded);
+    const onTimeUpdateRef = useRef(onTimeUpdate);
+    const onPlaybackFinishedRef = useRef(onPlaybackFinished);
+    const onReadyChangeRef = useRef(onReadyChange);
+    const harmonicaKeyRef = useRef(harmonicaKey);
+    const trackIndexRef = useRef(trackIndex);
+    const transposeRef = useRef(transpose);
+    const renderFrameRef = useRef<number | null>(null);
+    const autoFitFrameRef = useRef<number | null>(null);
+
+    const resetAutoFitZoom = useCallback(() => {
+        scoreZoomRef.current?.style.removeProperty("zoom");
+    }, []);
+
+    useEffect(() => {
+        onScoreLoadedRef.current = onScoreLoaded;
+        onTimeUpdateRef.current = onTimeUpdate;
+        onPlaybackFinishedRef.current = onPlaybackFinished;
+        onReadyChangeRef.current = onReadyChange;
+        harmonicaKeyRef.current = harmonicaKey;
+        trackIndexRef.current = trackIndex;
+        transposeRef.current = transpose;
+    }, [harmonicaKey, onPlaybackFinished, onReadyChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
 
     useImperativeHandle(ref, () => ({
-        unlockAudio: () => {
-            console.log("AlphaTab: Force unlocking audio...");
-            const api = apiRef.current;
-            if (api && api.player) {
-                try {
-                    const ctx = (api.player as any)._out?.context || (api.player as any)._audioContext;
-                    if (ctx && ctx.state === 'suspended') {
-                        ctx.resume().then(() => console.log("AlphaTab: Context resumed."));
-                    }
-                } catch (e) {
-                    console.warn("AlphaTab: Unlock error", e);
-                }
-            }
-        },
         playPause: () => {
             const api = apiRef.current;
-            const scoreLoaded = !!api?.score;
-            if (api && scoreLoaded) {
-                console.log("AlphaTab: playPause request. State:", api.playerState);
+            if (api?.isReadyForPlayback) {
                 try {
-                    if (api.playerState === 1) {
-                        api.pause();
-                    } else {
-                        const ctx = (api.player as any)._out?.context || (api.player as any)._audioContext;
-                        if (ctx && ctx.state === 'suspended') ctx.resume();
-                        api.play();
-                    }
+                    api.playPause();
                 } catch (e) {
                     console.error("AlphaTab: Playback error", e);
                 }
             } else {
-                console.warn(`AlphaTab: Cannot play. Score Loaded: ${scoreLoaded}, API: ${!!api}`);
+                console.warn(`AlphaTab: Cannot play. Ready: ${api?.isReadyForPlayback ?? false}, API: ${!!api}`);
             }
         },
         stop: () => {
@@ -92,25 +147,24 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 apiRef.current.playbackSpeed = tempo / 100;
             }
         },
-        transpose: (_interval: number) => {
-            console.log("AlphaTab: Transpose handled via props");
-        },
         setTickPosition: (tick: number) => {
             if (apiRef.current) {
-                apiRef.current.tickPosition = tick;
+                apiRef.current.tickPosition = Math.max(0, Math.round(tick));
             }
-        }
+        },
+        isReadyForPlayback: () => apiRef.current?.isReadyForPlayback ?? false
     }));
 
     useEffect(() => {
-        if (!alphaTabRef.current || !fileData) return;
+        if (!alphaTabRef.current || !containerRef.current || !fileData) return;
 
         let api: alphaTab.AlphaTabApi | null = null;
-        setIsReady(false);
+        onReadyChangeRef.current?.(false);
+        resetAutoFitZoom();
 
         try {
             const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/+$/, '') + '/';
-            const sfPath = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.2/dist/soundfont/sonivox.sf2";
+            const sfPath = `${baseUrl}soundfont/sonivox.sf2`;
             
             console.log(`AlphaTab: Initializing API core...`);
 
@@ -120,85 +174,152 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                     fontDirectory: baseUrl + "font/",
                 },
                 player: {
-                    enablePlayer: true,
+                    playerMode: alphaTab.PlayerMode.EnabledSynthesizer,
+                    enableCursor: true,
+                    enableAnimatedBeatCursor: true,
+                    enableElementHighlighting: true,
                     soundFont: sfPath,
                     scrollElement: containerRef.current,
-                    isLooping: false,
                 },
                 display: {
                     layoutMode: alphaTab.LayoutMode.Horizontal,
+                },
+                notation: {
+                    elements: hiddenScoreInfoElements,
                 }
             });
 
             apiRef.current = api;
-            (window as any).alphaTabApi = api;
+            (window as WindowWithAlphaTabDebug).alphaTabApi = api;
 
-            const safeOn = (obj: any, cb: any) => { if (obj && typeof obj.on === 'function') obj.on(cb); };
-
-            let scoreLoaded = false;
-            let sfLoaded = false;
-
-            const checkReady = () => {
-                if (scoreLoaded) {
-                    setIsReady(true);
-                    console.log("AlphaTab: Engine ready.");
-                    if (lastTickRef.current > 0 && api?.player) {
-                        api.tickPosition = lastTickRef.current;
-                    }
-                }
+            const safeOn = <T,>(obj: AlphaTabEvent<T> | undefined, cb: (args: T) => void) => {
+                if (obj && typeof obj.on === 'function') obj.on(cb);
             };
 
-            safeOn(api.scoreLoaded, (score: alphaTab.model.Score) => {
-                console.log("AlphaTab: Score loaded into API.");
-                scoreLoaded = true;
-                (window as any).alphaTabScore = score;
-                
-                score.tracks.forEach(track => {
-                    if (track.playbackInfo) {
-                        track.playbackInfo.program = 22;
-                        track.playbackInfo.bank = 0;
-                    }
-                    track.staves.forEach(staff => {
-                        staff.bars.forEach(bar => {
-                            if (bar.voices) {
-                                bar.voices.forEach(voice => {
-                                    voice.beats.forEach(beat => {
-                                        if ((beat as any).automations) {
-                                            (beat as any).automations = (beat as any).automations.filter((a: any) => a.type !== 2 && a.type !== 4);
-                                        }
-                                    });
-                                });
-                            }
-                        });
-                    });
-                });
+            const getSelectedTrack = (score: alphaTab.model.Score, selectedTrackIndex: number) => {
+                const track = score.tracks[selectedTrackIndex] || score.tracks[0];
+                if (!track) return null;
+                return {
+                    track,
+                    index: Math.max(0, score.tracks.indexOf(track))
+                };
+            };
 
-                const track = score.tracks[trackIndex] || score.tracks[0];
-                if (track) {
-                    api?.renderTracks([track]);
-                    try {
-                        api?.changeTrackSolo([track], true);
-                    } catch (e) { }
+            const getTracksInfo = (score: alphaTab.model.Score): TrackInfo[] =>
+                score.tracks.map((t, i) => ({ index: i, name: t.name }));
+
+            const ensureStandardNotationVisible = (track: alphaTab.model.Track) => {
+                track.staves.forEach((staff) => {
+                    staff.showStandardNotation = true;
+                    if (!staff.standardNotationLineCount) {
+                        staff.standardNotationLineCount = 5;
+                    }
+                });
+            };
+
+            const hideScoreHeaderFooter = (score: alphaTab.model.Score) => {
+                score.style?.headerAndFooter?.forEach((style: HeaderFooterStyle) => {
+                    style.isVisible = false;
+                });
+            };
+
+            const applySelectedTrack = (selectedTrackIndex: number, semitones: number) => {
+                const currentApi = api;
+                if (!currentApi?.score) return;
+                const selection = getSelectedTrack(currentApi.score, selectedTrackIndex);
+                if (!selection) return;
+                const { track } = selection;
+
+                ensureStandardNotationVisible(track);
+                setTrackTranspositionPitch(currentApi, track, semitones);
+                currentApi.changeTrackSolo([track], true);
+                currentApi.score.tracks.forEach(t => currentApi.changeTrackMute([t], t !== track));
+                currentApi.renderTracks([track]);
+                currentApi.loadMidiForScore();
+            };
+
+            const scheduleAutoFit = () => {
+                if (autoFitFrameRef.current !== null) {
+                    window.cancelAnimationFrame(autoFitFrameRef.current);
+                }
+
+                autoFitFrameRef.current = window.requestAnimationFrame(() => {
+                    autoFitFrameRef.current = null;
+
+                    const scoreZoomElement = scoreZoomRef.current;
+                    const scoreElement = alphaTabRef.current;
+                    const containerElement = containerRef.current;
+                    if (apiRef.current !== api || !scoreZoomElement || !scoreElement || !containerElement) return;
+
+                    resetAutoFitZoom();
+                    const availableHeight = containerElement.clientHeight * AUTO_FIT_PADDING;
+                    const renderedHeight = scoreElement.scrollHeight;
+                    if (availableHeight <= 0 || renderedHeight <= availableHeight) {
+                        return;
+                    }
+
+                    const nextZoom = Math.max(
+                        MIN_AUTO_FIT_ZOOM,
+                        Math.floor((availableHeight / renderedHeight) * 100) / 100
+                    );
+
+                    if (nextZoom < 0.99) {
+                        scoreZoomElement.style.setProperty("zoom", String(nextZoom));
+                    }
+                });
+            };
+
+            const notifyScoreLoaded = (score: alphaTab.model.Score) => {
+                const selected = getSelectedTrack(score, trackIndexRef.current);
+                const selectedTrackIndex = selected?.index ?? 0;
+                const { events, tempo } = parseAlphaTabScore(score, harmonicaKeyRef.current, selectedTrackIndex, transposeRef.current);
+                onScoreLoadedRef.current(events, score, getTracksInfo(score), tempo);
+            };
+
+            safeOn(api.scoreLoaded as AlphaTabEvent<alphaTab.model.Score>, (score) => {
+                console.log("AlphaTab: Score loaded into API.");
+                (window as WindowWithAlphaTabDebug).alphaTabScore = score;
+                hideScoreHeaderFooter(score);
+
+                try {
+                    if (renderFrameRef.current !== null) {
+                        window.cancelAnimationFrame(renderFrameRef.current);
+                    }
+                    renderFrameRef.current = window.requestAnimationFrame(() => {
+                        renderFrameRef.current = null;
+                        try {
+                            applySelectedTrack(trackIndexRef.current, transposeRef.current);
+                        } catch {
+                            console.warn("AlphaTab: Failed to apply selected track.");
+                        }
+                    });
+                } catch {
+                    console.warn("AlphaTab: Failed to apply selected track.");
                 }
                 
-                const events = parseAlphaTabScore(score, harmonicaKey, trackIndex, transpose);
-                onScoreLoaded(events, score, score.tracks.map((t, i) => ({ index: i, name: t.name })));
-                checkReady();
+                notifyScoreLoaded(score);
             });
 
-            safeOn(api.soundFontLoaded, () => {
-                console.log("AlphaTab: SoundFont loaded.");
-                sfLoaded = true;
-                checkReady();
+            safeOn(api.postRenderFinished as AlphaTabEvent, () => {
+                console.log("AlphaTab: Render finished.");
+                scheduleAutoFit();
             });
 
-            safeOn(api.playerPositionChanged, (args: any) => {
+            safeOn(api.playerReady as AlphaTabEvent, () => {
+                console.log("AlphaTab: Player ready.");
+                onReadyChangeRef.current?.(true);
+                if (lastTickRef.current > 0) {
+                    api!.tickPosition = lastTickRef.current;
+                }
+            });
+
+            safeOn(api.playerPositionChanged as AlphaTabEvent<PlayerPositionArgs>, (args) => {
                 if (args.currentTick !== undefined) {
                     lastTickRef.current = args.currentTick;
-                    onTimeUpdate(args.currentTick);
+                    onTimeUpdateRef.current(args.currentTick);
                 }
             });
-            safeOn(api.playerFinished, () => onPlaybackFinished());
+            safeOn(api.playerFinished as AlphaTabEvent, () => onPlaybackFinishedRef.current());
 
             let dataToLoad: string | Uint8Array = fileData;
             if (typeof fileData !== 'string' && !(fileData instanceof Uint8Array)) {
@@ -214,52 +335,106 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
         return () => {
             if (api) {
                 console.log("AlphaTab: Destroying API instance");
-                try { api.destroy(); } catch (e) { }
+                if (renderFrameRef.current !== null) {
+                    window.cancelAnimationFrame(renderFrameRef.current);
+                    renderFrameRef.current = null;
+                }
+                if (autoFitFrameRef.current !== null) {
+                    window.cancelAnimationFrame(autoFitFrameRef.current);
+                    autoFitFrameRef.current = null;
+                }
+                resetAutoFitZoom();
+                try {
+                    api.destroy();
+                } catch {
+                    console.warn("AlphaTab: Destroy failed.");
+                }
                 if (apiRef.current === api) {
                     apiRef.current = null;
-                    delete (window as any).alphaTabApi;
+                    delete (window as WindowWithAlphaTabDebug).alphaTabApi;
                 }
+                onReadyChangeRef.current?.(false);
             }
         };
-    }, [fileData, harmonicaKey]);
+    }, [fileData, resetAutoFitZoom]);
 
 
     useEffect(() => {
         const api = apiRef.current;
-        if (!api) return;
+        if (!api?.score) return;
 
-        // Apply audio transposition via player property (most stable for GP)
-        if (api.player && (api.player as any).masterTransposition !== transpose) {
-            console.log(`AlphaTab: Setting audio master transposition to ${transpose}`);
-            (api.player as any).masterTransposition = transpose;
+        const track = api.score.tracks[trackIndex] || api.score.tracks[0];
+        if (!track) return;
+
+        if (renderFrameRef.current !== null) {
+            window.cancelAnimationFrame(renderFrameRef.current);
         }
+        if (autoFitFrameRef.current !== null) {
+            window.cancelAnimationFrame(autoFitFrameRef.current);
+            autoFitFrameRef.current = null;
+        }
+        resetAutoFitZoom();
 
-        if (api.score) {
-            const track = api.score.tracks[trackIndex];
-            if (track) {
-                api.renderTracks([track]);
-                try {
-                    api.changeTrackSolo([track], true);
-                    api.score.tracks.forEach(t => api.changeTrackMute([t], t !== track));
-                } catch (e) { }
+        renderFrameRef.current = window.requestAnimationFrame(() => {
+            renderFrameRef.current = null;
+            const currentApi = apiRef.current;
+            if (!currentApi?.score) return;
 
-                const [bank, program] = selectedPreset.split(":").map(Number);
-                if (!isNaN(program)) {
-                    api.score.tracks.forEach(t => {
-                        if (t.playbackInfo) t.playbackInfo.program = program;
-                    });
-                }
+            const currentTrack = currentApi.score.tracks[trackIndex] || currentApi.score.tracks[0];
+            if (!currentTrack) return;
 
-                const events = parseAlphaTabScore(api.score, harmonicaKey, trackIndex, transpose);
-                const tracksInfo = api.score.tracks.map((t, i) => ({ index: i, name: t.name }));
-                onScoreLoaded(events, api.score, tracksInfo);
+            try {
+                currentTrack.staves.forEach((staff) => {
+                    staff.showStandardNotation = true;
+                    if (!staff.standardNotationLineCount) {
+                        staff.standardNotationLineCount = 5;
+                    }
+                });
+                setTrackTranspositionPitch(currentApi, currentTrack, transpose);
+                currentApi.changeTrackSolo([currentTrack], true);
+                currentApi.score.tracks.forEach(t => currentApi.changeTrackMute([t], t !== currentTrack));
+                currentApi.renderTracks([currentTrack]);
+                currentApi.loadMidiForScore();
+            } catch {
+                console.warn("AlphaTab: Failed to update track render state.");
             }
-        }
-    }, [transpose, trackIndex, selectedPreset]);
+
+            const selectedTrackIndex = Math.max(0, currentApi.score.tracks.indexOf(currentTrack));
+            const { events, tempo } = parseAlphaTabScore(currentApi.score, harmonicaKey, selectedTrackIndex, transpose);
+            const tracksInfo = currentApi.score.tracks.map((t, i) => ({ index: i, name: t.name }));
+            onScoreLoadedRef.current(events, currentApi.score, tracksInfo, tempo);
+        });
+
+        return () => {
+            if (renderFrameRef.current !== null) {
+                window.cancelAnimationFrame(renderFrameRef.current);
+                renderFrameRef.current = null;
+            }
+            if (autoFitFrameRef.current !== null) {
+                window.cancelAnimationFrame(autoFitFrameRef.current);
+                autoFitFrameRef.current = null;
+            }
+        };
+    }, [harmonicaKey, transpose, trackIndex, resetAutoFitZoom]);
+
+    useEffect(() => {
+        return () => {
+            if (renderFrameRef.current !== null) {
+                window.cancelAnimationFrame(renderFrameRef.current);
+                renderFrameRef.current = null;
+            }
+            if (autoFitFrameRef.current !== null) {
+                window.cancelAnimationFrame(autoFitFrameRef.current);
+                autoFitFrameRef.current = null;
+            }
+        };
+    }, []);
 
     return (
         <div ref={containerRef} className="h-full w-full bg-white overflow-y-hidden overflow-x-auto relative">
-            <div ref={alphaTabRef} />
+            <div ref={scoreZoomRef} className="min-h-full w-full origin-top-left">
+                <div ref={alphaTabRef} className="min-h-full min-w-max" />
+            </div>
         </div>
     );
 });

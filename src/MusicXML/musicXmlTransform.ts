@@ -318,12 +318,17 @@ export const findBestTransposeIntervals = (
     const uniqueMidi = Array.from(new Set(midiNumbers));
     if (uniqueMidi.length === 0) return [];
 
-    const results: { interval: number, score: number }[] = [];
-    let minInvalidCount = Number.POSITIVE_INFINITY;
+    const results: {
+        interval: number;
+        unplayableCount: number;
+        forbiddenTechniqueCount: number;
+    }[] = [];
+    let minUnplayableCount = Number.POSITIVE_INFINITY;
 
     // Search range +/- 36 semitones
     for (let interval = -36; interval <= 36; interval += 1) {
-        let invalidCount = 0;
+        let unplayableCount = 0;
+        let forbiddenTechniqueCount = 0;
 
         for (const midi of uniqueMidi) {
             const transposedMidi = midi + interval;
@@ -331,26 +336,28 @@ export const findBestTransposeIntervals = (
             const tab = getHarmonicaHoleForNote(selectedKey, transposedNoteName);
 
             if (!tab) {
-                invalidCount += 100;
+                unplayableCount += 1;
                 continue;
             }
 
             if (noOverblowOrDraw && tab.toLowerCase().includes("o")) {
-                invalidCount += 1;
+                forbiddenTechniqueCount += 1;
             }
 
             if (noBend && tab.includes("'")) {
-                invalidCount += 1;
+                forbiddenTechniqueCount += 1;
             }
         }
 
-        results.push({ interval, score: invalidCount });
-        if (invalidCount < minInvalidCount) minInvalidCount = invalidCount;
+        results.push({ interval, unplayableCount, forbiddenTechniqueCount });
+        if (unplayableCount < minUnplayableCount) minUnplayableCount = unplayableCount;
     }
 
-    // Return all intervals that share the lowest score found
-    return results
-        .filter(r => r.score === minInvalidCount)
+    const bestPlayableResults = results.filter(r => r.unplayableCount === minUnplayableCount);
+    const minForbiddenTechniqueCount = Math.min(...bestPlayableResults.map(r => r.forbiddenTechniqueCount));
+
+    return bestPlayableResults
+        .filter(r => r.forbiddenTechniqueCount === minForbiddenTechniqueCount)
         .map(r => r.interval)
         .sort((a, b) => Math.abs(a) - Math.abs(b)); // Sort by proximity to zero (original)
 };

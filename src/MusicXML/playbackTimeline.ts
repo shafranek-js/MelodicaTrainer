@@ -1,9 +1,5 @@
 import { Note } from "tonal";
-import {
-  NOTE_HIGHWAY_LOOKAHEAD_MS,
-  NOTE_HIGHWAY_TRAIL_MS,
-  NOTE_HIT_WINDOW_MS,
-} from "./constants";
+import { NOTE_HIT_WINDOW_MS } from "./constants";
 import { getTabHole } from "./playbackParser";
 import type { PlaybackEvent, PlaybackTiming, VisibleGameEvent } from "./types";
 

@@ -42,11 +42,11 @@ The detected musical note (e.g., **G4**) is compared against the active **Harmon
 
 ## 6. Integration with Note Highway
 During "Tabs" playback, the system constantly compares the **Detected Note** with the **Target Note** falling on the highway:
-- If the detected MIDI note matches the target MIDI note within a specific time window (**140ms**), a **"Hit"** is recorded.
+- If the detected MIDI note matches the target MIDI note within the configured time window (**200ms** in `NOTE_HIT_WINDOW_MS`) and cents tolerance (**45 cents** in `NOTE_PITCH_TOLERANCE_CENTS`), a **"Hit"** is recorded.
 - Visual feedback is triggered (green flash), and statistics (streak, accuracy) are updated.
 
 ---
 *For source implementation, see:*
 - `src/hooks/usePitchDetector.tsx` (Core detection hook)
 - `src/utils/utils.ts` (Frequency to Note conversion)
-- `src/MusicXML/useNoteHighwayScoring.tsx` (Game logic)
+- `src/MusicXML/useNoteHighwayScoring.ts` (Game logic)

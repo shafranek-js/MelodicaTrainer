@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Note } from "tonal";
 import type { freqToNoteAndCents } from "../utils/utils";
-import type { GameStats, PlaybackEvent } from "./types";
+import { NOTE_HIT_WINDOW_MS, NOTE_PITCH_TOLERANCE_CENTS } from "./constants";
+import type { GameStats, PlaybackEvent, PlaybackTiming } from "./types";
 
 type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
 
 type UseNoteHighwayScoringOptions = {
-  currentEventIndex: number;
+  currentGameTimeMs: number;
   currentGameEvent: PlaybackEvent | undefined;
   detectedNote: DetectedNote | null;
   playbackEvents: PlaybackEvent[];
+  playbackTimeline: PlaybackTiming[];
   targetEventIndex: number | null;
 };
 
@@ -20,16 +22,16 @@ const emptyGameStats: GameStats = {
 };
 
 export const useNoteHighwayScoring = ({
-  currentEventIndex,
+  currentGameTimeMs,
   currentGameEvent,
   detectedNote,
   playbackEvents,
+  playbackTimeline,
   targetEventIndex,
 }: UseNoteHighwayScoringOptions) => {
   const [gameStats, setGameStats] = useState<GameStats>(emptyGameStats);
   const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
-  const scoredEventIndexRef = useRef<number | null>(null);
-  const previousEventIndexRef = useRef(0);
+  const scoredEventIndexesRef = useRef(new Set<number>());
 
   const currentTargetMidiNumbers = useMemo(
     () =>
@@ -45,7 +47,7 @@ export const useNoteHighwayScoring = ({
     targetEventIndex !== null &&
     detectedMidi !== null &&
     currentTargetMidiNumbers.has(detectedMidi) &&
-    Math.abs(detectedNote?.cents ?? 99) <= 35;
+    Math.abs(detectedNote?.cents ?? 99) <= NOTE_PITCH_TOLERANCE_CENTS;
   const accuracy =
     gameStats.hits + gameStats.misses > 0
       ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
@@ -54,20 +56,19 @@ export const useNoteHighwayScoring = ({
   const resetScoring = useCallback(() => {
     setGameStats(emptyGameStats);
     setLastHitIndex(null);
-    scoredEventIndexRef.current = null;
-    previousEventIndexRef.current = 0;
+    scoredEventIndexesRef.current = new Set();
   }, []);
 
   useEffect(() => {
     if (
       targetEventIndex === null ||
       !isCurrentHit ||
-      scoredEventIndexRef.current === targetEventIndex
+      scoredEventIndexesRef.current.has(targetEventIndex)
     ) {
       return;
     }
 
-    scoredEventIndexRef.current = targetEventIndex;
+    scoredEventIndexesRef.current.add(targetEventIndex);
     setLastHitIndex(targetEventIndex);
     setGameStats((stats) => ({
       ...stats,
@@ -77,27 +78,31 @@ export const useNoteHighwayScoring = ({
   }, [isCurrentHit, targetEventIndex]);
 
   useEffect(() => {
-    const previousIndex = previousEventIndexRef.current;
-    if (currentEventIndex <= previousIndex) {
-      previousEventIndexRef.current = currentEventIndex;
-      return;
-    }
+    const missedIndexes: number[] = [];
 
-    const previousEvent = playbackEvents[previousIndex];
-    const shouldScoreMiss =
-      previousEvent?.notes.length &&
-      scoredEventIndexRef.current !== previousIndex;
+    playbackEvents.forEach((event, index) => {
+      const timing = playbackTimeline[index];
+      if (
+        !event.notes.length ||
+        !timing ||
+        scoredEventIndexesRef.current.has(index) ||
+        currentGameTimeMs <= timing.endMs + NOTE_HIT_WINDOW_MS
+      ) {
+        return;
+      }
 
-    if (shouldScoreMiss) {
+      scoredEventIndexesRef.current.add(index);
+      missedIndexes.push(index);
+    });
+
+    if (missedIndexes.length > 0) {
       setGameStats((stats) => ({
         ...stats,
-        misses: stats.misses + 1,
+        misses: stats.misses + missedIndexes.length,
         streak: 0,
       }));
     }
-
-    previousEventIndexRef.current = currentEventIndex;
-  }, [currentEventIndex, playbackEvents]);
+  }, [currentGameTimeMs, playbackEvents, playbackTimeline]);
 
   return {
     accuracy,

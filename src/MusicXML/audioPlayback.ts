@@ -2,6 +2,30 @@ import { Note } from "tonal";
 import type { PlaybackNote } from "./types";
 import { WorkletSynthesizer } from "spessasynth_lib";
 
+export type SoundFontPreset = {
+  bank: number;
+  program: number;
+  name: string;
+};
+
+type SoundBankManager = {
+  soundBankList: { forEach: (callback: (entry: unknown, id: number) => void) => void };
+  deleteSoundBank: (id: number) => void;
+  addSoundBank: (buffer: ArrayBuffer) => Promise<unknown>;
+};
+
+type SynthWithSoundBanks = WorkletSynthesizer & {
+  soundBankManager: SoundBankManager;
+  presetList?: SoundFontPreset[];
+};
+
+type RawPreset = {
+  bank?: number;
+  program?: number;
+  presetName?: string;
+  name?: string;
+};
+
 let synth: WorkletSynthesizer | null = null;
 let currentSfName: string | null = null;
 let initPromise: Promise<WorkletSynthesizer> | null = null;
@@ -34,7 +58,7 @@ export const initSynthesizer = async (audioContext: AudioContext, sfName: string
         const workletUrl = `${import.meta.env.BASE_URL}spessasynth_processor.min.js`;
         try {
             await audioContext.audioWorklet.addModule(workletUrl);
-        } catch (e) {
+        } catch {
             console.log("Worklet already loaded or failed to load, continuing...");
         }
         
@@ -45,19 +69,20 @@ export const initSynthesizer = async (audioContext: AudioContext, sfName: string
         synth.connect(audioContext.destination);
       } else {
         // If synth exists but we are changing SF, clear old ones
-        (synth as any).soundBankManager.soundBankList.forEach((_sb: any, id: number) => {
-            (synth as any).soundBankManager.deleteSoundBank(id);
+        const synthWithBanks = synth as SynthWithSoundBanks;
+        synthWithBanks.soundBankManager.soundBankList.forEach((_entry, id) => {
+            synthWithBanks.soundBankManager.deleteSoundBank(id);
         });
       }
 
       console.log("Adding soundbank via soundBankManager...");
-      await (synth as any).soundBankManager.addSoundBank(sfArrayBuffer);
+      await (synth as SynthWithSoundBanks).soundBankManager.addSoundBank(sfArrayBuffer);
 
       // SpessaSynth v4 might still need a moment to index presets
       console.log("Soundbank added, waiting for preset list...");
-      let presets: any[] = [];
+      let presets: SoundFontPreset[] = [];
       for (let i = 0; i < 50; i++) {
-        presets = (synth as any).presetList || [];
+        presets = (synth as SynthWithSoundBanks).presetList || [];
         if (presets.length > 0) break;
         await new Promise(r => setTimeout(r, 100));
       }
@@ -70,9 +95,10 @@ export const initSynthesizer = async (audioContext: AudioContext, sfName: string
   return initPromise;
 };
 
-export const getAvailablePresets = () => {
+export const getAvailablePresets = (): SoundFontPreset[] => {
     if (!synth) return [];
-    return ((synth as any).presetList || []).map((p: any) => ({
+    const presetList = ((synth as SynthWithSoundBanks).presetList || []) as unknown as RawPreset[];
+    return presetList.map((p) => ({
         bank: p.bank ?? 0,
         program: p.program ?? 0,
         name: p.presetName || p.name || "Unknown"
@@ -82,10 +108,21 @@ export const getAvailablePresets = () => {
 export const changeInstrument = (program: number, bank: number = 0) => {
     if (!synth || isNaN(program) || isNaN(bank)) return;
     console.log(`Changing instrument to ${bank}:${program}`);
-    synth.programChange(0, program, bank);
+    synth.controllerChange(0, 0, bank);
+    synth.programChange(0, program);
 };
 
-export const stopAudioNodes = (_nodes: Set<AudioScheduledSourceNode>) => {
+export const stopAudioNodes = (nodes: Set<AudioScheduledSourceNode>) => {
+  nodes.forEach((node) => {
+    try {
+      node.stop();
+    } catch {
+      // Node may already be stopped.
+    }
+    node.disconnect();
+  });
+  nodes.clear();
+
   // SpessaSynth handles its own nodes, we tell it to stop all notes
   if (synth) {
     synth.stopAll();
@@ -100,7 +137,7 @@ export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
 };
 
 export const playPlaybackNotes = (
-  audioContext: AudioContext,
+  _audioContext: AudioContext,
   _activeAudioNodes: Set<AudioScheduledSourceNode>,
   notes: PlaybackNote[],
   tempoBpm: number

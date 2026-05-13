@@ -66,9 +66,8 @@ HarpTrainer is a comprehensive interactive application designed for harmonica pl
 
 ## 📖 Related Documentation
 
-- [Pitch Detection Logic](./PITCH_DETECTION_LOGIC.md) - Detailed technical explanation of the audio processing pipeline.
-- [GP Reprise Implementation](./GP_REPRISE_IMPLEMENTATION.md) - Technical details on how Guitar Pro repeats and synchronization work.
-- [App Improvement Plan](./APP_IMPROVEMENT_PLAN.md) - Roadmap and planned future enhancements.
+- [Knowledge Base](./KNOWLEDGE_BASE.md) - Consolidated technical map of the app, current architecture, conventions, and known documentation drift.
+- [Archived Notes](./docs/archive/) - Historical planning and implementation notes that have been consolidated into the knowledge base.
 
 ---
 

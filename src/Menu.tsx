@@ -9,8 +9,9 @@ type GameStats = {
   streak: number;
 };
 
-type MenuProps = {
+export type MenuProps = {
   isPlaying?: boolean;
+  isPaused?: boolean;
   onTogglePlayback?: () => void;
   onRestartPlayback?: () => void;
   tempo?: number;
@@ -23,6 +24,7 @@ type MenuProps = {
 
 const Menu: React.FC<MenuProps> = ({
   isPlaying,
+  isPaused,
   onTogglePlayback,
   onRestartPlayback,
   tempo,
@@ -85,7 +87,7 @@ const Menu: React.FC<MenuProps> = ({
                 className="flex h-8 items-center gap-2 rounded bg-emerald-600 px-3 text-xs font-bold text-white transition hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-400"
               >
                 {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-                {isPlaying ? "Pause" : "Play"}
+                {isPlaying ? "Pause" : (isPaused ? "Resume" : "Play")}
               </button>
               <button
                 onClick={onRestartPlayback}
