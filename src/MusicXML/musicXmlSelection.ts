@@ -5,8 +5,9 @@ export const getFirstPartMeasures = (xmlDoc: XMLDocument) => {
   const firstPart = getFirstPart(xmlDoc);
   if (!firstPart) return [];
 
-  return Array.from(firstPart.children).filter(
-    (child): child is Element => child.tagName === "measure"
+  return Array.from(firstPart.childNodes).filter(
+    (child): child is Element =>
+      child.nodeType === 1 && (child as Element).tagName === "measure"
   );
 };
 

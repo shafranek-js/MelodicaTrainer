@@ -55,6 +55,33 @@ const assertMxlScoreSize = (size: number) => {
   }
 };
 
+const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
+  if (typeof file.arrayBuffer === "function") {
+    return file.arrayBuffer();
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        resolve(reader.result);
+        return;
+      }
+      reject(new TypeError("Expected FileReader to return an ArrayBuffer."));
+    };
+    reader.readAsArrayBuffer(file);
+  });
+};
+
+const readFileAsText = async (file: File) => {
+  if (typeof file.text === "function") {
+    return file.text();
+  }
+
+  return new TextDecoder().decode(await readFileAsArrayBuffer(file));
+};
+
 export const getContainerScorePath = (containerXml: string) => {
   const xmlDoc = parseMusicXmlDocument(containerXml, {
     requireScorePart: false,
@@ -75,7 +102,7 @@ const readCompressedMusicXmlEntry = async (entry: JSZip.JSZipObject) => {
 };
 
 const extractCompressedMusicXml = async (file: File) => {
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const zip = await JSZip.loadAsync(await readFileAsArrayBuffer(file));
   const containerFile = zip.file("META-INF/container.xml");
   const containerScorePath = containerFile
     ? getContainerScorePath(await containerFile.async("text"))
@@ -109,12 +136,12 @@ export const readMusicXmlFile = async (file: File) => {
   const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name);
 
   if (isGp) {
-    return new Uint8Array(await file.arrayBuffer());
+    return new Uint8Array(await readFileAsArrayBuffer(file));
   }
 
   const content = await (isMxl
     ? extractCompressedMusicXml(file)
-    : file.text());
+    : readFileAsText(file));
 
   if (!isGp) {
     parseMusicXmlDocument(content);

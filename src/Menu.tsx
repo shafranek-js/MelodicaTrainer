@@ -2,40 +2,24 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Gauge, Github, Pause, Play, RotateCcw } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
+import { usePlaybackToolbarState } from "./PlaybackToolbarContext";
 
-type GameStats = {
-  hits: number;
-  misses: number;
-  streak: number;
-};
-
-export type MenuProps = {
-  isPlaying?: boolean;
-  isPaused?: boolean;
-  onTogglePlayback?: () => void;
-  onRestartPlayback?: () => void;
-  tempo?: number;
-  setTempo?: (tempo: number) => void;
-  progress?: number;
-  gameStats?: GameStats;
-  accuracy?: number;
-  canPlayback?: boolean;
-};
-
-const Menu: React.FC<MenuProps> = ({
-  isPlaying,
-  isPaused,
-  onTogglePlayback,
-  onRestartPlayback,
-  tempo,
-  setTempo,
-  progress,
-  gameStats,
-  accuracy,
-  canPlayback,
-}) => {
+const Menu: React.FC = () => {
   const location = useLocation();
   const isTabsPage = location.pathname === "/musicxml";
+  const tabsState = usePlaybackToolbarState();
+  const {
+    isPlaying,
+    isPaused,
+    onTogglePlayback,
+    onRestartPlayback,
+    tempo,
+    setTempo,
+    progress,
+    gameStats,
+    accuracy,
+    canPlayback,
+  } = tabsState ?? {};
 
   return (
     <nav className="flex flex-col border-b border-gray-700 bg-gray-900 shadow-lg shrink-0 z-50">

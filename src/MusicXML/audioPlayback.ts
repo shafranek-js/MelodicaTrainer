@@ -112,8 +112,8 @@ export const changeInstrument = (program: number, bank: number = 0) => {
     synth.programChange(0, program);
 };
 
-export const stopAudioNodes = (nodes: Set<AudioScheduledSourceNode>) => {
-  nodes.forEach((node) => {
+export const stopAudioNodes = (nodes?: Set<AudioScheduledSourceNode>) => {
+  nodes?.forEach((node) => {
     try {
       node.stop();
     } catch {
@@ -121,7 +121,7 @@ export const stopAudioNodes = (nodes: Set<AudioScheduledSourceNode>) => {
     }
     node.disconnect();
   });
-  nodes.clear();
+  nodes?.clear();
 
   // SpessaSynth handles its own nodes, we tell it to stop all notes
   if (synth) {
@@ -137,8 +137,6 @@ export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
 };
 
 export const playPlaybackNotes = (
-  _audioContext: AudioContext,
-  _activeAudioNodes: Set<AudioScheduledSourceNode>,
   notes: PlaybackNote[],
   tempoBpm: number
 ) => {

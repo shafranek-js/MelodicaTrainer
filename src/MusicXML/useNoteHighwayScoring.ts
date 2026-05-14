@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Note } from "tonal";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { freqToNoteAndCents } from "../utils/utils";
-import { NOTE_HIT_WINDOW_MS, NOTE_PITCH_TOLERANCE_CENTS } from "./constants";
+import {
+  getMissedEventIndexes,
+  isDetectedPitchHit,
+} from "./noteHighwayScoring";
 import type { GameStats, PlaybackEvent, PlaybackTiming } from "./types";
 
 type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
@@ -33,21 +35,11 @@ export const useNoteHighwayScoring = ({
   const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
   const scoredEventIndexesRef = useRef(new Set<number>());
 
-  const currentTargetMidiNumbers = useMemo(
-    () =>
-      new Set(
-        (currentGameEvent?.notes ?? [])
-          .map((note) => Note.midi(note.name))
-          .filter((midi): midi is number => midi !== null)
-      ),
-    [currentGameEvent]
-  );
-  const detectedMidi = detectedNote ? Note.midi(detectedNote.note) : null;
-  const isCurrentHit =
-    targetEventIndex !== null &&
-    detectedMidi !== null &&
-    currentTargetMidiNumbers.has(detectedMidi) &&
-    Math.abs(detectedNote?.cents ?? 99) <= NOTE_PITCH_TOLERANCE_CENTS;
+  const isCurrentHit = isDetectedPitchHit({
+    currentGameEvent,
+    detectedNote,
+    targetEventIndex,
+  });
   const accuracy =
     gameStats.hits + gameStats.misses > 0
       ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
@@ -78,24 +70,15 @@ export const useNoteHighwayScoring = ({
   }, [isCurrentHit, targetEventIndex]);
 
   useEffect(() => {
-    const missedIndexes: number[] = [];
-
-    playbackEvents.forEach((event, index) => {
-      const timing = playbackTimeline[index];
-      if (
-        !event.notes.length ||
-        !timing ||
-        scoredEventIndexesRef.current.has(index) ||
-        currentGameTimeMs <= timing.endMs + NOTE_HIT_WINDOW_MS
-      ) {
-        return;
-      }
-
-      scoredEventIndexesRef.current.add(index);
-      missedIndexes.push(index);
+    const missedIndexes = getMissedEventIndexes({
+      currentGameTimeMs,
+      playbackEvents,
+      playbackTimeline,
+      scoredEventIndexes: scoredEventIndexesRef.current,
     });
 
     if (missedIndexes.length > 0) {
+      missedIndexes.forEach((index) => scoredEventIndexesRef.current.add(index));
       setGameStats((stats) => ({
         ...stats,
         misses: stats.misses + missedIndexes.length,

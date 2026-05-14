@@ -31,6 +31,11 @@ const getChildNumber = (parent: Element, tagName: string, fallback: number) => {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 };
 
+const getElementChildren = (parent: Element) =>
+  Array.from(parent.childNodes).filter(
+    (child): child is Element => child.nodeType === 1
+  );
+
 const getTabFromNote = (note: Element) =>
   note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
 
@@ -42,7 +47,7 @@ const getMeasureCursorPositionIndexes = (
   const positions = new Set<number>();
   let cursorPosition = 0;
 
-  Array.from(measure.children).forEach((child) => {
+  getElementChildren(measure).forEach((child) => {
     if (child.tagName === "backup") {
       cursorPosition -= getChildNumber(child, "duration", 0);
       return;
@@ -82,7 +87,7 @@ const dynamicVelocities: Record<string, number> = {
 
 const getDynamicVelocity = (direction: Element) => {
   const dynamics = direction.getElementsByTagName("dynamics")[0];
-  const dynamic = Array.from(dynamics?.children ?? []).find(
+  const dynamic = (dynamics ? getElementChildren(dynamics) : []).find(
     (child) => child.tagName in dynamicVelocities
   );
 
@@ -239,7 +244,7 @@ export const parsePlaybackEvents = (xml: string) => {
     );
     let cursorPosition = 0;
 
-    Array.from(measure.children).forEach((child) => {
+    getElementChildren(measure).forEach((child) => {
       if (child.tagName === "direction") {
         const sound = child.getElementsByTagName("sound")[0];
         const tempo = Number(sound?.getAttribute("tempo"));
@@ -322,7 +327,7 @@ export const parsePlaybackEvents = (xml: string) => {
   // Add a 4-beat lead-in (count-in) at the beginning of the song
   // to give the player time to prepare before notes start falling.
   // We skip this in tests to avoid breaking existing event sequence tests.
-  if (resolvedEvents.length > 0 && typeof process !== "undefined" && process.env.NODE_ENV !== "test") {
+  if (resolvedEvents.length > 0 && import.meta.env.MODE !== "test") {
     resolvedEvents.unshift({
       durationBeats: 4,
       tempoBpm: resolvedEvents[0].tempoBpm,

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import * as alphaTab from "@coderline/alphatab";
 import { parseAlphaTabScore } from "./alphaTabParser";
+import { onAlphaTabEvent, onAlphaTabEventOf } from "./alphaTabEvents";
+import { applyHarmonicaNotationView, createAlphaTabSettings } from "./alphaTabSettings";
 import type { PlaybackEvent } from "./types";
 
 type WindowWithAlphaTabDebug = Window & {
@@ -8,35 +10,10 @@ type WindowWithAlphaTabDebug = Window & {
     alphaTabScore?: alphaTab.model.Score;
 };
 
-type AlphaTabEvent<T = void> = {
-    on: (callback: (args: T) => void) => void;
-};
-
-type PlayerPositionArgs = {
-    currentTick?: number;
-};
-
 type TrackInfo = {
     index: number;
     name: string;
 };
-
-const hiddenScoreInfoElements = new Map<alphaTab.NotationElement, boolean>([
-    [alphaTab.NotationElement.ScoreTitle, false],
-    [alphaTab.NotationElement.ScoreSubTitle, false],
-    [alphaTab.NotationElement.ScoreArtist, false],
-    [alphaTab.NotationElement.ScoreAlbum, false],
-    [alphaTab.NotationElement.ScoreWords, false],
-    [alphaTab.NotationElement.ScoreMusic, false],
-    [alphaTab.NotationElement.ScoreWordsAndMusic, false],
-    [alphaTab.NotationElement.ScoreCopyright, false],
-    [alphaTab.NotationElement.GuitarTuning, false],
-    [alphaTab.NotationElement.TrackNames, false],
-    [alphaTab.NotationElement.ChordDiagrams, false],
-    [alphaTab.NotationElement.EffectLyrics, false],
-    [alphaTab.NotationElement.EffectText, false],
-    [alphaTab.NotationElement.EffectDynamics, false],
-]);
 
 const MIN_AUTO_FIT_ZOOM = 0.65;
 const AUTO_FIT_PADDING = 0.96;
@@ -106,16 +83,6 @@ const setTrackTranspositionPitch = (
     }
     transpositionPitches[selectedTrackIndex] = semitones;
     api.settings.notation.transpositionPitches = transpositionPitches;
-};
-
-const applyHarmonicaNotationView = (track: alphaTab.model.Track) => {
-    track.staves.forEach((staff) => {
-        staff.showStandardNotation = true;
-        staff.showTablature = false;
-        if (!staff.standardNotationLineCount) {
-            staff.standardNotationLineCount = 5;
-        }
-    });
 };
 
 export interface AlphaTabViewerRef {
@@ -234,43 +201,17 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             
             console.log(`AlphaTab: Initializing API core...`);
 
-            api = new alphaTab.AlphaTabApi(alphaTabRef.current, {
-                core: {
-                    logLevel: alphaTab.LogLevel.Info,
-                    fontDirectory: baseUrl + "font/",
-                    engine: 'svg'
-                },
-                player: {
-                    playerMode: alphaTab.PlayerMode.EnabledSynthesizer,
-                    enableCursor: true,
-                    enableAnimatedBeatCursor: true,
-                    enableElementHighlighting: true,
-                    soundFont: sfPath,
+            api = new alphaTab.AlphaTabApi(
+                alphaTabRef.current,
+                createAlphaTabSettings({
+                    baseUrl,
                     scrollElement: containerRef.current,
-                },
-                display: {
-                    layoutMode: alphaTab.LayoutMode.Horizontal,
-                    padding: [8, 0, 8, 0],
-                    firstSystemPaddingTop: 0,
-                    systemPaddingTop: 0,
-                    systemPaddingBottom: 0,
-                    lastSystemPaddingBottom: 0,
-                    firstNotationStaffPaddingTop: 0,
-                    lastNotationStaffPaddingBottom: 0,
-                    notationStaffPaddingTop: 0,
-                    notationStaffPaddingBottom: 0,
-                },
-                notation: {
-                    elements: hiddenScoreInfoElements,
-                }
-            });
+                    soundFontPath: sfPath,
+                })
+            );
 
             apiRef.current = api;
             (window as WindowWithAlphaTabDebug).alphaTabApi = api;
-
-            const safeOn = <T,>(obj: AlphaTabEvent<T> | undefined, cb: (args: T) => void) => {
-                if (obj && typeof obj.on === 'function') obj.on(cb);
-            };
 
             const getSelectedTrack = (score: alphaTab.model.Score, selectedTrackIndex: number) => {
                 const track = score.tracks[selectedTrackIndex] || score.tracks[0];
@@ -346,7 +287,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 onScoreLoadedRef.current(events, score, getTracksInfo(score), tempo);
             };
 
-            safeOn(api.scoreLoaded as AlphaTabEvent<alphaTab.model.Score>, (score) => {
+            onAlphaTabEventOf(api.scoreLoaded, (score) => {
                 console.log("AlphaTab: Score loaded into API.");
                 (window as WindowWithAlphaTabDebug).alphaTabScore = score;
                 hideScoreHeaderFooter(score);
@@ -370,12 +311,12 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 notifyScoreLoaded(score);
             });
 
-            safeOn(api.postRenderFinished as AlphaTabEvent, () => {
+            onAlphaTabEvent(api.postRenderFinished, () => {
                 console.log("AlphaTab: Render finished.");
                 scheduleAutoFit();
             });
 
-            safeOn(api.playerReady as AlphaTabEvent, () => {
+            onAlphaTabEvent(api.playerReady, () => {
                 console.log("AlphaTab: Player ready.");
                 onReadyChangeRef.current?.(true);
                 if (lastTickRef.current > 0) {
@@ -383,26 +324,24 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 }
             });
 
-            safeOn(api.playerPositionChanged as AlphaTabEvent<PlayerPositionArgs>, (args) => {
-                if (args.currentTick !== undefined) {
-                    lastTickRef.current = args.currentTick;
-                    onTimeUpdateRef.current(args.currentTick);
+            onAlphaTabEventOf(api.playerPositionChanged, (args) => {
+                lastTickRef.current = args.currentTick;
+                onTimeUpdateRef.current(args.currentTick);
 
-                    // Internal Centered Scrolling
-                    const container = containerRef.current;
-                    const cursor = alphaTabRef.current?.querySelector(".at-cursor-beat") as HTMLElement;
-                    if (container && cursor) {
-                        const containerRect = container.getBoundingClientRect();
-                        const cursorRect = cursor.getBoundingClientRect();
-                        const targetLeft = containerRect.width * 0.4;
-                        const offset = cursorRect.left - containerRect.left - targetLeft;
-                        
-                        // We use direct manipulation for speed during playback
-                        container.scrollLeft = Math.max(0, container.scrollLeft + offset);
-                    }
+                // Internal Centered Scrolling
+                const container = containerRef.current;
+                const cursor = alphaTabRef.current?.querySelector(".at-cursor-beat") as HTMLElement;
+                if (container && cursor) {
+                    const containerRect = container.getBoundingClientRect();
+                    const cursorRect = cursor.getBoundingClientRect();
+                    const targetLeft = containerRect.width * 0.4;
+                    const offset = cursorRect.left - containerRect.left - targetLeft;
+
+                    // We use direct manipulation for speed during playback
+                    container.scrollLeft = Math.max(0, container.scrollLeft + offset);
                 }
             });
-            safeOn(api.playerFinished as AlphaTabEvent, () => onPlaybackFinishedRef.current());
+            onAlphaTabEvent(api.playerFinished, () => onPlaybackFinishedRef.current());
 
             let dataToLoad: string | Uint8Array = fileData;
             if (typeof fileData !== 'string' && !(fileData instanceof Uint8Array)) {
