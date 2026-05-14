@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --environment jsdom",
-    "test:node": "vitest run --environment node src/hooks/usePersistentState.test.ts src/utils/utils.test.ts src/Circle/circleTheory.test.ts src/Practice/practiceTargets.test.ts src/MusicXML/audioPlayback.test.ts src/MusicXML/alphaTabParser.test.ts src/MusicXML/gpCursor.test.ts src/MusicXML/noteHighwayLayout.test.ts src/MusicXML/noteHighwayScoring.test.ts src/MusicXML/playbackTimeline.test.ts src/MusicXML/scoreParserSmoke.test.ts src/MusicXML/tempoModel.test.ts",
+    "test:node": "vitest run --environment node src/hooks/usePersistentState.test.ts src/utils/utils.test.ts src/Circle/circleTheory.test.ts src/Practice/practiceTargets.test.ts src/MusicXML/audioPlayback.test.ts src/MusicXML/alphaTabParser.test.ts src/MusicXML/gpCursor.test.ts src/MusicXML/noteHighwayLayout.test.ts src/MusicXML/noteHighwayScoring.test.ts src/MusicXML/playbackStart.test.ts src/MusicXML/playbackTimeline.test.ts src/MusicXML/scoreParserSmoke.test.ts src/MusicXML/tempoModel.test.ts",
     "test:dom": "vitest run --environment jsdom src/MusicXML/musicXmlTransform.test.ts src/MusicXML/musicXmlParser.test.ts src/MusicXML/musicXmlFile.test.ts src/MusicXML/playbackParser.test.ts",
     "test:watch": "vitest --environment jsdom"
   },

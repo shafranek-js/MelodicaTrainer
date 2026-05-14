@@ -11,6 +11,7 @@ import {
   stopAudioNodes,
 } from "./audioPlayback";
 import type { AlphaTabViewerRef } from "./AlphaTabViewer";
+import { getPlaybackStartIndex } from "./playbackStart";
 import type { PlaybackEvent, PlaybackTiming } from "./types";
 
 type RouteStatus = {
@@ -235,7 +236,11 @@ export const useScorePlayback = ({
 
       setRouteStatus({ tone: "success", message: fileName ? `Ready: ${fileName}.` : "Score ready." });
 
-      const startIndex = currentEventIndex >= playbackEvents.length ? 0 : currentEventIndex;
+      const startIndex = getPlaybackStartIndex({
+        currentEventIndex,
+        currentGameTimeMs,
+        playbackEvents,
+      });
       if (startIndex === 0) {
         resetScoring();
       }
@@ -264,7 +269,7 @@ export const useScorePlayback = ({
     isGpPlaybackReady,
     isPlayingRef,
     isSheetReady,
-    playbackEvents.length,
+    playbackEvents,
     playbackRunRef,
     resetScoring,
     schedulePlayback,
