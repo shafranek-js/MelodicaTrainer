@@ -26,7 +26,7 @@ import {
 } from "./playbackTimeline";
 import { styleSheetCursor } from "./sheetCursor";
 import { useNoteHighwayScoring } from "./useNoteHighwayScoring";
-import { getGpEventIndexAtOriginalTick, getInterpolatedGpCursorTick } from "./gpCursor";
+import { getInterpolatedGpCursorTick } from "./gpCursor";
 import { usePersistentState } from "../hooks/usePersistentState";
 import { useScoreFileLoader } from "./useScoreFileLoader";
 import { useOsmdScore } from "./useOsmdScore";
@@ -565,21 +565,9 @@ const TestFileLoader: React.FC = () => {
               transpose={transpose}
               onScoreLoaded={handleGpScoreLoaded}
               onReadyChange={setIsGpPlaybackReady}
-              onTimeUpdate={(tickOrMs) => {
-                  scrollSheetToCursor();
-                  if (isPlayingRef.current) return;
-                  
-                  if (isGpFile) {
-                      const actualIdx = getGpEventIndexAtOriginalTick(playbackEvents, tickOrMs);
-                      const timing = playbackTimeline[actualIdx];
-                      if (timing) {
-                          setCurrentGameTimeMs(timing.startMs);
-                          setCurrentEventIndex(actualIdx);
-                      }
-                  } else {
-                      setCurrentGameTimeMs(tickOrMs);
-                      const index = playbackTimeline.findIndex(t => tickOrMs >= t.startMs && tickOrMs <= t.endMs);
-                      if (index !== -1) setCurrentEventIndex(index);
+              onTimeUpdate={() => {
+                  if (isPlayingRef.current) {
+                      scrollSheetToCursor();
                   }
               }}
               onPlaybackFinished={() => stopPlayback(true)}
