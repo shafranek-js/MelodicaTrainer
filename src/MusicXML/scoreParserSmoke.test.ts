@@ -29,7 +29,7 @@ describe("score parser smoke tests without browser DOM", () => {
                 </measure>
               </part>
             </score-partwise>
-        `);
+        `, { addLeadIn: false });
 
         expect(result.detectedTempo).toBe(132);
         expect(result.events[0].notes[0]?.name).toBe("C4");
@@ -75,7 +75,7 @@ describe("score parser smoke tests without browser DOM", () => {
             ],
         } as unknown as alphaTab.model.Score;
 
-        const result = parseAlphaTabScore(score, "C");
+        const result = parseAlphaTabScore(score, "C", 0, 0, { addLeadIn: false });
 
         expect(result.tempo).toBe(144);
         expect(result.events[0].notes[0]?.name).toBe("C4");

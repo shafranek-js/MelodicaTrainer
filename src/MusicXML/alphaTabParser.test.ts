@@ -75,7 +75,7 @@ describe("parseAlphaTabScore", () => {
             200
         );
 
-        const result = parseAlphaTabScore(score, "C");
+        const result = parseAlphaTabScore(score, "C", 0, 0, { addLeadIn: false });
 
         expect(result.tempo).toBe(200);
         expect(result.events.map((event) => event.tempoBpm)).toEqual([200, 120]);
@@ -100,7 +100,7 @@ describe("parseAlphaTabScore", () => {
             100
         );
 
-        const result = parseAlphaTabScore(score, "C");
+        const result = parseAlphaTabScore(score, "C", 0, 0, { addLeadIn: false });
 
         expect(result.events[0]).toMatchObject({
             durationBeats: 1,
@@ -140,7 +140,7 @@ describe("parseAlphaTabScore", () => {
             90
         );
 
-        const result = parseAlphaTabScore(score, "C");
+        const result = parseAlphaTabScore(score, "C", 0, 0, { addLeadIn: false });
 
         expect(result.events[0].notes[0]).toMatchObject({
             name: "G4",
@@ -176,9 +176,63 @@ describe("parseAlphaTabScore", () => {
             90
         );
 
-        const result = parseAlphaTabScore(score, "C");
+        const result = parseAlphaTabScore(score, "C", 0, 0, { addLeadIn: false });
 
         expect(result.events).toHaveLength(1);
         expect(result.events[0].notes.map((note) => note.name)).toEqual(["C4"]);
+    });
+
+    it("adds a one-measure lead-in when a GP score starts with a note", () => {
+        const score = makeScore(
+            [
+                {
+                    voices: [
+                        {
+                            beats: [
+                                { playbackStart: 0, playbackDuration: 480, notes: [{ realValue: 60 }] },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            [masterBar(0, { timeSignatureNumerator: 3, timeSignatureDenominator: 4 })],
+            90
+        );
+
+        const result = parseAlphaTabScore(score, "C");
+
+        expect(result.events[0]).toMatchObject({
+            durationBeats: 3,
+            notes: [],
+            tabs: [],
+        });
+        expect(result.events[1].notes[0]?.name).toBe("C4");
+    });
+
+    it("does not add a lead-in when a GP score already starts with a rest", () => {
+        const score = makeScore(
+            [
+                {
+                    voices: [
+                        {
+                            beats: [
+                                { playbackStart: 0, playbackDuration: 960, isRest: true },
+                                { playbackStart: 960, playbackDuration: 480, notes: [{ realValue: 62 }] },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            [masterBar(0)],
+            90
+        );
+
+        const result = parseAlphaTabScore(score, "C");
+
+        expect(result.events[0]).toMatchObject({
+            durationBeats: 1,
+            notes: [],
+        });
+        expect(result.events[1].notes[0]?.name).toBe("D4");
     });
 });

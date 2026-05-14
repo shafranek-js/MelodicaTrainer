@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getPitchNoteName, getTabHole, parsePlaybackEvents } from "./playbackParser";
 
+const parsePlaybackEventsWithoutLeadIn = (xml: string) =>
+  parsePlaybackEvents(xml, { addLeadIn: false });
+
 const parsePitch = (xml: string) =>
   new DOMParser()
     .parseFromString(xml, "application/xml")
@@ -27,7 +30,7 @@ describe("getTabHole", () => {
 
 describe("parsePlaybackEvents", () => {
   it("builds timed note events with chords, rests, tabs, and articulations", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part>
           <measure>
@@ -78,7 +81,7 @@ describe("parsePlaybackEvents", () => {
   });
 
   it("only parses the first staff from the first part", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part id="P1">
           <measure>
@@ -116,7 +119,7 @@ describe("parsePlaybackEvents", () => {
   });
 
   it("maps first-staff events to score-wide cursor positions", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part id="P1">
           <measure>
@@ -154,7 +157,7 @@ describe("parsePlaybackEvents", () => {
   });
 
   it("parses all notes when the first part has no staff numbers", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part>
           <measure>
@@ -179,7 +182,7 @@ describe("parsePlaybackEvents", () => {
   });
 
   it("expands simple repeat blocks while keeping source event indexes", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part>
           <measure number="1">
@@ -228,7 +231,7 @@ describe("parsePlaybackEvents", () => {
   });
 
   it("repeats from the beginning when a backward repeat has no forward repeat", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part>
           <measure number="1">
@@ -262,7 +265,7 @@ describe("parsePlaybackEvents", () => {
   });
 
   it("extends tie starts and disables repeated tie-stop playback", () => {
-    const result = parsePlaybackEvents(`
+    const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>
         <part>
           <measure>
@@ -292,5 +295,57 @@ describe("parsePlaybackEvents", () => {
       durationBeats: 1,
       shouldPlay: false,
     });
+  });
+
+  it("adds a one-measure lead-in when the score starts with a note", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes>
+              <divisions>1</divisions>
+              <time><beats>3</beats><beat-type>4</beat-type></time>
+            </attributes>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events[0]).toMatchObject({
+      durationBeats: 3,
+      notes: [],
+      tabs: [],
+    });
+    expect(result.events[1].notes[0]?.name).toBe("C4");
+  });
+
+  it("does not add a lead-in when the score already starts with a rest", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <rest />
+              <duration>1</duration>
+            </note>
+            <note>
+              <pitch><step>D</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events[0]).toMatchObject({
+      durationBeats: 1,
+      notes: [],
+    });
+    expect(result.events[1].notes[0]?.name).toBe("D4");
   });
 });

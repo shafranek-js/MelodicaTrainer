@@ -3,6 +3,7 @@ import { getHarmonicaHoleForNote } from "../utils/utils";
 import type { PlaybackEvent, PlaybackNote } from "./types";
 import { Note } from "tonal";
 import { resolveTiedNotes } from "./playbackParser";
+import { addLeadInIfNeeded } from "./playbackLeadIn";
 
 type AlphaTabTrackWithStaffs = alphaTab.model.Track & {
     staffs?: alphaTab.model.Staff[];
@@ -35,6 +36,10 @@ type AlphaTabTempoAutomation = {
 };
 
 const DEFAULT_GP_TEMPO = 90;
+
+type ParseAlphaTabScoreOptions = {
+    addLeadIn?: boolean;
+};
 
 const getMidiTickResolution = (score: alphaTab.model.Score) =>
     (score as alphaTab.model.Score & { midiTickResolution?: number }).midiTickResolution ?? 960;
@@ -82,7 +87,8 @@ export function parseAlphaTabScore(
     score: alphaTab.model.Score, 
     harmonicaKey: string, 
     trackIndex: number = 0, 
-    manualTranspose: number = 0
+    manualTranspose: number = 0,
+    options: ParseAlphaTabScoreOptions = {}
 ): { events: PlaybackEvent[], tempo: number } {
     const events: PlaybackEvent[] = [];
     
@@ -306,7 +312,14 @@ export function parseAlphaTabScore(
         currentPlaybackCursor = eventStartTick + eventDurationTicks;
     });
 
-    const resolvedEvents = resolveTiedNotes(events);
+    const firstMasterBar = masterBars[0];
+    const leadInBeats = firstMasterBar
+        ? (firstMasterBar.timeSignatureNumerator * 4) / firstMasterBar.timeSignatureDenominator
+        : 4;
+    const tiedEvents = resolveTiedNotes(events);
+    const resolvedEvents = options.addLeadIn === false
+        ? tiedEvents
+        : addLeadInIfNeeded(tiedEvents, leadInBeats);
     console.log(`AlphaTab Parser: Success! Parsed ${resolvedEvents.length} events.`);
     return { events: resolvedEvents, tempo: initialTempo };
 }

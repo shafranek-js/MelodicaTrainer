@@ -5,6 +5,11 @@ import {
   isFirstStaffNote,
 } from "./musicXmlSelection";
 import { parseMusicXmlDocument } from "./musicXmlParser";
+import { addLeadInIfNeeded } from "./playbackLeadIn";
+
+type ParsePlaybackEventsOptions = {
+  addLeadIn?: boolean;
+};
 
 export const getPitchNoteName = (pitch: Element): string | null => {
   const step = pitch.getElementsByTagName("step")[0]?.textContent ?? "";
@@ -212,7 +217,10 @@ const expandRepeats = (
   return expanded;
 };
 
-export const parsePlaybackEvents = (xml: string) => {
+export const parsePlaybackEvents = (
+  xml: string,
+  options: ParsePlaybackEventsOptions = {}
+) => {
   const xmlDoc = parseMusicXmlDocument(xml);
   const measuresWithEvents: { element: Element; events: PlaybackEvent[] }[] = [];
   let divisions = 1;
@@ -220,6 +228,7 @@ export const parsePlaybackEvents = (xml: string) => {
   let currentTempo = detectedTempo;
   let currentVelocity = dynamicVelocities.mf;
   let nextCursorPositionIndex = 0;
+  let leadInBeats = 4;
   const firstPart = xmlDoc.getElementsByTagName("part")[0];
   const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
 
@@ -236,6 +245,11 @@ export const parsePlaybackEvents = (xml: string) => {
     const attributes = measure.getElementsByTagName("attributes")[0];
     if (attributes) {
       divisions = getChildNumber(attributes, "divisions", divisions);
+      if (measuresWithEvents.length === 0) {
+        const numerator = getChildNumber(attributes, "beats", 4);
+        const denominator = getChildNumber(attributes, "beat-type", 4);
+        leadInBeats = (numerator * 4) / denominator;
+      }
     }
     const cursorPositionIndexes = getMeasureCursorPositionIndexes(
       measure,
@@ -322,20 +336,10 @@ export const parsePlaybackEvents = (xml: string) => {
   });
 
   const events = expandRepeats(measuresWithEvents);
-  const resolvedEvents = resolveTiedNotes(events);
-
-  // Add a 4-beat lead-in (count-in) at the beginning of the song
-  // to give the player time to prepare before notes start falling.
-  // We skip this in tests to avoid breaking existing event sequence tests.
-  if (resolvedEvents.length > 0 && import.meta.env.MODE !== "test") {
-    resolvedEvents.unshift({
-      durationBeats: 4,
-      tempoBpm: resolvedEvents[0].tempoBpm,
-      notes: [],
-      tabs: [],
-      sourceEventIndex: 0,
-    });
-  }
+  const tiedEvents = resolveTiedNotes(events);
+  const resolvedEvents = options.addLeadIn === false
+    ? tiedEvents
+    : addLeadInIfNeeded(tiedEvents, leadInBeats);
 
   return { events: resolvedEvents, detectedTempo };
 };
