@@ -31,6 +31,16 @@ export const getGpEventIndexAtOriginalTick = (
   events: PlaybackEvent[],
   tick: number
 ) => {
+  if (
+    events.length > 1 &&
+    events[0].originalTick === undefined &&
+    events[0].notes.length === 0 &&
+    events[1].originalTick !== undefined &&
+    tick <= events[1].originalTick
+  ) {
+    return 0;
+  }
+
   let selectedIndex = 0;
 
   for (let index = 0; index < events.length; index++) {
