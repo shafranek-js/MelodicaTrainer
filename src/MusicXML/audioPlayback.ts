@@ -1,6 +1,7 @@
 import { Note } from "tonal";
 import type { PlaybackNote } from "./types";
 import { WorkletSynthesizer } from "spessasynth_lib";
+import { musicXmlDebugLogger } from "./debugLogger";
 
 export type SoundFontPreset = {
   bank: number;
@@ -26,156 +27,230 @@ type RawPreset = {
   name?: string;
 };
 
-let synth: WorkletSynthesizer | null = null;
-let currentSfName: string | null = null;
-let initPromise: Promise<WorkletSynthesizer> | null = null;
+type Logger = Pick<Console, "log" | "warn">;
+type TimerId = ReturnType<typeof setTimeout>;
 
-export const ensureAudioContext = (audioContext: AudioContext | null) => {
-  if (audioContext) return audioContext;
-  return new AudioContext();
+type AudioPlaybackServiceOptions = {
+  baseUrl?: string;
+  clearTimeoutFn?: (timerId: TimerId) => void;
+  createSynthesizer?: (audioContext: AudioContext) => WorkletSynthesizer;
+  fetchFn?: typeof fetch;
+  logger?: Logger;
+  setTimeoutFn?: (callback: () => void, delayMs: number) => TimerId;
 };
 
-/**
- * Initializes the synthesizer and loads the SoundFont if not already loaded.
- */
-export const initSynthesizer = async (audioContext: AudioContext, sfName: string = "MS_Basic.sf3") => {
-  // Use a singleton promise to avoid race conditions
-  if (initPromise && currentSfName === sfName) return initPromise;
+export class AudioPlaybackService {
+  private synth: WorkletSynthesizer | null = null;
+  private currentSfName: string | null = null;
+  private pendingSfName: string | null = null;
+  private initPromise: Promise<WorkletSynthesizer> | null = null;
+  private initGeneration = 0;
+  private noteGeneration = 0;
+  private readonly noteOffTimers = new Set<TimerId>();
 
-  initPromise = (async () => {
-      // If synth exists and soundfont is the same, just return
-      if (synth && currentSfName === sfName) return synth;
+  private readonly baseUrl: string;
+  private readonly clearTimeoutFn: (timerId: TimerId) => void;
+  private readonly createSynthesizer: (audioContext: AudioContext) => WorkletSynthesizer;
+  private readonly fetchFn: typeof fetch;
+  private readonly logger: Logger;
+  private readonly setTimeoutFn: (callback: () => void, delayMs: number) => TimerId;
 
-      console.log(`Loading SoundFont: ${sfName}...`);
-      const response = await fetch(`${import.meta.env.BASE_URL}${sfName}`);
+  constructor({
+    baseUrl = import.meta.env.BASE_URL,
+    clearTimeoutFn = globalThis.clearTimeout.bind(globalThis),
+    createSynthesizer = (audioContext) => new WorkletSynthesizer(audioContext),
+    fetchFn = globalThis.fetch.bind(globalThis),
+    logger = musicXmlDebugLogger,
+    setTimeoutFn = globalThis.setTimeout.bind(globalThis),
+  }: AudioPlaybackServiceOptions = {}) {
+    this.baseUrl = baseUrl;
+    this.clearTimeoutFn = clearTimeoutFn;
+    this.createSynthesizer = createSynthesizer;
+    this.fetchFn = fetchFn;
+    this.logger = logger;
+    this.setTimeoutFn = setTimeoutFn;
+  }
+
+  ensureAudioContext(audioContext: AudioContext | null) {
+    if (audioContext) return audioContext;
+    return new AudioContext();
+  }
+
+  async initSynthesizer(audioContext: AudioContext, sfName: string = "MS_Basic.sf3") {
+    if (this.initPromise && (this.currentSfName === sfName || this.pendingSfName === sfName)) {
+      return this.initPromise;
+    }
+
+    const generation = this.initGeneration + 1;
+    this.initGeneration = generation;
+    this.pendingSfName = sfName;
+
+    const assertCurrentGeneration = () => {
+      if (generation !== this.initGeneration) {
+        throw new Error(`SoundFont load superseded: ${sfName}`);
+      }
+    };
+
+    this.initPromise = (async () => {
+      if (this.synth && this.currentSfName === sfName) return this.synth;
+
+      this.logger.log(`Loading SoundFont: ${sfName}...`);
+      const response = await this.fetchFn(`${this.baseUrl}${sfName}`);
       if (!response.ok) throw new Error(`Failed to load SoundFont ${sfName}`);
-      
+      assertCurrentGeneration();
+
       const sfArrayBuffer = await response.arrayBuffer();
-      
-      if (!synth) {
-        // Load the worklet processor (REQUIRED for SpessaSynth v4+)
-        console.log("Loading SpessaSynth Worklet...");
-        const workletUrl = `${import.meta.env.BASE_URL}spessasynth_processor.min.js`;
+      assertCurrentGeneration();
+
+      if (!this.synth) {
+        this.logger.log("Loading SpessaSynth Worklet...");
+        const workletUrl = `${this.baseUrl}spessasynth_processor.min.js`;
         try {
-            await audioContext.audioWorklet.addModule(workletUrl);
+          await audioContext.audioWorklet.addModule(workletUrl);
         } catch {
-            console.log("Worklet already loaded or failed to load, continuing...");
+          this.logger.log("Worklet already loaded or failed to load, continuing...");
         }
-        
-        // Create synthesizer
-        synth = new WorkletSynthesizer(audioContext);
-        
-        // Connect to output
-        synth.connect(audioContext.destination);
+        assertCurrentGeneration();
+
+        this.synth = this.createSynthesizer(audioContext);
+        this.synth.connect(audioContext.destination);
       } else {
-        // If synth exists but we are changing SF, clear old ones
-        const synthWithBanks = synth as SynthWithSoundBanks;
+        const synthWithBanks = this.synth as SynthWithSoundBanks;
         synthWithBanks.soundBankManager.soundBankList.forEach((_entry, id) => {
-            synthWithBanks.soundBankManager.deleteSoundBank(id);
+          synthWithBanks.soundBankManager.deleteSoundBank(id);
         });
       }
+      assertCurrentGeneration();
 
-      console.log("Adding soundbank via soundBankManager...");
-      await (synth as SynthWithSoundBanks).soundBankManager.addSoundBank(sfArrayBuffer);
+      this.logger.log("Adding soundbank via soundBankManager...");
+      await (this.synth as SynthWithSoundBanks).soundBankManager.addSoundBank(sfArrayBuffer);
+      assertCurrentGeneration();
 
-      // SpessaSynth v4 might still need a moment to index presets
-      console.log("Soundbank added, waiting for preset list...");
+      this.logger.log("Soundbank added, waiting for preset list...");
       let presets: SoundFontPreset[] = [];
-      for (let i = 0; i < 50; i++) {
-        presets = (synth as SynthWithSoundBanks).presetList || [];
+      for (let index = 0; index < 50; index += 1) {
+        presets = (this.synth as SynthWithSoundBanks).presetList || [];
         if (presets.length > 0) break;
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise<void>((resolve) => this.setTimeoutFn(() => resolve(), 100));
+        assertCurrentGeneration();
       }
 
-      currentSfName = sfName;
-      console.log(`SoundFont ${sfName} loaded. Presets: ${presets.length}`);
-      return synth;
-  })();
+      this.currentSfName = sfName;
+      this.logger.log(`SoundFont ${sfName} loaded. Presets: ${presets.length}`);
+      return this.synth;
+    })();
 
-  return initPromise;
-};
-
-export const getAvailablePresets = (): SoundFontPreset[] => {
-    if (!synth) return [];
-    const presetList = ((synth as SynthWithSoundBanks).presetList || []) as unknown as RawPreset[];
-    return presetList.map((p) => ({
-        bank: p.bank ?? 0,
-        program: p.program ?? 0,
-        name: p.presetName || p.name || "Unknown"
-    }));
-};
-
-export const changeInstrument = (program: number, bank: number = 0) => {
-    if (!synth || isNaN(program) || isNaN(bank)) return;
-    console.log(`Changing instrument to ${bank}:${program}`);
-    synth.controllerChange(0, 0, bank);
-    synth.programChange(0, program);
-};
-
-export const stopAudioNodes = (nodes?: Set<AudioScheduledSourceNode>) => {
-  nodes?.forEach((node) => {
     try {
-      node.stop();
-    } catch {
-      // Node may already be stopped.
+      return await this.initPromise;
+    } finally {
+      if (generation === this.initGeneration) {
+        this.pendingSfName = null;
+        this.initPromise = null;
+      }
     }
-    node.disconnect();
-  });
-  nodes?.clear();
-
-  // SpessaSynth handles its own nodes, we tell it to stop all notes
-  if (synth) {
-    synth.stopAll();
-  }
-};
-
-export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) => {
-  if (!audioContext) return 0;
-  const contextWithLatency = audioContext as AudioContext & { outputLatency?: number };
-  const latencySeconds = (audioContext.baseLatency || 0) + (contextWithLatency.outputLatency || 0);
-  return Math.max(0, latencySeconds * 1000);
-};
-
-export const playPlaybackNotes = (
-  notes: PlaybackNote[],
-  tempoBpm: number
-) => {
-  if (!synth) {
-    console.warn("Synthesizer not initialized yet.");
-    return;
   }
 
-  notes.forEach((note) => {
-    if (!note.shouldPlay) return;
+  getAvailablePresets(): SoundFontPreset[] {
+    if (!this.synth) return [];
 
-    const midiNote = Note.midi(note.name);
-    if (midiNote === null) return;
+    const presetList = ((this.synth as SynthWithSoundBanks).presetList || []) as unknown as RawPreset[];
+    return presetList.map((preset) => ({
+      bank: preset.bank ?? 0,
+      program: preset.program ?? 0,
+      name: preset.presetName || preset.name || "Unknown",
+    }));
+  }
 
-    const durationMs = Math.max(80, (60000 / tempoBpm) * note.durationBeats);
-    const articulationRatio = note.tieStart
-      ? 1
-      : note.articulation === "staccato"
-        ? 0.42
-        : note.articulation === "tenuto"
-          ? 0.98
-          : 0.86;
-    
-    const soundDurationMs = durationMs * articulationRatio;
-    const velocity = Math.min(127, Math.max(0, Math.floor(note.velocity * 127)));
+  changeInstrument(program: number, bank: number = 0) {
+    if (!this.synth || Number.isNaN(program) || Number.isNaN(bank)) return;
 
-    // SpessaSynth play note
-    // noteOn(channel, midiNote, velocity)
-    synth!.noteOn(0, midiNote, velocity);
+    this.logger.log(`Changing instrument to ${bank}:${program}`);
+    this.synth.controllerChange(0, 0, bank);
+    this.synth.programChange(0, program);
+  }
 
-    // Ensure channel volume is up (GM default is usually fine, but let's be safe)
-    // Channel Message: 7 is Main Volume
-    synth!.controllerChange(0, 7, 100);
+  stopAudioNodes(nodes?: Set<AudioScheduledSourceNode>) {
+    this.noteGeneration += 1;
+    this.noteOffTimers.forEach((timerId) => this.clearTimeoutFn(timerId));
+    this.noteOffTimers.clear();
 
-    // Schedule noteOff
-    setTimeout(() => {
-        if (synth) {
-            synth.noteOff(0, midiNote);
+    nodes?.forEach((node) => {
+      try {
+        node.stop();
+      } catch {
+        // Node may already be stopped.
+      }
+      node.disconnect();
+    });
+    nodes?.clear();
+
+    this.synth?.stopAll();
+  }
+
+  getAudioOutputLatencyMs(audioContext: AudioContext | null) {
+    if (!audioContext) return 0;
+
+    const contextWithLatency = audioContext as AudioContext & { outputLatency?: number };
+    const latencySeconds = (audioContext.baseLatency || 0) + (contextWithLatency.outputLatency || 0);
+    return Math.max(0, latencySeconds * 1000);
+  }
+
+  playPlaybackNotes(notes: PlaybackNote[], tempoBpm: number) {
+    if (!this.synth) {
+      this.logger.warn("Synthesizer not initialized yet.");
+      return;
+    }
+
+    notes.forEach((note) => {
+      if (!note.shouldPlay) return;
+
+      const midiNote = Note.midi(note.name);
+      if (midiNote === null) return;
+
+      const durationMs = Math.max(80, (60000 / tempoBpm) * note.durationBeats);
+      const articulationRatio = note.tieStart
+        ? 1
+        : note.articulation === "staccato"
+          ? 0.42
+          : note.articulation === "tenuto"
+            ? 0.98
+            : 0.86;
+      const soundDurationMs = durationMs * articulationRatio;
+      const velocity = Math.min(127, Math.max(0, Math.floor(note.velocity * 127)));
+      const generation = this.noteGeneration;
+
+      this.synth!.noteOn(0, midiNote, velocity);
+      this.synth!.controllerChange(0, 7, 100);
+
+      const timerId = this.setTimeoutFn(() => {
+        this.noteOffTimers.delete(timerId);
+        if (this.synth && generation === this.noteGeneration) {
+          this.synth.noteOff(0, midiNote);
         }
-    }, soundDurationMs);
-  });
-};
+      }, soundDurationMs);
+      this.noteOffTimers.add(timerId);
+    });
+  }
+}
+
+export const audioPlaybackService = new AudioPlaybackService();
+
+export const ensureAudioContext = (audioContext: AudioContext | null) =>
+  audioPlaybackService.ensureAudioContext(audioContext);
+
+export const initSynthesizer = (audioContext: AudioContext, sfName?: string) =>
+  audioPlaybackService.initSynthesizer(audioContext, sfName);
+
+export const getAvailablePresets = () => audioPlaybackService.getAvailablePresets();
+
+export const changeInstrument = (program: number, bank: number = 0) =>
+  audioPlaybackService.changeInstrument(program, bank);
+
+export const stopAudioNodes = (nodes?: Set<AudioScheduledSourceNode>) =>
+  audioPlaybackService.stopAudioNodes(nodes);
+
+export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) =>
+  audioPlaybackService.getAudioOutputLatencyMs(audioContext);
+
+export const playPlaybackNotes = (notes: PlaybackNote[], tempoBpm: number) =>
+  audioPlaybackService.playPlaybackNotes(notes, tempoBpm);

@@ -2,87 +2,21 @@ import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 
 import * as alphaTab from "@coderline/alphatab";
 import { parseAlphaTabScore } from "./alphaTabParser";
 import { onAlphaTabEvent, onAlphaTabEventOf } from "./alphaTabEvents";
-import { applyHarmonicaNotationView, createAlphaTabSettings } from "./alphaTabSettings";
+import { createAlphaTabSettings } from "./alphaTabSettings";
+import { getAutoFitZoom, measureRenderedContentHeight } from "./alphaTabAutoFit";
+import {
+    applySelectedTrackRenderState,
+    getSelectedTrack,
+    getTracksInfo,
+    hideScoreHeaderFooter,
+    type TrackInfo,
+} from "./alphaTabTrack";
+import { musicXmlDebugLogger } from "./debugLogger";
 import type { PlaybackEvent } from "./types";
 
 type WindowWithAlphaTabDebug = Window & {
     alphaTabApi?: alphaTab.AlphaTabApi;
     alphaTabScore?: alphaTab.model.Score;
-};
-
-type TrackInfo = {
-    index: number;
-    name: string;
-};
-
-const MIN_AUTO_FIT_ZOOM = 0.65;
-const AUTO_FIT_PADDING = 0.96;
-
-type HeaderFooterStyle = {
-    isVisible?: boolean;
-};
-
-const isVisibleCanvasPixel = (data: Uint8ClampedArray, offset: number) => {
-    const red = data[offset];
-    const green = data[offset + 1];
-    const blue = data[offset + 2];
-    const alpha = data[offset + 3];
-
-    return alpha > 12 && !(red > 245 && green > 245 && blue > 245);
-};
-
-const getCanvasVisibleHeight = (canvas: HTMLCanvasElement) => {
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context || canvas.width <= 0 || canvas.height <= 0) return null;
-
-    try {
-        const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-        for (let y = canvas.height - 1; y >= 0; y -= 1) {
-            const rowOffset = y * canvas.width * 4;
-            for (let x = 0; x < canvas.width; x += 1) {
-                if (isVisibleCanvasPixel(data, rowOffset + x * 4)) {
-                    return y + 1;
-                }
-            }
-        }
-    } catch {
-        return null;
-    }
-
-    return null;
-};
-
-const measureRenderedContentHeight = (scoreElement: HTMLDivElement) => {
-    const scoreRect = scoreElement.getBoundingClientRect();
-    let bottom = 0;
-
-    scoreElement.querySelectorAll("canvas").forEach((canvas) => {
-        const visibleHeight = getCanvasVisibleHeight(canvas);
-        if (visibleHeight === null) return;
-
-        const canvasRect = canvas.getBoundingClientRect();
-        const scaleY = canvas.height > 0 ? canvasRect.height / canvas.height : 1;
-        const canvasTop = canvasRect.top - scoreRect.top;
-        bottom = Math.max(bottom, canvasTop + visibleHeight * scaleY);
-    });
-
-    return bottom > 0 ? bottom : scoreElement.scrollHeight;
-};
-
-const setTrackTranspositionPitch = (
-    api: alphaTab.AlphaTabApi,
-    track: alphaTab.model.Track,
-    semitones: number
-) => {
-    const selectedTrackIndex = api.score?.tracks.indexOf(track) ?? -1;
-    if (selectedTrackIndex < 0) return;
-
-    const transpositionPitches = [...(api.settings.notation.transpositionPitches ?? [])];
-    while (transpositionPitches.length <= selectedTrackIndex) {
-        transpositionPitches.push(0);
-    }
-    transpositionPitches[selectedTrackIndex] = semitones;
-    api.settings.notation.transpositionPitches = transpositionPitches;
 };
 
 export interface AlphaTabViewerRef {
@@ -97,6 +31,7 @@ export interface AlphaTabViewerRef {
 interface AlphaTabViewerProps {
     fileData: string | Uint8Array;
     harmonicaKey: string;
+    isPlaybackActive?: boolean;
     trackIndex?: number;
     transpose?: number;
     onScoreLoaded: (events: PlaybackEvent[], score: alphaTab.model.Score, tracks: TrackInfo[], tempo: number) => void;
@@ -109,6 +44,7 @@ interface AlphaTabViewerProps {
 const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({ 
     fileData, 
     harmonicaKey,
+    isPlaybackActive = false,
     trackIndex = 0,
     transpose = 0,
     onScoreLoaded, 
@@ -128,6 +64,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
     const onRenderedHeightChangeRef = useRef(onRenderedHeightChange);
     const onReadyChangeRef = useRef(onReadyChange);
     const harmonicaKeyRef = useRef(harmonicaKey);
+    const isPlaybackActiveRef = useRef(isPlaybackActive);
     const trackIndexRef = useRef(trackIndex);
     const transposeRef = useRef(transpose);
     const renderFrameRef = useRef<number | null>(null);
@@ -144,9 +81,10 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
         onRenderedHeightChangeRef.current = onRenderedHeightChange;
         onReadyChangeRef.current = onReadyChange;
         harmonicaKeyRef.current = harmonicaKey;
+        isPlaybackActiveRef.current = isPlaybackActive;
         trackIndexRef.current = trackIndex;
         transposeRef.current = transpose;
-    }, [harmonicaKey, onPlaybackFinished, onReadyChange, onRenderedHeightChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
+    }, [harmonicaKey, isPlaybackActive, onPlaybackFinished, onReadyChange, onRenderedHeightChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
 
     useImperativeHandle(ref, () => ({
         playPause: () => {
@@ -158,7 +96,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                     console.error("AlphaTab: Playback error", e);
                 }
             } else {
-                console.warn(`AlphaTab: Cannot play. Ready: ${api?.isReadyForPlayback ?? false}, API: ${!!api}`);
+                musicXmlDebugLogger.warn(`AlphaTab: Cannot play. Ready: ${api?.isReadyForPlayback ?? false}, API: ${!!api}`);
             }
         },
         stop: () => {
@@ -168,7 +106,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                         apiRef.current.stop();
                     }
                 } catch (e) {
-                    console.warn("AlphaTab: Stop error", e);
+                    musicXmlDebugLogger.warn("AlphaTab: Stop error", e);
                 }
             }
         },
@@ -193,13 +131,14 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
 
         let api: alphaTab.AlphaTabApi | null = null;
         onReadyChangeRef.current?.(false);
+        lastTickRef.current = 0;
         resetAutoFitZoom();
 
         try {
             const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/+$/, '') + '/';
             const sfPath = `${baseUrl}soundfont/sonivox.sf2`;
             
-            console.log(`AlphaTab: Initializing API core...`);
+            musicXmlDebugLogger.log("AlphaTab: Initializing API core...");
 
             api = new alphaTab.AlphaTabApi(
                 alphaTabRef.current,
@@ -212,39 +151,6 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
 
             apiRef.current = api;
             (window as WindowWithAlphaTabDebug).alphaTabApi = api;
-
-            const getSelectedTrack = (score: alphaTab.model.Score, selectedTrackIndex: number) => {
-                const track = score.tracks[selectedTrackIndex] || score.tracks[0];
-                if (!track) return null;
-                return {
-                    track,
-                    index: Math.max(0, score.tracks.indexOf(track))
-                };
-            };
-
-            const getTracksInfo = (score: alphaTab.model.Score): TrackInfo[] =>
-                score.tracks.map((t, i) => ({ index: i, name: t.name }));
-
-            const hideScoreHeaderFooter = (score: alphaTab.model.Score) => {
-                score.style?.headerAndFooter?.forEach((style: HeaderFooterStyle) => {
-                    style.isVisible = false;
-                });
-            };
-
-            const applySelectedTrack = (selectedTrackIndex: number, semitones: number) => {
-                const currentApi = api;
-                if (!currentApi?.score) return;
-                const selection = getSelectedTrack(currentApi.score, selectedTrackIndex);
-                if (!selection) return;
-                const { track } = selection;
-
-                applyHarmonicaNotationView(track);
-                setTrackTranspositionPitch(currentApi, track, semitones);
-                currentApi.changeTrackSolo([track], true);
-                currentApi.score.tracks.forEach(t => currentApi.changeTrackMute([t], t !== track));
-                currentApi.renderTracks([track]);
-                currentApi.loadMidiForScore();
-            };
 
             const scheduleAutoFit = () => {
                 if (autoFitFrameRef.current !== null) {
@@ -260,23 +166,17 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                     if (apiRef.current !== api || !scoreZoomElement || !scoreElement || !containerElement) return;
 
                     resetAutoFitZoom();
-                    const availableHeight = containerElement.clientHeight * AUTO_FIT_PADDING;
+                    const availableHeight = containerElement.clientHeight;
                     const renderedHeight = measureRenderedContentHeight(scoreElement);
                     if (renderedHeight > 0) {
                         onRenderedHeightChangeRef.current?.(renderedHeight);
                     }
-                    if (availableHeight <= 0 || renderedHeight <= availableHeight) {
+                    const nextZoom = getAutoFitZoom(availableHeight, renderedHeight);
+                    if (nextZoom === null) {
                         return;
                     }
 
-                    const nextZoom = Math.max(
-                        MIN_AUTO_FIT_ZOOM,
-                        Math.floor((availableHeight / renderedHeight) * 100) / 100
-                    );
-
-                    if (nextZoom < 0.99) {
-                        scoreZoomElement.style.setProperty("zoom", String(nextZoom));
-                    }
+                    scoreZoomElement.style.setProperty("zoom", String(nextZoom));
                 });
             };
 
@@ -288,7 +188,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             };
 
             onAlphaTabEventOf(api.scoreLoaded, (score) => {
-                console.log("AlphaTab: Score loaded into API.");
+                musicXmlDebugLogger.log("AlphaTab: Score loaded into API.");
                 (window as WindowWithAlphaTabDebug).alphaTabScore = score;
                 hideScoreHeaderFooter(score);
 
@@ -299,25 +199,25 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                     renderFrameRef.current = window.requestAnimationFrame(() => {
                         renderFrameRef.current = null;
                         try {
-                            applySelectedTrack(trackIndexRef.current, transposeRef.current);
+                            applySelectedTrackRenderState(api, trackIndexRef.current, transposeRef.current);
                         } catch {
-                            console.warn("AlphaTab: Failed to apply selected track.");
+                            musicXmlDebugLogger.warn("AlphaTab: Failed to apply selected track.");
                         }
                     });
                 } catch {
-                    console.warn("AlphaTab: Failed to apply selected track.");
+                    musicXmlDebugLogger.warn("AlphaTab: Failed to apply selected track.");
                 }
                 
                 notifyScoreLoaded(score);
             });
 
             onAlphaTabEvent(api.postRenderFinished, () => {
-                console.log("AlphaTab: Render finished.");
+                musicXmlDebugLogger.log("AlphaTab: Render finished.");
                 scheduleAutoFit();
             });
 
             onAlphaTabEvent(api.playerReady, () => {
-                console.log("AlphaTab: Player ready.");
+                musicXmlDebugLogger.log("AlphaTab: Player ready.");
                 onReadyChangeRef.current?.(true);
                 if (lastTickRef.current > 0) {
                     api!.tickPosition = lastTickRef.current;
@@ -327,6 +227,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             onAlphaTabEventOf(api.playerPositionChanged, (args) => {
                 lastTickRef.current = args.currentTick;
                 onTimeUpdateRef.current(args.currentTick);
+                if (!isPlaybackActiveRef.current) return;
 
                 // Internal Centered Scrolling
                 const container = containerRef.current;
@@ -356,7 +257,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
 
         return () => {
             if (api) {
-                console.log("AlphaTab: Destroying API instance");
+                musicXmlDebugLogger.log("AlphaTab: Destroying API instance");
                 if (renderFrameRef.current !== null) {
                     window.cancelAnimationFrame(renderFrameRef.current);
                     renderFrameRef.current = null;
@@ -369,7 +270,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 try {
                     api.destroy();
                 } catch {
-                    console.warn("AlphaTab: Destroy failed.");
+                    musicXmlDebugLogger.warn("AlphaTab: Destroy failed.");
                 }
                 if (apiRef.current === api) {
                     apiRef.current = null;
@@ -406,20 +307,14 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             if (!currentTrack) return;
 
             try {
-                applyHarmonicaNotationView(currentTrack);
-                setTrackTranspositionPitch(currentApi, currentTrack, transpose);
-                currentApi.changeTrackSolo([currentTrack], true);
-                currentApi.score.tracks.forEach(t => currentApi.changeTrackMute([t], t !== currentTrack));
-                currentApi.renderTracks([currentTrack]);
-                currentApi.loadMidiForScore();
+                applySelectedTrackRenderState(currentApi, trackIndex, transpose);
             } catch {
-                console.warn("AlphaTab: Failed to update track render state.");
+                musicXmlDebugLogger.warn("AlphaTab: Failed to update track render state.");
             }
 
             const selectedTrackIndex = Math.max(0, currentApi.score.tracks.indexOf(currentTrack));
             const { events, tempo } = parseAlphaTabScore(currentApi.score, harmonicaKey, selectedTrackIndex, transpose);
-            const tracksInfo = currentApi.score.tracks.map((t, i) => ({ index: i, name: t.name }));
-            onScoreLoadedRef.current(events, currentApi.score, tracksInfo, tempo);
+            onScoreLoadedRef.current(events, currentApi.score, getTracksInfo(currentApi.score), tempo);
         });
 
         return () => {

@@ -323,7 +323,7 @@ describe("parsePlaybackEvents", () => {
     expect(result.events[1].notes[0]?.name).toBe("C4");
   });
 
-  it("does not add a lead-in when the score already starts with a rest", () => {
+  it("tops up a short initial score rest to one measure of preparation", () => {
     const result = parsePlaybackEvents(`
       <score-partwise>
         <part>
@@ -343,7 +343,37 @@ describe("parsePlaybackEvents", () => {
     `);
 
     expect(result.events[0]).toMatchObject({
+      durationBeats: 3,
+      notes: [],
+    });
+    expect(result.events[1]).toMatchObject({
       durationBeats: 1,
+      notes: [],
+    });
+    expect(result.events[2].notes[0]?.name).toBe("D4");
+  });
+
+  it("does not add a lead-in when the score already starts with a full-measure rest", () => {
+    const result = parsePlaybackEvents(`
+      <score-partwise>
+        <part>
+          <measure>
+            <attributes><divisions>1</divisions></attributes>
+            <note>
+              <rest />
+              <duration>4</duration>
+            </note>
+            <note>
+              <pitch><step>D</step><octave>4</octave></pitch>
+              <duration>1</duration>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+
+    expect(result.events[0]).toMatchObject({
+      durationBeats: 4,
       notes: [],
     });
     expect(result.events[1].notes[0]?.name).toBe("D4");

@@ -59,3 +59,24 @@
 - [x] Разобраться с `jsdom@29` / `html-encoding-sniffer` ESM-конфликтом.
 - [x] Разделить scripts на `test:node` для pure helpers и `test:dom` для DOM/React.
 - [x] Добавить smoke tests для XML и GP parser без браузера.
+
+## 10. Runtime Lifecycle Refactoring
+- [x] Закрыть known runtime bugs из code review: stale playback timeout, AlphaTab pre-play scroll, noteOff timers, SoundFont race, pitch cleanup guard.
+- [x] Вынести AlphaTab track selection/render helpers из `AlphaTabViewer.tsx`.
+- [x] Вынести AlphaTab auto-fit math/measurement helpers из `AlphaTabViewer.tsx`.
+- [x] Добавить focused tests для вынесенных AlphaTab helpers.
+- [x] Вынести cursor sync из `MusicXML.tsx` в отдельный hook.
+- [x] Сузить обязанности `audioPlayback.ts` до явного synth service API.
+- [x] Уменьшить debug logging или завести controlled debug flag.
+- [x] После каждого шага запускать targeted tests, `npm run lint`, `npx tsc -b`, `npm run build`.
+
+## 11. Route Orchestration Refactoring
+- [x] Вынести transpose optimizer state/actions из `MusicXML.tsx`.
+- [x] Вынести score download actions из `MusicXML.tsx`.
+- [x] Вынести soundfont/preset warmup и live instrument sync из `MusicXML.tsx`.
+
+## 12. Score Pipeline Refactoring
+- [x] Вынести XML transform/render/playback parsing pipeline из `MusicXML.tsx`.
+- [x] Вынести file import/reset flow из `MusicXML.tsx`.
+- [x] Вынести derived playback/highway view model из `MusicXML.tsx`.
+- [x] Проверить `MusicXML.tsx` на оставшиеся route-level обязанности и не дробить UI без практической пользы.

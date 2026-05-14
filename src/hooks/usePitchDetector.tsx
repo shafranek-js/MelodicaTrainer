@@ -88,8 +88,10 @@ export function usePitchDetector(
 
           if (audioContext.state === "suspended") {
             await audioContext.resume();
+            if (cancelled) return;
           }
 
+          if (cancelled) return;
           analyser.getFloatTimeDomainData(buffer);
           const [detectedPitch, detectedClarity] =
             pitchDetectorRef.current!.findPitch(

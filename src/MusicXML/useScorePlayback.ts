@@ -5,21 +5,20 @@ import {
   changeInstrument,
   ensureAudioContext,
   getAudioOutputLatencyMs,
-  getAvailablePresets,
   initSynthesizer,
   playPlaybackNotes,
   stopAudioNodes,
 } from "./audioPlayback";
 import type { AlphaTabViewerRef } from "./AlphaTabViewer";
+import { musicXmlDebugLogger } from "./debugLogger";
 import { getPlaybackStartIndex } from "./playbackStart";
+import { parsePresetSelection } from "./useSoundFontPresets";
 import type { PlaybackEvent, PlaybackTiming } from "./types";
 
 type RouteStatus = {
   tone: "info" | "success" | "error";
   message: string;
 };
-
-type AvailablePreset = ReturnType<typeof getAvailablePresets>[number];
 
 type UseScorePlaybackOptions = {
   alphaTabRef: MutableRefObject<AlphaTabViewerRef | null>;
@@ -32,7 +31,6 @@ type UseScorePlaybackOptions = {
   gameClockFrameRef: MutableRefObject<number | null>;
   gameClockOffsetMsRef: MutableRefObject<number>;
   gameClockStartMsRef: MutableRefObject<number>;
-  gpCursorFrameRef: MutableRefObject<number | null>;
   isGpPlaybackReady: boolean;
   isGpFile: boolean;
   isPlaying: boolean;
@@ -47,13 +45,13 @@ type UseScorePlaybackOptions = {
   resetScoring: () => void;
   selectedPreset: string;
   selectedSf: string;
-  setAvailablePresets: (presets: AvailablePreset[]) => void;
   setCurrentEventIndex: (index: number) => void;
   setCurrentGameTimeMs: (timeMs: number) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setRouteStatus: (status: RouteStatus) => void;
   sheetScrollRef: MutableRefObject<HTMLDivElement | null>;
   shortestNoteDurationMs: number;
+  stopGpCursorAnimation: () => void;
   tempoScaleRef: MutableRefObject<number>;
 };
 
@@ -68,7 +66,6 @@ export const useScorePlayback = ({
   gameClockFrameRef,
   gameClockOffsetMsRef,
   gameClockStartMsRef,
-  gpCursorFrameRef,
   isGpPlaybackReady,
   isGpFile,
   isPlaying,
@@ -83,22 +80,15 @@ export const useScorePlayback = ({
   resetScoring,
   selectedPreset,
   selectedSf,
-  setAvailablePresets,
   setCurrentEventIndex,
   setCurrentGameTimeMs,
   setIsPlaying,
   setRouteStatus,
   sheetScrollRef,
   shortestNoteDurationMs,
+  stopGpCursorAnimation,
   tempoScaleRef,
 }: UseScorePlaybackOptions) => {
-  const stopGpCursorAnimation = useCallback(() => {
-    if (gpCursorFrameRef.current !== null) {
-      window.cancelAnimationFrame(gpCursorFrameRef.current);
-      gpCursorFrameRef.current = null;
-    }
-  }, [gpCursorFrameRef]);
-
   const clearPlaybackResources = useCallback(() => {
     if (playbackTimerRef.current !== null) {
       window.clearTimeout(playbackTimerRef.current);
@@ -159,7 +149,11 @@ export const useScorePlayback = ({
     if (!event) {
       const msPerPx = shortestNoteDurationMs / 40;
       const trailMs = (520 * msPerPx) * 0.5;
-      window.setTimeout(() => stopPlayback(true, false), trailMs / tempoScaleRef.current);
+      playbackTimerRef.current = window.setTimeout(() => {
+        playbackTimerRef.current = null;
+        if (playbackRunRef.current !== runId) return;
+        stopPlayback(true, false);
+      }, trailMs / tempoScaleRef.current);
       return;
     }
 
@@ -195,7 +189,7 @@ export const useScorePlayback = ({
   const togglePlayback = useCallback(async () => {
     const playbackReady = canPlayback && (isGpFile ? isGpPlaybackReady : true);
 
-    console.log("Toggle playback triggered", {
+    musicXmlDebugLogger.log("Toggle playback triggered", {
       isPlaying: isPlayingRef.current,
       canPlayback: playbackReady,
       isGpFile,
@@ -211,7 +205,7 @@ export const useScorePlayback = ({
     }
 
     if (!playbackReady) {
-      console.warn("Playback not ready", {
+      musicXmlDebugLogger.warn("Playback not ready", {
         isSheetReady,
         hasEvents: playbackEvents.length > 0,
         hasAlphaTab: !!alphaTabRef.current,
@@ -228,11 +222,10 @@ export const useScorePlayback = ({
 
       await initSynthesizer(audioContext, selectedSf);
 
-      const presets = getAvailablePresets();
-      setAvailablePresets(presets);
-
-      const [bank, program] = selectedPreset.split(":").map(Number);
-      changeInstrument(program, bank);
+      const preset = parsePresetSelection(selectedPreset);
+      if (preset) {
+        changeInstrument(preset.program, preset.bank);
+      }
 
       setRouteStatus({ tone: "success", message: fileName ? `Ready: ${fileName}.` : "Score ready." });
 
@@ -275,7 +268,6 @@ export const useScorePlayback = ({
     schedulePlayback,
     selectedPreset,
     selectedSf,
-    setAvailablePresets,
     setIsPlaying,
     setRouteStatus,
     stopPlayback,
@@ -310,7 +302,6 @@ export const useScorePlayback = ({
 
   return {
     clearPlaybackResources,
-    stopGpCursorAnimation,
     stopPlayback,
     togglePlayback,
   };

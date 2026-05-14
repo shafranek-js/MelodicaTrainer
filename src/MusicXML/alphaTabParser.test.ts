@@ -209,7 +209,7 @@ describe("parseAlphaTabScore", () => {
         expect(result.events[1].notes[0]?.name).toBe("C4");
     });
 
-    it("does not add a lead-in when a GP score already starts with a rest", () => {
+    it("tops up a short initial GP rest to one measure of preparation", () => {
         const score = makeScore(
             [
                 {
@@ -230,7 +230,38 @@ describe("parseAlphaTabScore", () => {
         const result = parseAlphaTabScore(score, "C");
 
         expect(result.events[0]).toMatchObject({
+            durationBeats: 3,
+            notes: [],
+        });
+        expect(result.events[1]).toMatchObject({
             durationBeats: 1,
+            notes: [],
+        });
+        expect(result.events[2].notes[0]?.name).toBe("D4");
+    });
+
+    it("does not add a lead-in when a GP score already starts with a full-measure rest", () => {
+        const score = makeScore(
+            [
+                {
+                    voices: [
+                        {
+                            beats: [
+                                { playbackStart: 0, playbackDuration: 3840, isRest: true },
+                                { playbackStart: 3840, playbackDuration: 480, notes: [{ realValue: 62 }] },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            [masterBar(0)],
+            90
+        );
+
+        const result = parseAlphaTabScore(score, "C");
+
+        expect(result.events[0]).toMatchObject({
+            durationBeats: 4,
             notes: [],
         });
         expect(result.events[1].notes[0]?.name).toBe("D4");

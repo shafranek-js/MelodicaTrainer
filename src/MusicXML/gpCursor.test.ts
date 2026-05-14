@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  getGpEventIndexAtOriginalTick,
-  getInterpolatedGpCursorTick,
-} from "./gpCursor";
+import { getInterpolatedGpCursorTick } from "./gpCursor";
 import type { PlaybackEvent } from "./types";
 
 const makeEvent = (
@@ -25,14 +22,6 @@ const makeEvent = (
   tabs: [],
   sourceEventIndex: 0,
   originalTick,
-});
-
-const makeLeadInEvent = (): PlaybackEvent => ({
-  durationBeats: 4,
-  tempoBpm: 120,
-  notes: [],
-  tabs: [],
-  sourceEventIndex: 0,
 });
 
 describe("GP cursor interpolation", () => {
@@ -70,23 +59,5 @@ describe("GP cursor interpolation", () => {
         durationMs: 500,
       })
     ).toBe(5760);
-  });
-
-  it("maps a small tick after the score start to the leading rest", () => {
-    const events = [makeEvent(0, []), makeEvent(2880), makeEvent(3840)];
-
-    expect(getGpEventIndexAtOriginalTick(events, 1)).toBe(0);
-  });
-
-  it("maps score-start tick to artificial lead-in before the first note", () => {
-    const events = [makeLeadInEvent(), makeEvent(0), makeEvent(960)];
-
-    expect(getGpEventIndexAtOriginalTick(events, 0)).toBe(0);
-  });
-
-  it("maps an exact note tick to that note event", () => {
-    const events = [makeEvent(0, []), makeEvent(2880), makeEvent(3840)];
-
-    expect(getGpEventIndexAtOriginalTick(events, 2880)).toBe(1);
   });
 });

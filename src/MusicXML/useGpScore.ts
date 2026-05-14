@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { findBestTransposeIntervals } from "./musicXmlTransform";
 import { getPlayableMidiNumbers } from "./playbackTimeline";
+import { musicXmlDebugLogger } from "./debugLogger";
 import type { PlaybackEvent } from "./types";
 import type { MutableRefObject } from "react";
 import type * as alphaTab from "@coderline/alphatab";
@@ -78,7 +79,7 @@ export const useGpScore = ({
     tracks: TrackInfo[],
     scoreTempo: number
   ) => {
-    console.log(`MusicXML: Score loaded. Extracted tempo: ${scoreTempo}`);
+    musicXmlDebugLogger.log(`MusicXML: Score loaded. Extracted tempo: ${scoreTempo}`);
     const originalMidiNumbers = Array.from(getPlayableMidiNumbers(events)).map((m) => m - transpose);
     setGpOriginalMidiNumbers(originalMidiNumbers);
 
@@ -86,7 +87,7 @@ export const useGpScore = ({
       shouldAutoTransposeGpRef.current = false;
       const bestTranspose = findBestGpTranspose(originalMidiNumbers);
       if (bestTranspose !== null && bestTranspose !== transpose) {
-        console.log(`MusicXML: Auto-transposing GP score by ${bestTranspose} semitones.`);
+        musicXmlDebugLogger.log(`MusicXML: Auto-transposing GP score by ${bestTranspose} semitones.`);
         setTranspose(bestTranspose);
         setRouteStatus({ tone: "info", message: `Auto transposed Guitar Pro score by ${bestTranspose} semitones.` });
         return;

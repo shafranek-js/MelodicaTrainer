@@ -4,6 +4,7 @@ import type { PlaybackEvent, PlaybackNote } from "./types";
 import { Note } from "tonal";
 import { resolveTiedNotes } from "./playbackParser";
 import { addLeadInIfNeeded } from "./playbackLeadIn";
+import { musicXmlDebugLogger } from "./debugLogger";
 
 type AlphaTabTrackWithStaffs = alphaTab.model.Track & {
     staffs?: alphaTab.model.Staff[];
@@ -100,7 +101,7 @@ export function parseAlphaTabScore(
     const appliedStaffTranspose = -((staff as AlphaTabStaffWithTransposition).transpositionPitch ?? 0);
     const missingManualTranspose = manualTranspose - appliedStaffTranspose;
 
-    console.log(`AlphaTab Parser: Extracting track ${trackIndex} (${track.name})`);
+    musicXmlDebugLogger.log(`AlphaTab Parser: Extracting track ${trackIndex} (${track.name})`);
     
     const masterBars = score.masterBars;
     const initialTempo = getScoreTempo(score);
@@ -320,6 +321,6 @@ export function parseAlphaTabScore(
     const resolvedEvents = options.addLeadIn === false
         ? tiedEvents
         : addLeadInIfNeeded(tiedEvents, leadInBeats);
-    console.log(`AlphaTab Parser: Success! Parsed ${resolvedEvents.length} events.`);
+    musicXmlDebugLogger.log(`AlphaTab Parser: Success! Parsed ${resolvedEvents.length} events.`);
     return { events: resolvedEvents, tempo: initialTempo };
 }
