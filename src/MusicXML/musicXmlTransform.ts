@@ -1,5 +1,10 @@
 import { Note } from "tonal";
-import { getHarmonicaHoleForNote } from "../utils/utils";
+import {
+  generateMelodicaLayout,
+  getHarmonicaHoleForNote,
+  getMelodicaKeyLabelForNote,
+} from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
 import { getPitchNoteName } from "./playbackParser";
 import {
   getFirstPart,
@@ -362,12 +367,116 @@ export const findBestTransposeIntervals = (
         .sort((a, b) => Math.abs(a) - Math.abs(b)); // Sort by proximity to zero (original)
 };
 
+type InjectMelodicaLabelsOptions = {
+  keyCount: MelodicaKeyCount;
+  labelMode?: "note" | "keyNumber";
+  transpose: number;
+};
+
+export const injectMelodicaLabels = (
+  xml: string,
+  { keyCount, labelMode = "note", transpose }: InjectMelodicaLabelsOptions
+): string => {
+  const xmlDoc = parseMusicXmlDocument(xml);
+  const noteElements = getFirstStaffNoteElements(xmlDoc);
+  transposeKeySignatures(xmlDoc, transpose);
+
+  noteElements.forEach((note) => {
+    const pitch = note.getElementsByTagName("pitch")[0];
+    if (!pitch) return;
+
+    const originalNote = getPitchNoteName(pitch);
+    if (!originalNote) return;
+
+    const transposedNote = transposeNoteName(originalNote, transpose);
+    if (!transposedNote) return;
+
+    writePitch(xmlDoc, pitch, transposedNote);
+    note.removeAttribute("default-y");
+    note.removeAttribute("relative-y");
+
+    const label = getMelodicaKeyLabelForNote(keyCount, transposedNote, labelMode);
+    replaceHarmonicaFingering(xmlDoc, note, label);
+  });
+
+  return new XMLSerializer().serializeToString(xmlDoc);
+};
+
 export const findBestTransposeInterval = (
     midiNumbers: number[],
     options: AutoTransposeOptions
 ) => {
     const bests = findBestTransposeIntervals(midiNumbers, options);
     return bests.length > 0 ? bests[0] : null;
+};
+
+type AutoMelodicaTransposeOptions = {
+  keyCount: MelodicaKeyCount;
+};
+
+export const findBestMelodicaTransposeIntervals = (
+  midiNumbers: number[],
+  { keyCount }: AutoMelodicaTransposeOptions
+): number[] => {
+  const uniqueMidi = Array.from(new Set(midiNumbers));
+  if (uniqueMidi.length === 0) return [];
+
+  const layout = generateMelodicaLayout(keyCount);
+  const minMidi = layout.keys[0]?.midi ?? 0;
+  const maxMidi = layout.keys[layout.keys.length - 1]?.midi ?? 127;
+  const results: { interval: number; unplayableCount: number }[] = [];
+  let minUnplayableCount = Number.POSITIVE_INFINITY;
+
+  for (let interval = -36; interval <= 36; interval += 1) {
+    const unplayableCount = uniqueMidi.filter((midi) => {
+      const transposedMidi = midi + interval;
+      return transposedMidi < minMidi || transposedMidi > maxMidi;
+    }).length;
+
+    results.push({ interval, unplayableCount });
+    if (unplayableCount < minUnplayableCount) minUnplayableCount = unplayableCount;
+  }
+
+  return results
+    .filter((result) => result.unplayableCount === minUnplayableCount)
+    .map((result) => result.interval)
+    .sort((a, b) => Math.abs(a) - Math.abs(b));
+};
+
+export const findBestMelodicaTransposeInterval = (
+  midiNumbers: number[],
+  options: AutoMelodicaTransposeOptions
+) => {
+  const bests = findBestMelodicaTransposeIntervals(midiNumbers, options);
+  return bests.length > 0 ? bests[0] : null;
+};
+
+export const findAutoMelodicaTransposeIntervals = (
+  xml: string,
+  options: AutoMelodicaTransposeOptions
+) => {
+  const xmlDoc = parseMusicXmlDocument(xml);
+  const noteElements = getFirstStaffNoteElements(xmlDoc);
+
+  const midiNumbers: number[] = [];
+  noteElements.forEach((note) => {
+    const pitch = note.getElementsByTagName("pitch")[0];
+    if (!pitch) return;
+
+    const name = getPitchNoteName(pitch);
+    const midi = name ? Note.midi(name) : null;
+    if (midi !== null) midiNumbers.push(midi);
+  });
+
+  return findBestMelodicaTransposeIntervals(midiNumbers, options);
+};
+
+export const findAutoMelodicaTransposeInterval = (
+  xml: string,
+  options: AutoMelodicaTransposeOptions
+) => {
+  const bests = findAutoMelodicaTransposeIntervals(xml, options);
+  return bests.length > 0 ? bests[0] : null;
 };
 
 export const findAutoTransposeIntervals = (

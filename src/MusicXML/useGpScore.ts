@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { findBestTransposeIntervals } from "./musicXmlTransform";
+import { findBestMelodicaTransposeIntervals } from "./musicXmlTransform";
 import { getPlayableMidiNumbers } from "./playbackTimeline";
 import { musicXmlDebugLogger } from "./debugLogger";
 import type { PlaybackEvent } from "./types";
 import type { MutableRefObject } from "react";
 import type * as alphaTab from "@coderline/alphatab";
+import type { MelodicaKeyCount } from "../utils/utils";
 
 const DEFAULT_GP_SCORE_HEIGHT_PX = 128;
 const MIN_GP_SCORE_HEIGHT_PX = 72;
@@ -22,9 +23,7 @@ type TrackInfo = {
 
 type UseGpScoreOptions = {
   cursorEventIndexRef: MutableRefObject<number | null>;
-  harmonicaKey: string;
-  noBend: boolean;
-  noOverblowOrDraw: boolean;
+  keyCount: MelodicaKeyCount;
   setCurrentEventIndex: (index: number) => void;
   setCurrentGameTimeMs: (timeMs: number) => void;
   setDetectedTempoBpm: (tempoBpm: number) => void;
@@ -37,9 +36,7 @@ type UseGpScoreOptions = {
 
 export const useGpScore = ({
   cursorEventIndexRef,
-  harmonicaKey,
-  noBend,
-  noOverblowOrDraw,
+  keyCount,
   setCurrentEventIndex,
   setCurrentGameTimeMs,
   setDetectedTempoBpm,
@@ -64,14 +61,12 @@ export const useGpScore = ({
   const findBestGpTranspose = useCallback((originalMidiNumbers: number[]) => {
     if (originalMidiNumbers.length === 0) return null;
 
-    const intervals = findBestTransposeIntervals(originalMidiNumbers, {
-      selectedKey: harmonicaKey,
-      noOverblowOrDraw,
-      noBend,
+    const intervals = findBestMelodicaTransposeIntervals(originalMidiNumbers, {
+      keyCount,
     });
 
     return intervals[0] ?? null;
-  }, [harmonicaKey, noBend, noOverblowOrDraw]);
+  }, [keyCount]);
 
   const handleGpScoreLoaded = useCallback((
     events: PlaybackEvent[],

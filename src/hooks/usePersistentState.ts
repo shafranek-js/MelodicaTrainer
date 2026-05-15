@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const STORAGE_ENVELOPE_TYPE = "HarpTrainerPersistentState";
+const STORAGE_ENVELOPE_TYPE = "MelodicaTrainerPersistentState";
 const STORAGE_VERSION = 1;
 const UINT8_ARRAY_TYPE = "Uint8Array";
 const BYTE_CHUNK_SIZE = 0x8000;

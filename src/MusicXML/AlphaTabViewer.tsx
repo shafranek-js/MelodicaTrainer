@@ -12,6 +12,7 @@ import {
     type TrackInfo,
 } from "./alphaTabTrack";
 import { musicXmlDebugLogger } from "./debugLogger";
+import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent } from "./types";
 
 type WindowWithAlphaTabDebug = Window & {
@@ -30,7 +31,7 @@ export interface AlphaTabViewerRef {
 
 interface AlphaTabViewerProps {
     fileData: string | Uint8Array;
-    harmonicaKey: string;
+    keyCount: MelodicaKeyCount;
     isPlaybackActive?: boolean;
     trackIndex?: number;
     transpose?: number;
@@ -43,7 +44,7 @@ interface AlphaTabViewerProps {
 
 const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({ 
     fileData, 
-    harmonicaKey,
+    keyCount,
     isPlaybackActive = false,
     trackIndex = 0,
     transpose = 0,
@@ -63,7 +64,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
     const onPlaybackFinishedRef = useRef(onPlaybackFinished);
     const onRenderedHeightChangeRef = useRef(onRenderedHeightChange);
     const onReadyChangeRef = useRef(onReadyChange);
-    const harmonicaKeyRef = useRef(harmonicaKey);
+    const keyCountRef = useRef(keyCount);
     const isPlaybackActiveRef = useRef(isPlaybackActive);
     const trackIndexRef = useRef(trackIndex);
     const transposeRef = useRef(transpose);
@@ -80,11 +81,11 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
         onPlaybackFinishedRef.current = onPlaybackFinished;
         onRenderedHeightChangeRef.current = onRenderedHeightChange;
         onReadyChangeRef.current = onReadyChange;
-        harmonicaKeyRef.current = harmonicaKey;
+        keyCountRef.current = keyCount;
         isPlaybackActiveRef.current = isPlaybackActive;
         trackIndexRef.current = trackIndex;
         transposeRef.current = transpose;
-    }, [harmonicaKey, isPlaybackActive, onPlaybackFinished, onReadyChange, onRenderedHeightChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
+    }, [isPlaybackActive, keyCount, onPlaybackFinished, onReadyChange, onRenderedHeightChange, onScoreLoaded, onTimeUpdate, trackIndex, transpose]);
 
     useImperativeHandle(ref, () => ({
         playPause: () => {
@@ -183,7 +184,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             const notifyScoreLoaded = (score: alphaTab.model.Score) => {
                 const selected = getSelectedTrack(score, trackIndexRef.current);
                 const selectedTrackIndex = selected?.index ?? 0;
-                const { events, tempo } = parseAlphaTabScore(score, harmonicaKeyRef.current, selectedTrackIndex, transposeRef.current);
+                const { events, tempo } = parseAlphaTabScore(score, keyCountRef.current, selectedTrackIndex, transposeRef.current);
                 onScoreLoadedRef.current(events, score, getTracksInfo(score), tempo);
             };
 
@@ -313,7 +314,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             }
 
             const selectedTrackIndex = Math.max(0, currentApi.score.tracks.indexOf(currentTrack));
-            const { events, tempo } = parseAlphaTabScore(currentApi.score, harmonicaKey, selectedTrackIndex, transpose);
+            const { events, tempo } = parseAlphaTabScore(currentApi.score, keyCount, selectedTrackIndex, transpose);
             onScoreLoadedRef.current(events, currentApi.score, getTracksInfo(currentApi.score), tempo);
         });
 
@@ -327,7 +328,7 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 autoFitFrameRef.current = null;
             }
         };
-    }, [harmonicaKey, transpose, trackIndex, resetAutoFitZoom]);
+    }, [keyCount, transpose, trackIndex, resetAutoFitZoom]);
 
     useEffect(() => {
         return () => {

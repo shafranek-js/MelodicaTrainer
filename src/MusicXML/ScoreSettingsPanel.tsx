@@ -1,13 +1,9 @@
 import { FolderOpen } from "lucide-react";
 import type { ChangeEvent } from "react";
+import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string };
-
-type HarmonicaKey = {
-  label: string;
-  value: string;
-};
 
 type SoundFontOption = {
   label: string;
@@ -30,14 +26,14 @@ type ScoreSettingsPanelProps = {
   canUseProcessedScore: boolean;
   fileName: string | null;
   gpTracks: GpTrack[];
-  harmonicaKey: string;
-  harmonicaKeys: HarmonicaKey[];
+  keyCount: MelodicaKeyCount;
+  melodicaRanges: readonly MelodicaRangeOption[];
   isGpFile: boolean;
-  onDownloadHarpTabs: () => void;
+  onDownloadMelodicaNotes: () => void;
   onDownloadTransposedXml: () => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onGpTrackChange: (trackIndex: number) => void;
-  onHarmonicaKeyChange: (key: string) => void;
+  onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
   onSoundFontChange: (soundFont: string) => void;
   routeStatus: RouteStatus | null;
@@ -46,7 +42,6 @@ type ScoreSettingsPanelProps = {
   selectedPreset: string;
   selectedSoundFont: string;
   soundFonts: SoundFontOption[];
-  t: (key: string) => string;
 };
 
 export const ScoreSettingsPanel = ({
@@ -54,14 +49,14 @@ export const ScoreSettingsPanel = ({
   canUseProcessedScore,
   fileName,
   gpTracks,
-  harmonicaKey,
-  harmonicaKeys,
+  keyCount,
+  melodicaRanges,
   isGpFile,
-  onDownloadHarpTabs,
+  onDownloadMelodicaNotes,
   onDownloadTransposedXml,
   onFileChange,
   onGpTrackChange,
-  onHarmonicaKeyChange,
+  onMelodicaRangeChange,
   onSelectedPresetChange,
   onSoundFontChange,
   routeStatus,
@@ -70,7 +65,6 @@ export const ScoreSettingsPanel = ({
   selectedPreset,
   selectedSoundFont,
   soundFonts,
-  t,
 }: ScoreSettingsPanelProps) => (
   <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar">
     {routeStatus && (
@@ -81,15 +75,15 @@ export const ScoreSettingsPanel = ({
 
     <div className="space-y-4">
       <div>
-        <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Harmonica Key</label>
+        <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Melodica Range</label>
         <select
-          value={harmonicaKey}
-          onChange={(e) => onHarmonicaKeyChange(e.target.value)}
+          value={keyCount}
+          onChange={(e) => onMelodicaRangeChange(Number(e.target.value) as MelodicaKeyCount)}
           className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
         >
-          {harmonicaKeys.map((key) => (
-            <option key={key.value} value={key.value}>
-              {t(key.label)}
+          {melodicaRanges.map((range) => (
+            <option key={range.value} value={range.value}>
+              {range.label} ({range.startNote}-{range.endNote})
             </option>
           ))}
         </select>
@@ -170,10 +164,10 @@ export const ScoreSettingsPanel = ({
           💾 XML
         </button>
         <button
-          onClick={onDownloadHarpTabs}
+          onClick={onDownloadMelodicaNotes}
           disabled={!canUseProcessedScore}
           className="bg-gray-800 border border-gray-700 hover:bg-gray-750 disabled:opacity-30 text-gray-400 px-3 py-2 rounded-lg transition-all w-full text-[10px] font-black uppercase tracking-tighter"
-          title="HarpTabs text"
+          title="Melodica notes text"
         >
           📝 Text
         </button>

@@ -128,8 +128,8 @@ function Circle() {
 
       <div className="flex gap-2 sm:gap-3 overflow-x-auto max-w-full px-2 sm:px-4 mt-2 sm:mt-4 pb-2">
         {[...modes]
-          .sort((a, b) => a.harmonicaOrder - b.harmonicaOrder)
-          .map(({ name, harmonicaPosition }) => {
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map(({ name }) => {
             const modeIndex = modeNames.indexOf(name);
             const isSelected = modeIndex === selectedMode;
 
@@ -145,7 +145,7 @@ function Circle() {
                     : "bg-gray-800 text-white hover:bg-indigo-500 transition-colors"
                 }`}
               >
-                {name} ({harmonicaPosition})
+                {name}
               </button>
             );
           })}

@@ -1,7 +1,7 @@
 import { Note } from "tonal";
 import { describe, expect, it } from "vitest";
-import { generateLayout } from "../utils/utils";
-import { getPracticeScale, getPracticeTargets } from "./practiceTargets";
+import { generateMelodicaLayout } from "../utils/utils";
+import { getLayoutTargets, getPracticeScale, getPracticeTargets } from "./practiceTargets";
 import type { PracticeTarget } from "./practiceTargets";
 
 const midi = (note: string) => {
@@ -14,48 +14,41 @@ const targetSummary = (targets: PracticeTarget[]) =>
   targets.map((target) => `${target.label}:${target.noteName}`);
 
 describe("getPracticeScale", () => {
-  it("derives the selected position mode from the harmonica key", () => {
+  it("derives scale notes from a selected tonic", () => {
     const selection = getPracticeScale({
-      harmonicaKey: "C4",
-      positionIndex: 1,
-      scaleValue: "mode",
+      tonic: "C",
+      scaleValue: "major",
     });
 
-    expect(selection.position.label).toBe("2nd");
-    expect(selection.tonic).toBe("G");
-    expect(selection.scaleLabel).toBe("Mixolydian");
-    expect(selection.scale).toEqual(["G", "A", "B", "C", "D", "E", "F"]);
+    expect(selection.tonic).toBe("C");
+    expect(selection.scaleLabel).toBe("Major");
+    expect(selection.scale).toEqual(["C", "D", "E", "F", "G", "A", "B"]);
   });
 
-  it("uses the position tonic when deriving alternate scale choices", () => {
+  it("supports alternate scale choices", () => {
     const selection = getPracticeScale({
-      harmonicaKey: "C4",
-      positionIndex: 2,
+      tonic: "D",
       scaleValue: "minor pentatonic",
     });
 
-    expect(selection.position.label).toBe("3rd");
-    expect(selection.tonic).toBe("D");
     expect(selection.scaleLabel).toBe("Minor pentatonic");
     expect(selection.scale).toEqual(["D", "F", "G", "A", "C"]);
   });
 });
 
 describe("getPracticeTargets", () => {
-  it("returns playable targets matching the selected scale pitch classes", () => {
+  it("returns melodica keys matching the selected scale pitch classes", () => {
     const selection = getPracticeTargets({
-      layout: generateLayout("C4"),
-      harmonicaKey: "C4",
-      positionIndex: 1,
-      scaleValue: "blues",
+      layout: generateMelodicaLayout(32),
+      tonic: "C",
+      scaleValue: "major",
     });
 
-    expect(selection.scale).toEqual(["G", "Bb", "C", "Db", "D", "F"]);
     expect(selection.practiceTargets).toEqual(
       expect.arrayContaining([
-        { label: "Blow 1", midi: midi("C4"), noteName: "C4", row: "Blow" },
-        { label: "Draw 2", midi: midi("G4"), noteName: "G4", row: "Draw" },
-        { label: "Draw bend 1", midi: midi("C#4"), noteName: "C#4", row: "Draw bend" },
+        { label: "Key 8", midi: midi("C4"), noteName: "C4", row: "White key" },
+        { label: "Key 17", midi: midi("A4"), noteName: "A4", row: "White key" },
+        { label: "Key 27", midi: midi("G5"), noteName: "G5", row: "White key" },
       ])
     );
     expect(
@@ -65,48 +58,32 @@ describe("getPracticeTargets", () => {
     ).toBe(true);
   });
 
-  it("filters bend practice to bend rows without changing row order", () => {
+  it("keeps targets inside the selected melodica range", () => {
     const selection = getPracticeTargets({
-      layout: generateLayout("C4"),
-      harmonicaKey: "C4",
-      positionIndex: 1,
-      scaleValue: "blues",
+      layout: generateMelodicaLayout(25),
+      tonic: "C",
+      scaleValue: "major",
     });
 
-    expect(targetSummary(selection.bendTargets)).toEqual([
-      "Blow bend 10:Bb6",
-      "Draw bend 1:C#4",
-      "Draw bend 3:A#4",
-      "Draw bend 4:C#5",
-      "Draw bend 2:F4",
-    ]);
-    expect(selection.bendTargets.every((target) => target.row.endsWith("bend"))).toBe(
+    expect(selection.practiceTargets[0].noteName).toBe("F3");
+    expect(selection.practiceTargets[selection.practiceTargets.length - 1]?.noteName).toBe("F5");
+    expect(selection.practiceTargets.every((target) => target.midi >= midi("F3"))).toBe(
+      true
+    );
+    expect(selection.practiceTargets.every((target) => target.midi <= midi("F5"))).toBe(
       true
     );
   });
 
-  it("changes target choices when the selected position and scale change", () => {
-    const secondPositionBlues = getPracticeTargets({
-      layout: generateLayout("C4"),
-      harmonicaKey: "C4",
-      positionIndex: 1,
-      scaleValue: "blues",
-    });
-    const thirdPositionMinorPentatonic = getPracticeTargets({
-      layout: generateLayout("C4"),
-      harmonicaKey: "C4",
-      positionIndex: 2,
-      scaleValue: "minor pentatonic",
-    });
+  it("can derive chord-tone targets from any pitch-class set", () => {
+    const layout = generateMelodicaLayout(32);
+    const targets = getLayoutTargets(layout, new Set([Note.chroma("C"), Note.chroma("E"), Note.chroma("G")]));
 
-    expect(thirdPositionMinorPentatonic.tonic).toBe("D");
-    expect(thirdPositionMinorPentatonic.practiceTargets).toEqual(
-      expect.arrayContaining([
-        { label: "Draw 1", midi: midi("D4"), noteName: "D4", row: "Draw" },
-      ])
-    );
-    expect(thirdPositionMinorPentatonic.practiceTargets).not.toEqual(
-      secondPositionBlues.practiceTargets
-    );
+    expect(targetSummary(targets).slice(0, 4)).toEqual([
+      "Key 3:G3",
+      "Key 8:C4",
+      "Key 12:E4",
+      "Key 15:G4",
+    ]);
   });
 });

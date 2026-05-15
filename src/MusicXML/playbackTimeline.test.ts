@@ -43,13 +43,14 @@ describe("playback timeline helpers", () => {
     ]);
   });
 
-  it("deduplicates and sorts lane holes from tabs", () => {
+  it("deduplicates and sorts lane keys from melodica notes", () => {
     expect(
       getLaneKeys([
-        makeEvent(1, 120, ["-4", "6o"]),
-        makeEvent(1, 120, ["3'", "-4"]),
+        makeEvent(1, 120, ["C4"], "C4"),
+        makeEvent(1, 120, ["A4"], "A4"),
+        makeEvent(1, 120, ["C4"], "C4"),
       ])
-    ).toEqual([3, 4, 6]);
+    ).toEqual([8, 17]);
   });
 
   it("selects only the closest playable event inside the hit window", () => {

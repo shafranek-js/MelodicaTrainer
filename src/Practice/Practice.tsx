@@ -4,67 +4,47 @@ import { Chord, Note } from "tonal";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import {
   freqToNoteAndCents,
-  generateLayout,
-  getLayoutMidiNumbers,
-  harmonicaKeys,
-  harmonicaLayoutDisplayRows,
+  generateMelodicaLayout,
+  getMelodicaMidiNumbers,
+  getSuzukiNoteColor,
+  melodicaRangeOptions,
 } from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
+import { MelodicaKeyboard } from "../Melodica/MelodicaKeyboard";
 import {
   bluesBars,
+  getLayoutTargets,
   getPitchClassSet,
   getPracticeTargets,
-  positionOptions,
   scaleOptions,
+  tonicOptions,
 } from "./practiceTargets";
-import type { HarmonicaLayoutDisplayRowKey, TonalNote } from "../utils/utils";
 import type { PracticeScaleValue } from "./practiceTargets";
 
 const trainerModes = [
   { label: "Explore", value: "explore" },
-  { label: "Practice", value: "practice" },
-  { label: "Bends", value: "bends" },
+  { label: "Notes", value: "practice" },
+  { label: "Scale", value: "scale" },
+  { label: "Chord tones", value: "chords" },
   { label: "12-bar", value: "blues" },
-];
-
-const rowColorClasses = {
-  wholeStepBlowBend: "bg-purple-800",
-  HalfStepBlowBend: "bg-indigo-800",
-  blow: "bg-blue-700",
-  draw: "bg-red-700",
-  halfStepDrawBendOverdraw: "bg-pink-800",
-  wholeStepDrawBend: "bg-rose-800",
-  oneAndHalfStepDrawBend: "bg-amber-800",
-} satisfies Record<HarmonicaLayoutDisplayRowKey, string>;
+] as const;
 
 type TrainerMode = (typeof trainerModes)[number]["value"];
 
 function Practice() {
   const { t } = useTranslation();
-  const [key, setKey] = useState("C4");
-  const [positionIndex, setPositionIndex] = useState(1);
+  const [keyCount, setKeyCount] = useState<MelodicaKeyCount>(32);
+  const [tonic, setTonic] = useState("C");
   const [scaleValue, setScaleValue] = useState<PracticeScaleValue>("blues");
   const [trainerMode, setTrainerMode] = useState<TrainerMode>("explore");
   const [targetIndex, setTargetIndex] = useState(0);
   const [barIndex, setBarIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
 
-  const layout = useMemo(() => generateLayout(key), [key]);
-  const {
-    position,
-    tonic,
-    scaleLabel,
-    activePitchClasses,
-    practiceTargets,
-    bendTargets,
-  } = useMemo(
-    () =>
-      getPracticeTargets({
-        layout,
-        harmonicaKey: key,
-        positionIndex,
-        scaleValue,
-      }),
-    [key, layout, positionIndex, scaleValue]
+  const layout = useMemo(() => generateMelodicaLayout(keyCount), [keyCount]);
+  const { scale, scaleLabel, activePitchClasses, practiceTargets } = useMemo(
+    () => getPracticeTargets({ layout, tonic, scaleValue }),
+    [layout, scaleValue, tonic]
   );
 
   const bluesRoots = useMemo(
@@ -76,82 +56,54 @@ function Practice() {
     [tonic]
   );
   const currentBluesRoot = bluesRoots[bluesBars[barIndex] as keyof typeof bluesRoots];
-  const currentChordNotes = Chord.get(`${currentBluesRoot}7`).notes;
-
-  const chordPitchClasses = useMemo(
-    () => getPitchClassSet(currentChordNotes),
-    [currentChordNotes]
+  const currentBluesNotes = Chord.get(`${currentBluesRoot}7`).notes;
+  const chordNotes = Chord.get(`${tonic}maj7`).notes;
+  const chordPitchClasses = useMemo(() => getPitchClassSet(chordNotes), [chordNotes]);
+  const bluesPitchClasses = useMemo(
+    () => getPitchClassSet(currentBluesNotes),
+    [currentBluesNotes]
   );
-  const targets = trainerMode === "bends" ? bendTargets : practiceTargets;
+  const chordTargets = useMemo(
+    () => getLayoutTargets(layout, chordPitchClasses),
+    [chordPitchClasses, layout]
+  );
+
+  const targets = trainerMode === "chords" ? chordTargets : practiceTargets;
   const target = targets[targetIndex % Math.max(targets.length, 1)];
   const activeTarget =
-    trainerMode === "practice" || trainerMode === "bends" ? target : undefined;
+    trainerMode === "practice" || trainerMode === "scale" || trainerMode === "chords"
+      ? target
+      : undefined;
 
-  const allowedMidiNumbers = useMemo(() => {
-    return new Set(getLayoutMidiNumbers(layout));
-  }, [layout]);
-
+  const allowedMidiNumbers = useMemo(
+    () => new Set(getMelodicaMidiNumbers(layout)),
+    [layout]
+  );
   const { pitch, clarity, error } = usePitchDetector(0.82, isListening, {
     allowedMidiNumbers,
     minRms: 0.015,
     stableFrames: 4,
   });
-  const detectedNote = useMemo(() => {
-    if (!pitch) return null;
-    return freqToNoteAndCents(Number(pitch));
-  }, [pitch]);
+  const detectedNote = useMemo(
+    () => (pitch ? freqToNoteAndCents(Number(pitch)) : null),
+    [pitch]
+  );
   const detectedMidi = detectedNote ? Note.midi(detectedNote.note) : null;
-  const isTargetHit =
-    Boolean(activeTarget && detectedMidi === activeTarget.midi && Math.abs(detectedNote?.cents ?? 99) <= 25);
+  const isTargetHit = Boolean(
+    activeTarget &&
+      detectedMidi === activeTarget.midi &&
+      Math.abs(detectedNote?.cents ?? 99) <= 25
+  );
 
   const nextTarget = () => {
     if (!targets.length) return;
     setTargetIndex((index) => {
+      if (trainerMode === "scale") return (index + 1) % targets.length;
       if (targets.length === 1) return 0;
 
       const nextIndex = Math.floor(Math.random() * targets.length);
       return nextIndex === index ? (index + 1) % targets.length : nextIndex;
     });
-  };
-
-  const renderLine = (offsetY: number) => {
-    const clampedOffset = Math.max(-8, Math.min(8, offsetY));
-    return (
-      <div
-        className="absolute left-0 right-0 h-[2px] bg-green-300"
-        style={{ top: `calc(50% + ${clampedOffset}px)`, pointerEvents: "none" }}
-      />
-    );
-  };
-
-  const renderCell = (note: TonalNote | null, rowLabel: string, index: number, color: string) => {
-    if (!note) return <div key={`${rowLabel}-${index}`} />;
-
-    const midi = Note.midi(note.name);
-    const chroma = Note.chroma(note.name);
-    const isActive = activePitchClasses.has(chroma);
-    const isChordTone = trainerMode === "blues" && chordPitchClasses.has(chroma);
-    const isTarget = activeTarget?.midi === midi;
-    const isDetected = detectedMidi === midi;
-    const pitchClass = Note.simplify(Note.pitchClass(note.name));
-
-    return (
-      <div
-        key={`${rowLabel}-${index}`}
-        className={`relative min-h-8 rounded border px-1 py-1 text-center text-sm font-semibold ${
-          isTarget
-            ? "border-cyan-200 bg-cyan-400 text-black"
-            : isChordTone
-              ? "border-yellow-200 bg-yellow-400 text-black"
-              : isActive
-              ? "border-emerald-300 bg-emerald-500 text-black"
-              : `border-gray-700 ${color} text-white opacity-45`
-        }`}
-      >
-        {t(pitchClass)}
-        {isDetected && renderLine(-((detectedNote?.cents ?? 0) / 50) * 8)}
-      </div>
-    );
   };
 
   return (
@@ -160,43 +112,42 @@ function Practice() {
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">Practice Trainer</h1>
           <p className="mt-1 text-sm text-gray-400">
-            {t(Note.pitchClass(key))} harmonica · {position.label} position · {t(tonic)}{" "}
-            {scaleLabel}
+            {layout.startNote}-{layout.endNote} · {t(tonic)} {scaleLabel}
           </p>
         </div>
 
-        <div className="grid gap-3 rounded border border-gray-800 bg-gray-900 p-4 lg:grid-cols-4">
+        <div className="grid gap-3 rounded-lg border border-gray-800 bg-gray-900 p-4 lg:grid-cols-4">
           <label className="text-sm text-gray-300">
-            Harmonica key
+            Melodica range
             <select
-              value={key}
+              value={keyCount}
               onChange={(event) => {
-                setKey(event.target.value);
+                setKeyCount(Number(event.target.value) as MelodicaKeyCount);
                 setTargetIndex(0);
               }}
-              className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
             >
-              {harmonicaKeys.map((harmonicaKey) => (
-                <option key={harmonicaKey.value} value={harmonicaKey.value}>
-                  {t(harmonicaKey.label)}
+              {melodicaRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.startNote}-{option.endNote})
                 </option>
               ))}
             </select>
           </label>
 
           <label className="text-sm text-gray-300">
-            Position
+            Tonic
             <select
-              value={positionIndex}
+              value={tonic}
               onChange={(event) => {
-                setPositionIndex(Number(event.target.value));
+                setTonic(event.target.value);
                 setTargetIndex(0);
               }}
-              className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
             >
-              {positionOptions.map((option, index) => (
-                <option key={option.label} value={index}>
-                  {option.label} · {option.name}
+              {tonicOptions.map((option) => (
+                <option key={option} value={option}>
+                  {t(option)}
                 </option>
               ))}
             </select>
@@ -210,7 +161,7 @@ function Practice() {
                 setScaleValue(event.target.value as PracticeScaleValue);
                 setTargetIndex(0);
               }}
-              className="mt-1 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+              className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
             >
               {scaleOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -229,7 +180,7 @@ function Practice() {
                   setTrainerMode(mode.value);
                   setTargetIndex(0);
                 }}
-                className={`rounded px-3 py-2 text-sm font-semibold ${
+                className={`rounded-lg px-3 py-2 text-sm font-semibold ${
                   trainerMode === mode.value
                     ? "bg-emerald-400 text-black"
                     : "bg-gray-800 text-white hover:bg-gray-700"
@@ -242,31 +193,40 @@ function Practice() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          <div className="overflow-x-auto rounded border border-gray-800 bg-gray-900 p-4">
-            <div className="min-w-[620px]">
-              {harmonicaLayoutDisplayRows.slice(0, 3).map(({ key, practiceLabel }) => (
-                <div key={key} className="mb-1 grid grid-cols-10 gap-2">
-                  {layout[key].map((note, index) =>
-                    renderCell(note, practiceLabel, index, rowColorClasses[key])
-                  )}
-                </div>
-              ))}
-              <div className="mb-2 grid grid-cols-10 gap-2 text-center text-sm font-bold text-gray-400">
-                {Array.from({ length: 10 }, (_, index) => (
-                  <div key={index + 1}>{index + 1}</div>
-                ))}
+          <div className="min-w-0 overflow-x-auto rounded-lg border border-gray-800 bg-gray-900 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-black uppercase tracking-widest text-gray-300">
+                Keyboard
+              </h2>
+              <div className="text-xs text-gray-500">
+                {scale.map((note) => t(note)).join(" ")}
               </div>
-              {harmonicaLayoutDisplayRows.slice(3).map(({ key, practiceLabel }) => (
-                <div key={key} className="mb-1 grid grid-cols-10 gap-2">
-                  {layout[key].map((note, index) =>
-                    renderCell(note, practiceLabel, index, rowColorClasses[key])
-                  )}
-                </div>
-              ))}
             </div>
+            <MelodicaKeyboard
+              formatPitchClass={t}
+              getKeyState={(key) => {
+                const chroma = Note.chroma(key.name);
+                const isScaleTone = activePitchClasses.has(chroma);
+                const isChordTone = trainerMode === "chords" && chordPitchClasses.has(chroma);
+                const isBluesTone = trainerMode === "blues" && bluesPitchClasses.has(chroma);
+                const isDetected = detectedMidi === key.midi;
+
+                return {
+                  activeColor: getSuzukiNoteColor(key.name),
+                  isActive: isDetected,
+                  isMuted: !isScaleTone && !isChordTone && !isBluesTone,
+                  isPrimary: isScaleTone,
+                  isSecondary: isChordTone || isBluesTone,
+                  isTarget: activeTarget?.midi === key.midi,
+                  tuningCents: isDetected ? detectedNote?.cents : null,
+                };
+              }}
+              heightClassName="h-44 sm:h-52"
+              layout={layout}
+            />
           </div>
 
-          <aside className="rounded border border-gray-800 bg-gray-900 p-4">
+          <aside className="rounded-lg border border-gray-800 bg-gray-900 p-4">
             {trainerMode === "blues" ? (
               <>
                 <h2 className="text-lg font-bold">12-bar blues</h2>
@@ -276,7 +236,7 @@ function Practice() {
                       key={`${degree}-${index}`}
                       type="button"
                       onClick={() => setBarIndex(index)}
-                      className={`rounded px-2 py-2 text-sm font-semibold ${
+                      className={`rounded-lg px-2 py-2 text-sm font-semibold ${
                         barIndex === index
                           ? "bg-cyan-400 text-black"
                           : "bg-gray-800 text-white hover:bg-gray-700"
@@ -288,38 +248,42 @@ function Practice() {
                 </div>
                 <p className="mt-4 text-sm text-gray-300">
                   Bar {barIndex + 1}: {t(currentBluesRoot)}7 ·{" "}
-                  {currentChordNotes.map((note) => t(Note.pitchClass(note))).join(" - ")}
+                  {currentBluesNotes.map((note) => t(Note.pitchClass(note))).join(" ")}
                 </p>
               </>
             ) : (
               <>
                 <h2 className="text-lg font-bold">
-                  {trainerMode === "bends" ? "Bend trainer" : "Note practice"}
+                  {trainerMode === "chords" ? "Chord tones" : "Note practice"}
                 </h2>
                 {activeTarget ? (
-                  <div className="mt-4 rounded bg-gray-800 p-4 text-center">
+                  <div className="mt-4 rounded-lg bg-gray-800 p-4 text-center">
                     <div className="text-sm text-gray-400">{activeTarget.label}</div>
-                    <div className="mt-1 text-4xl font-bold">{t(Note.pitchClass(activeTarget.noteName))}</div>
-                    <div className="mt-1 text-sm text-gray-400">{activeTarget.noteName}</div>
+                    <div className="mt-1 text-4xl font-bold">
+                      {t(Note.pitchClass(activeTarget.noteName))}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-400">
+                      {activeTarget.noteName}
+                    </div>
                     <div
-                      className={`mt-3 rounded px-3 py-2 text-sm font-semibold ${
-                        isTargetHit ? "bg-green-500 text-black" : "bg-gray-700 text-gray-300"
+                      className={`mt-3 rounded-lg px-3 py-2 text-sm font-semibold ${
+                        isTargetHit
+                          ? "bg-green-500 text-black"
+                          : "bg-gray-700 text-gray-300"
                       }`}
                     >
                       {isTargetHit ? "Hit" : "Waiting"}
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-3 text-sm text-gray-400">
-                    No playable targets for this selection.
-                  </p>
+                  <p className="mt-3 text-sm text-gray-400">No targets.</p>
                 )}
 
                 <button
                   type="button"
                   onClick={nextTarget}
                   disabled={!targets.length}
-                  className="mt-3 w-full rounded bg-cyan-700 px-4 py-2 font-semibold text-white transition hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-400"
+                  className="mt-3 w-full rounded-lg bg-cyan-700 px-4 py-2 font-semibold text-white transition hover:bg-cyan-600 disabled:bg-gray-700 disabled:text-gray-400"
                 >
                   Next target
                 </button>
@@ -327,29 +291,18 @@ function Practice() {
             )}
 
             <div className="mt-5 border-t border-gray-800 pt-4">
-              {!isListening ? (
-                <button
-                  type="button"
-                  onClick={() => setIsListening(true)}
-                  className="w-full rounded bg-green-600 px-4 py-2 font-semibold text-white transition hover:bg-green-700"
-                >
-                  Start listening
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsListening(false)}
-                  className="w-full rounded bg-gray-800 px-4 py-2 font-semibold text-white transition hover:bg-gray-700"
-                >
-                  Stop listening
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setIsListening((value) => !value)}
+                className="w-full rounded-lg bg-green-600 px-4 py-2 font-semibold text-white transition hover:bg-green-700"
+              >
+                {isListening ? "Stop listening" : "Start listening"}
+              </button>
 
               {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
               {detectedNote && (
                 <p className="mt-3 text-sm text-gray-300">
-                  Detected {detectedNote.note} · {detectedNote.cents.toFixed(1)} cents · clarity{" "}
-                  {clarity}
+                  {detectedNote.note} · {detectedNote.cents.toFixed(1)} cents · {clarity}
                 </p>
               )}
             </div>

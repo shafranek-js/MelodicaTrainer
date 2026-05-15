@@ -1,16 +1,18 @@
 import { useCallback, useMemo } from "react";
-import { findAutoTransposeIntervals, findBestTransposeIntervals } from "./musicXmlTransform";
+import {
+  findAutoMelodicaTransposeIntervals,
+  findBestMelodicaTransposeIntervals,
+} from "./musicXmlTransform";
 import { getPlayableMidiNumbers } from "./playbackTimeline";
 import { musicXmlDebugLogger } from "./debugLogger";
+import type { MelodicaKeyCount } from "../utils/utils";
 import type { ScoreFileContent } from "./useScoreFileLoader";
 import type { PlaybackEvent } from "./types";
 
 type UseTransposeOptimizerOptions = {
   gpOriginalMidiNumbers: number[];
-  harmonicaKey: string;
+  keyCount: MelodicaKeyCount;
   isGpFile: boolean;
-  noBend: boolean;
-  noOverblowOrDraw: boolean;
   playbackEvents: PlaybackEvent[];
   rawFileContent: ScoreFileContent | null;
   setTranspose: (transpose: number) => void;
@@ -19,10 +21,8 @@ type UseTransposeOptimizerOptions = {
 
 export const useTransposeOptimizer = ({
   gpOriginalMidiNumbers,
-  harmonicaKey,
+  keyCount,
   isGpFile,
-  noBend,
-  noOverblowOrDraw,
   playbackEvents,
   rawFileContent,
   setTranspose,
@@ -36,22 +36,18 @@ export const useTransposeOptimizer = ({
       midiNumbers = gpOriginalMidiNumbers;
     } else {
       if (playbackEvents.length === 0) return 0;
-      midiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents)).map((midi) => midi - transpose);
+      midiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents)).map(
+        (midi) => midi - transpose
+      );
     }
 
     if (midiNumbers.length === 0) return 0;
 
-    return findBestTransposeIntervals(midiNumbers, {
-      selectedKey: harmonicaKey,
-      noOverblowOrDraw,
-      noBend,
-    }).length;
+    return findBestMelodicaTransposeIntervals(midiNumbers, { keyCount }).length;
   }, [
     gpOriginalMidiNumbers,
-    harmonicaKey,
     isGpFile,
-    noBend,
-    noOverblowOrDraw,
+    keyCount,
     playbackEvents,
     rawFileContent,
     transpose,
@@ -61,19 +57,13 @@ export const useTransposeOptimizer = ({
     if (!rawFileContent) return;
 
     if (isGpFile) {
-      musicXmlDebugLogger.log("AutoTranspose: Analyzing GP track for optimization (Cycling)...");
+      musicXmlDebugLogger.log("AutoTranspose: Analyzing GP track for melodica range.");
       const originalMidiNumbers = gpOriginalMidiNumbers;
       if (originalMidiNumbers.length === 0) return;
 
-      const bestAbsoluteIntervals = findBestTransposeIntervals(originalMidiNumbers, {
-        selectedKey: harmonicaKey,
-        noOverblowOrDraw,
-        noBend,
-      });
-
-      musicXmlDebugLogger.log(
-        `AutoTranspose: Found ${bestAbsoluteIntervals.length} optimal positions:`,
-        bestAbsoluteIntervals
+      const bestAbsoluteIntervals = findBestMelodicaTransposeIntervals(
+        originalMidiNumbers,
+        { keyCount }
       );
 
       if (bestAbsoluteIntervals.length === 0) return;
@@ -84,16 +74,14 @@ export const useTransposeOptimizer = ({
           ? bestAbsoluteIntervals[(currentIndex + 1) % bestAbsoluteIntervals.length]
           : bestAbsoluteIntervals[0];
 
-      musicXmlDebugLogger.log(`AutoTranspose: Selecting absolute position: ${nextTranspose}`);
       setTranspose(nextTranspose);
       return;
     }
 
-    const bestIntervals = findAutoTransposeIntervals(rawFileContent as string, {
-      selectedKey: harmonicaKey,
-      noOverblowOrDraw,
-      noBend,
-    });
+    const bestIntervals = findAutoMelodicaTransposeIntervals(
+      rawFileContent as string,
+      { keyCount }
+    );
     if (bestIntervals.length === 0) return;
 
     const currentIndex = bestIntervals.indexOf(transpose);
@@ -104,10 +92,8 @@ export const useTransposeOptimizer = ({
     setTranspose(nextTranspose);
   }, [
     gpOriginalMidiNumbers,
-    harmonicaKey,
     isGpFile,
-    noBend,
-    noOverblowOrDraw,
+    keyCount,
     rawFileContent,
     setTranspose,
     transpose,

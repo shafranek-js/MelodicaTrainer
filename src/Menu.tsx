@@ -35,12 +35,12 @@ const Menu: React.FC = () => {
             Circle
           </Link>
           <Link
-            to="/harmonica"
+            to="/melodica"
             className={`whitespace-nowrap text-sm font-bold transition-colors ${
-              location.pathname === "/harmonica" ? "text-green-400" : "text-white hover:text-green-400"
+              location.pathname === "/melodica" ? "text-green-400" : "text-white hover:text-green-400"
             }`}
           >
-            Harmonica
+            Melodica
           </Link>
           <Link
             to="/musicxml"
@@ -125,7 +125,7 @@ const Menu: React.FC = () => {
             <NotationSwitch />
           </div>
           <a
-            href="https://github.com/shafranek-js/HarpTrainer"
+            href="https://github.com/shafranek-js/MelodicaTrainer"
             target="_blank"
             rel="noopener noreferrer"
             className="text-white transition-colors hover:text-green-400"

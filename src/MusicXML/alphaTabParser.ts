@@ -1,5 +1,6 @@
 import * as alphaTab from "@coderline/alphatab";
-import { getHarmonicaHoleForNote } from "../utils/utils";
+import { getMelodicaKeyLabelForNote, normalizeMelodicaKeyCount } from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent, PlaybackNote } from "./types";
 import { Note } from "tonal";
 import { resolveTiedNotes } from "./playbackParser";
@@ -86,12 +87,13 @@ const getTempoAtTick = (
 
 export function parseAlphaTabScore(
     score: alphaTab.model.Score, 
-    harmonicaKey: string, 
+    keyCountInput: MelodicaKeyCount | string, 
     trackIndex: number = 0, 
     manualTranspose: number = 0,
     options: ParseAlphaTabScoreOptions = {}
 ): { events: PlaybackEvent[], tempo: number } {
     const events: PlaybackEvent[] = [];
+    const keyCount = normalizeMelodicaKeyCount(keyCountInput);
     
     if (!score.tracks || score.tracks.length === 0) return { events: [], tempo: DEFAULT_GP_TEMPO };
 
@@ -294,7 +296,7 @@ export function parseAlphaTabScore(
             }
         });
 
-        const tabs = notes.map(n => getHarmonicaHoleForNote(harmonicaKey, n.name) || "");
+        const tabs = notes.map(n => getMelodicaKeyLabelForNote(keyCount, n.name) || "");
 
         // Ensure we don't create overlapping events in our linear playbackEvents list
         const eventStartTick = Math.max(start, currentPlaybackCursor);

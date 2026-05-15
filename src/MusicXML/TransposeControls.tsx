@@ -1,11 +1,7 @@
 import { RotateCcw } from "lucide-react";
 
 type TransposeControlsProps = {
-  noBend: boolean;
-  noOverblowOrDraw: boolean;
   onAutoTranspose: () => void;
-  onNoBendChange: (checked: boolean) => void;
-  onNoOverblowOrDrawChange: (checked: boolean) => void;
   onResetTranspose: () => void;
   onShowNoteNamesChange: (checked: boolean) => void;
   onTransposeChange: (value: string) => void;
@@ -15,11 +11,7 @@ type TransposeControlsProps = {
 };
 
 export const TransposeControls = ({
-  noBend,
-  noOverblowOrDraw,
   onAutoTranspose,
-  onNoBendChange,
-  onNoOverblowOrDrawChange,
   onResetTranspose,
   onShowNoteNamesChange,
   onTransposeChange,
@@ -50,26 +42,6 @@ export const TransposeControls = ({
         <label className="flex items-center gap-3 cursor-pointer group">
           <input
             type="checkbox"
-            checked={noOverblowOrDraw}
-            onChange={(e) => onNoOverblowOrDrawChange(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-950"
-          />
-          <span className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors uppercase tracking-tight">No Overblow/Draw</span>
-        </label>
-
-        <label className="flex items-center gap-3 cursor-pointer group">
-          <input
-            type="checkbox"
-            checked={noBend}
-            onChange={(e) => onNoBendChange(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-950"
-          />
-          <span className="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors uppercase tracking-tight">No Bends</span>
-        </label>
-
-        <label className="flex items-center gap-3 cursor-pointer group">
-          <input
-            type="checkbox"
             checked={showNoteNames}
             onChange={(e) => onShowNoteNamesChange(e.target.checked)}
             className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-gray-950"
@@ -88,7 +60,7 @@ export const TransposeControls = ({
 
     <div className="bg-emerald-900/10 border border-emerald-500/10 rounded-lg p-3">
       <p className="text-[9px] text-gray-500 font-bold leading-tight uppercase tracking-tighter">
-        Optimization uses advanced pitch analysis to find the best key for your harmonica model.
+        Optimization searches for a transpose value that fits the selected melodica range.
       </p>
     </div>
   </div>

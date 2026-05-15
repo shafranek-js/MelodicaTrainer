@@ -3,12 +3,12 @@ import {
     NOTE_HIT_WINDOW_MS,
     NOTE_TARGET_LINE_PERCENT,
 } from "./constants";
-import { getTabHole } from "./playbackParser";
+import { generateMelodicaLayout, getMelodicaKeyboardGeometry, getSuzukiNoteColor } from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent, PlaybackTiming, VisibleGameEvent } from "./types";
 
 export type NoteHighwayRenderItem = {
     key: string;
-    pathD: string;
     color: string;
     wasHit: boolean;
     isVisible: boolean;
@@ -22,12 +22,14 @@ export type NoteHighwayRenderItem = {
     htmlTop: number;
     htmlHeight: number;
     htmlWidth: number;
+    isSounding: boolean;
 };
 
 type BuildNoteHighwayRenderDataOptions = {
     clarity: string | null;
     containerWidth: number;
     lastHitIndex: number | null;
+    keyCount?: MelodicaKeyCount;
     shortestNoteDurationMs: number;
     visibleGameEvents: VisibleGameEvent[];
     visualPlayheadMs: number;
@@ -62,21 +64,28 @@ export const buildNoteHighwayRenderData = ({
     clarity,
     containerWidth,
     lastHitIndex,
+    keyCount = 32,
     shortestNoteDurationMs,
     visibleGameEvents,
     visualPlayheadMs,
     playbackEvents,
     playbackTimeline,
 }: BuildNoteHighwayRenderDataOptions): NoteHighwayRenderItem[] => {
+    const keyboardGeometry = getMelodicaKeyboardGeometry(generateMelodicaLayout(keyCount));
+    const geometryByMidi = new Map(
+        keyboardGeometry.keys.map((key) => [key.midi, key])
+    );
+
     return visibleGameEvents.flatMap(({ event, index: globalEventIndex, timing }) => {
         return event.notes.map((note, noteIndex) => {
             if (!note.shouldPlay) return null;
 
             const tab = event.tabs[noteIndex] || event.tabs[0] || "";
-            const hole = getTabHole(tab);
-            if (hole === null || hole < 1 || hole > 10) return null;
+            const noteMidi = Note.midi(note.name);
+            const melodicaKey = noteMidi === null ? null : geometryByMidi.get(noteMidi);
+            if (!melodicaKey) return null;
 
-            const laneIndex = hole - 1;
+            const laneIndex = melodicaKey.index - 1;
             const timeToHitMs = timing.startMs - visualPlayheadMs;
             const msPerPx = shortestNoteDurationMs / 40;
             const dynamicLookaheadMs = CONTAINER_HEIGHT_PX * msPerPx;
@@ -89,7 +98,8 @@ export const buildNoteHighwayRenderData = ({
             const topPercent = NOTE_TARGET_LINE_PERCENT - timeToHitMs * percentPerMs;
             const heightPercent = noteDurationMs * percentPerMs;
 
-            const targetWidth = getTargetWidthPct(tab, containerWidth);
+            const minWidthPct = containerWidth > 0 ? (28 / containerWidth) * 100 : 2.8;
+            const targetWidth = Math.max(melodicaKey.widthPct * 0.66, minWidthPct);
             let bottomWidth = targetWidth;
             const topWidth = targetWidth;
 
@@ -102,11 +112,15 @@ export const buildNoteHighwayRenderData = ({
                 const prevTiming = playbackTimeline[globalEventIndex - 1];
                 if (prevTiming && Math.abs(prevTiming.endMs - timing.startMs) < 10) {
                     const prevEvent = playbackEvents[globalEventIndex - 1];
-                    const prevNoteIndex = prevEvent.tabs.findIndex(t => getTabHole(t) === hole);
+                    const prevNoteIndex = prevEvent.notes.findIndex((prevNote) => {
+                        const previousMidi = Note.midi(prevNote.name);
+                        const previousKey = previousMidi === null ? null : geometryByMidi.get(previousMidi);
+                        return previousKey?.index === melodicaKey.index;
+                    });
                     if (prevNoteIndex !== -1) {
                         const prevTab = prevEvent.tabs[prevNoteIndex];
                         if (prevTab !== tab) {
-                            bottomWidth = getTargetWidthPct(prevTab, containerWidth);
+                            bottomWidth = targetWidth;
                             isScoop = true;
                         }
                     }
@@ -120,74 +134,26 @@ export const buildNoteHighwayRenderData = ({
             const isHitWindow = visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS && visualPlayheadMs <= noteEndMs + NOTE_HIT_WINDOW_MS;
             const isStrictlyActive = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= noteEndMs;
             const wasHit = lastHitIndex === globalEventIndex && isHitWindow;
-
-            const isDraw = tab.startsWith("-");
-            const isBlow = /^\d/.test(tab);
+            const isSounding = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= noteEndMs;
 
             let color = "#374151";
             if (wasHit) {
                 color = "#34d399";
             } else if (isStrictlyActive) {
-                color = isDraw ? "#60a5fa" : (isBlow ? "#f87171" : "#22d3ee");
+                color = getSuzukiNoteColor(note.name);
             } else {
-                color = isDraw ? "#1e3a8a" : (isBlow ? "#7f1d1d" : "#1f2937");
+                color = getSuzukiNoteColor(note.name);
             }
 
-            const isOverblow = tab.toLowerCase().endsWith("o");
-            const bendDepth = getBendDepth(tab);
-            const centerX = laneIndex * 10 + 5;
-
-            const tlX = centerX - topWidth / 2;
-            const trX = centerX + topWidth / 2;
-            const brX = centerX + bottomWidth / 2;
-            const blX = centerX - bottomWidth / 2;
-
-            const effContainerWidth = containerWidth > 0 ? containerWidth : 1000;
-            const targetRadiusPx = 20;
-
-            const idealRXPercent = (targetRadiusPx / effContainerWidth) * 100;
-            const idealRYPercent = (targetRadiusPx / CONTAINER_HEIGHT_PX) * 100;
-
-            const heightPct = Math.max(0, yBottom - yTop);
-            const maxRY = heightPct / 2;
-            const maxRXTop = topWidth / 2;
-            const maxRXBot = bottomWidth / 2;
-
-            let rxTop = idealRXPercent;
-            let ryTop = idealRYPercent;
-            if (idealRYPercent > maxRY || idealRXPercent > maxRXTop) {
-                const scale = Math.min(maxRY / idealRYPercent, maxRXTop / idealRXPercent);
-                rxTop = idealRXPercent * scale;
-                ryTop = idealRYPercent * scale;
-            }
-
-            let rxBot = idealRXPercent;
-            let ryBot = idealRYPercent;
-            if (idealRYPercent > maxRY || idealRXPercent > maxRXBot) {
-                const scale = Math.min(maxRY / idealRYPercent, maxRXBot / idealRXPercent);
-                rxBot = idealRXPercent * scale;
-                ryBot = idealRYPercent * scale;
-            }
-
-            const pathD = `
-            M ${tlX + rxTop},${yTop}
-            L ${trX - rxTop},${yTop}
-            A ${rxTop} ${ryTop} 0 0 1 ${trX},${yTop + ryTop}
-            L ${brX},${yBottom - ryBot}
-            A ${rxBot} ${ryBot} 0 0 1 ${brX - rxBot},${yBottom}
-            L ${blX + rxBot},${yBottom}
-            A ${rxBot} ${ryBot} 0 0 1 ${blX},${yBottom - ryBot}
-            L ${tlX},${yTop + ryTop}
-            A ${rxTop} ${ryTop} 0 0 1 ${tlX + rxTop},${yTop}
-            Z
-          `;
+            const isOverblow = false;
+            const bendDepth = 0;
+            const centerX = melodicaKey.centerPct;
 
             const isVisible = !(yBottom < -10 || yTop > 110);
             const maxHtmlWidth = Math.max(topWidth, bottomWidth);
 
             return {
                 key: `${globalEventIndex}-${note.name}-${noteIndex}`,
-                pathD,
                 color,
                 wasHit,
                 isVisible,
@@ -201,6 +167,7 @@ export const buildNoteHighwayRenderData = ({
                 htmlTop: yTop,
                 htmlHeight: heightPercent,
                 htmlWidth: maxHtmlWidth,
+                isSounding,
             };
         }).filter((item): item is NoteHighwayRenderItem => item !== null);
     });

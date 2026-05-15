@@ -18,6 +18,9 @@ export const getTransposedXmlDownloadFileName = (fileName: string | null) =>
 export const getHarpTabsDownloadFileName = (fileName: string | null) =>
   fileName ? `${fileName.replace(/\.[^/.]+$/, "")}_tabs.txt` : "tabs.txt";
 
+export const getMelodicaNotesDownloadFileName = (fileName: string | null) =>
+  fileName ? `${fileName.replace(/\.[^/.]+$/, "")}_melodica_notes.txt` : "melodica_notes.txt";
+
 export const downloadBrowserFile = ({
   content,
   fileName,
@@ -49,15 +52,15 @@ export const useScoreDownloads = ({
     });
   }, [fileContent, fileName]);
 
-  const downloadHarpTabs = useCallback(() => {
+  const downloadMelodicaNotes = useCallback(() => {
     if (!fileContent) return;
 
     downloadBrowserFile({
       content: exportHarpTabsText(fileContent),
-      fileName: getHarpTabsDownloadFileName(fileName),
+      fileName: getMelodicaNotesDownloadFileName(fileName),
       mimeType: "text/plain",
     });
   }, [fileContent, fileName]);
 
-  return { downloadHarpTabs, downloadTransposedXml };
+  return { downloadMelodicaNotes, downloadTransposedXml };
 };

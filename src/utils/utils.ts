@@ -16,3 +16,21 @@ export {
   harmonicaLayoutDisplayRows,
 } from "./harmonicaLayout";
 export { freqToNoteAndCents } from "./pitch";
+export { getSuzukiNoteColor } from "./noteColors";
+export type {
+  MelodicaKey,
+  MelodicaKeyCount,
+  MelodicaKeyGeometry,
+  MelodicaKeyboardGeometry,
+  MelodicaLayout,
+  MelodicaRangeOption,
+} from "./melodicaLayout";
+export {
+  generateMelodicaLayout,
+  getMelodicaKeyboardGeometry,
+  getMelodicaKeyForNote,
+  getMelodicaKeyLabelForNote,
+  getMelodicaMidiNumbers,
+  melodicaRangeOptions,
+  normalizeMelodicaKeyCount,
+} from "./melodicaLayout";

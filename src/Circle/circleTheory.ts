@@ -1,18 +1,17 @@
 import { Chord, Note, Scale } from "tonal";
 
 export const modes = [
-  { name: "Ionian", degree: 1, harmonicaPosition: "1st", harmonicaOrder: 1 },
+  { name: "Ionian", degree: 1, displayOrder: 1 },
   {
     name: "Mixolydian",
     degree: 5,
-    harmonicaPosition: "2nd",
-    harmonicaOrder: 2,
+    displayOrder: 5,
   },
-  { name: "Dorian", degree: 2, harmonicaPosition: "3rd", harmonicaOrder: 3 },
-  { name: "Aeolian", degree: 6, harmonicaPosition: "4th", harmonicaOrder: 4 },
-  { name: "Phrygian", degree: 3, harmonicaPosition: "5th", harmonicaOrder: 5 },
-  { name: "Locrian", degree: 7, harmonicaPosition: "6th", harmonicaOrder: 6 },
-  { name: "Lydian", degree: 4, harmonicaPosition: "12th", harmonicaOrder: 12 },
+  { name: "Dorian", degree: 2, displayOrder: 2 },
+  { name: "Aeolian", degree: 6, displayOrder: 6 },
+  { name: "Phrygian", degree: 3, displayOrder: 3 },
+  { name: "Locrian", degree: 7, displayOrder: 7 },
+  { name: "Lydian", degree: 4, displayOrder: 4 },
 ] as const;
 
 export const modeNames = modes.map((mode) => mode.name);

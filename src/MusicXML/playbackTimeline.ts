@@ -1,6 +1,7 @@
 import { Note } from "tonal";
 import { NOTE_HIT_WINDOW_MS } from "./constants";
-import { getTabHole } from "./playbackParser";
+import { getMelodicaKeyForNote } from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent, PlaybackTiming, VisibleGameEvent } from "./types";
 
 export const getPlayableMidiNumbers = (events: PlaybackEvent[]) => {
@@ -36,17 +37,17 @@ export const createPlaybackTimeline = (
   });
 };
 
-export const getLaneKeys = (events: PlaybackEvent[]) => {
-  const holes = new Set<number>();
+export const getLaneKeys = (events: PlaybackEvent[], keyCount: MelodicaKeyCount = 32) => {
+  const keys = new Set<number>();
 
   events.forEach((event) => {
-    event.tabs.forEach((tab) => {
-      const hole = getTabHole(tab);
-      if (hole !== null) holes.add(hole);
+    event.notes.forEach((note) => {
+      const key = getMelodicaKeyForNote(keyCount, note.name);
+      if (key) keys.add(key.index);
     });
   });
 
-  return Array.from(holes).sort((a, b) => a - b);
+  return Array.from(keys).sort((a, b) => a - b);
 };
 
 export const getVisibleGameEvents = (

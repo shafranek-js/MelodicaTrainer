@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { freqToNoteAndCents, harmonicaKeys, normalizeHarmonicaKey } from "../utils/utils";
-import { useTranslation } from "react-i18next";
+import {
+  freqToNoteAndCents,
+  melodicaRangeOptions,
+  normalizeMelodicaKeyCount,
+} from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
 import { usePitchDetector } from "../hooks/usePitchDetector";
 import { NoteHighway } from "./NoteHighway";
 import { useNoteHighwayScoring } from "./useNoteHighwayScoring";
@@ -38,10 +42,7 @@ const routeStatusClassNames: Record<RouteStatusTone, string> = {
 };
 
 const SOUNDFONTS = [
-    { label: "General MIDI (Large)", value: "MS_Basic.sf3" },
-    { label: "Harmonica Essentials", value: "Harmonica_Essentials.sf2" },
-    { label: "Florestan Harmonica", value: "022_Florestan_Harmonica.sf2" },
-    { label: "Monsoons Harmonica (C)", value: "Monsoons Hohner C Harmonica.sf2" },
+    { label: "General MIDI Reed", value: "MS_Basic.sf3" },
 ];
 
 const sanitizeFiniteNumber = (value: unknown): number | undefined =>
@@ -53,24 +54,31 @@ const sanitizeBoolean = (value: unknown): boolean | undefined =>
 const sanitizeString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
 
+const sanitizeSoundFont = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  return SOUNDFONTS.some((soundFont) => soundFont.value === value) ? value : "MS_Basic.sf3";
+};
+
+const sanitizeMelodicaKeyCount = (value: unknown): MelodicaKeyCount | undefined => {
+  if (typeof value !== "number" && typeof value !== "string") return undefined;
+  return normalizeMelodicaKeyCount(value);
+};
+
 const TestFileLoader: React.FC = () => {
-  const { t } = useTranslation();
   const setPlaybackToolbarState = useSetPlaybackToolbarState();
   
   // PERSISTENT STATES
   const [transpose, setTranspose] = usePersistentState<number>("harptrainer_transpose", 0, { sanitize: sanitizeFiniteNumber });
-  const [selectedKey, setSelectedKey] = usePersistentState<string>("harptrainer_harmonica_key", "C4", { sanitize: sanitizeString });
-  const [noOverblowOrDraw, setNoOverblowOrDraw] = usePersistentState<boolean>("harptrainer_no_overblow", true, { sanitize: sanitizeBoolean });
-  const [noBend, setNoBend] = usePersistentState<boolean>("harptrainer_no_bend", false, { sanitize: sanitizeBoolean });
+  const [selectedKeyCount, setSelectedKeyCount] = usePersistentState<MelodicaKeyCount>("melodicatrainer_key_count", 32, { sanitize: sanitizeMelodicaKeyCount });
   const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("harptrainer_show_note_names", true, { sanitize: sanitizeBoolean });
   const [userTempoBpm, setUserTempoBpm] = usePersistentState<number | null>("harptrainer_user_tempo", null, { sanitize: sanitizeNullableTempo });
 
   const handleSetTempo = useCallback((newTempo: number) => {
     setUserTempoBpm(newTempo);
   }, [setUserTempoBpm]);
-  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "022_Florestan_Harmonica.sf2", { sanitize: sanitizeString });
-  const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22", { sanitize: sanitizeString }); // Default to Harmonica
-  const harmonicaKey = normalizeHarmonicaKey(selectedKey);
+  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "MS_Basic.sf3", { sanitize: sanitizeSoundFont });
+  const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22", { sanitize: sanitizeString });
+  const keyCount = normalizeMelodicaKeyCount(selectedKeyCount);
 
   // VOLATILE STATES
   const [routeStatus, setRouteStatus] = useState<RouteStatus | null>({ tone: "info", message: "Ready." });
@@ -124,9 +132,7 @@ const TestFileLoader: React.FC = () => {
     setIsGpPlaybackReady,
   } = useGpScore({
     cursorEventIndexRef,
-    harmonicaKey,
-    noBend,
-    noOverblowOrDraw,
+    keyCount,
     setCurrentEventIndex,
     setCurrentGameTimeMs,
     setDetectedTempoBpm,
@@ -138,7 +144,7 @@ const TestFileLoader: React.FC = () => {
   });
 
   const { displayFileContent, fileContent } = useMusicXmlScore({
-    harmonicaKey,
+    keyCount,
     isGpFile,
     rawFileContent,
     setDetectedTempoBpm,
@@ -179,7 +185,7 @@ const TestFileLoader: React.FC = () => {
   const canUseProcessedScore = (Boolean(fileContent) || (isGpFile && Boolean(rawFileContent))) && isSheetReady && !hasSheetRenderError;
   const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
 
-  const { downloadHarpTabs, downloadTransposedXml } = useScoreDownloads({
+  const { downloadMelodicaNotes, downloadTransposedXml } = useScoreDownloads({
     fileContent,
     fileName,
   });
@@ -266,10 +272,8 @@ const TestFileLoader: React.FC = () => {
 
   const { autoTransposeWithFilters, optimalVariantsCount } = useTransposeOptimizer({
     gpOriginalMidiNumbers,
-    harmonicaKey,
+    keyCount,
     isGpFile,
-    noBend,
-    noOverblowOrDraw,
     playbackEvents,
     rawFileContent,
     setTranspose,
@@ -307,7 +311,7 @@ const TestFileLoader: React.FC = () => {
             <AlphaTabViewer
               ref={alphaTabRef}
               fileData={rawFileContent as Uint8Array}
-              harmonicaKey={harmonicaKey}
+              keyCount={keyCount}
               isPlaybackActive={isPlaying}
               trackIndex={selectedGpTrackIndex}
               transpose={transpose}
@@ -327,7 +331,7 @@ const TestFileLoader: React.FC = () => {
         </div>
       </div>
       <div className="flex-1 w-full overflow-hidden bg-gray-950">
-        <div className="h-full max-w-screen-2xl mx-auto p-4 sm:p-6 overflow-hidden flex flex-col">
+        <div className="h-full w-full p-4 sm:p-6 overflow-hidden flex flex-col">
           <div className="flex flex-col lg:flex-row gap-4 h-full items-start w-full">
             {/* COLUMN 1: Score & Track Settings (Left) */}
             <ScoreSettingsPanel
@@ -335,14 +339,14 @@ const TestFileLoader: React.FC = () => {
               canUseProcessedScore={canUseProcessedScore}
               fileName={fileName}
               gpTracks={gpTracks}
-              harmonicaKey={harmonicaKey}
-              harmonicaKeys={harmonicaKeys}
+              keyCount={keyCount}
+              melodicaRanges={melodicaRangeOptions}
               isGpFile={isGpFile}
-              onDownloadHarpTabs={downloadHarpTabs}
+              onDownloadMelodicaNotes={downloadMelodicaNotes}
               onDownloadTransposedXml={downloadTransposedXml}
               onFileChange={handleFileChange}
               onGpTrackChange={(trackIndex) => handleGpTrackChange(trackIndex, () => stopPlayback(true))}
-              onHarmonicaKeyChange={setSelectedKey}
+              onMelodicaRangeChange={setSelectedKeyCount}
               onSelectedPresetChange={setSelectedPreset}
               onSoundFontChange={(soundFont) => {
                 setSelectedSf(soundFont);
@@ -354,15 +358,15 @@ const TestFileLoader: React.FC = () => {
               selectedPreset={selectedPreset}
               selectedSoundFont={selectedSf}
               soundFonts={SOUNDFONTS}
-              t={t}
             />
 
             {/* COLUMN 2: Note Highway (Center) */}
-            <div className="flex-1 w-full h-full overflow-hidden flex flex-col min-w-0 order-first lg:order-none">
+            <div className="flex-[1_1_auto] w-full h-full overflow-hidden flex flex-col min-w-0 order-first lg:order-none">
               <NoteHighway
                 clarity={clarity}
                 detectedNote={detectedNote}
                 isPlaying={isPlaying}
+                keyCount={keyCount}
                 lastHitIndex={lastHitIndex}
                 pitchError={pitchError}
                 shortestNoteDurationMs={shortestNoteDurationMs}
@@ -376,12 +380,9 @@ const TestFileLoader: React.FC = () => {
             </div>
 
             {/* COLUMN 3: Transpose & Optimizer (Right) */}
+            <div className="hidden 2xl:block flex-1" />
             <TransposeControls
-              noBend={noBend}
-              noOverblowOrDraw={noOverblowOrDraw}
               onAutoTranspose={autoTransposeWithFilters}
-              onNoBendChange={setNoBend}
-              onNoOverblowOrDrawChange={setNoOverblowOrDraw}
               onResetTranspose={() => setTranspose(0)}
               onShowNoteNamesChange={setShowNoteNames}
               onTransposeChange={handleTransposeChange}

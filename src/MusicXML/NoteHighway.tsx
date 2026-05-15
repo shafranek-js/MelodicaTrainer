@@ -1,12 +1,12 @@
 import { Mic } from "lucide-react";
 import { Note } from "tonal";
-import { useRef, useEffect, useState } from "react";
-import type { freqToNoteAndCents } from "../utils/utils";
-import {
-  NOTE_TARGET_LINE_PERCENT,
-} from "./constants";
+import { useRef, useEffect, useMemo, useState } from "react";
+import { generateMelodicaLayout, getMelodicaKeyboardGeometry } from "../utils/utils";
+import type { MelodicaKeyCount, freqToNoteAndCents } from "../utils/utils";
+import { NOTE_TARGET_LINE_PERCENT } from "./constants";
 import { buildNoteHighwayRenderData } from "./noteHighwayLayout";
 import type { VisibleGameEvent, PlaybackEvent, PlaybackTiming } from "./types";
+import { MelodicaKeyboard } from "../Melodica/MelodicaKeyboard";
 
 type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
 
@@ -14,6 +14,7 @@ type NoteHighwayProps = {
   clarity: string | null;
   detectedNote: DetectedNote | null;
   isPlaying: boolean;
+  keyCount: MelodicaKeyCount;
   lastHitIndex: number | null;
   pitchError: string | null;
   shortestNoteDurationMs: number;
@@ -29,6 +30,7 @@ export const NoteHighway = ({
   clarity,
   detectedNote,
   isPlaying,
+  keyCount,
   lastHitIndex,
   pitchError,
   shortestNoteDurationMs,
@@ -54,58 +56,82 @@ export const NoteHighway = ({
       return () => observer.disconnect();
   }, []);
 
+  const melodicaLayout = useMemo(() => generateMelodicaLayout(keyCount), [keyCount]);
+  const keyboardGeometry = useMemo(
+    () => getMelodicaKeyboardGeometry(melodicaLayout),
+    [melodicaLayout]
+  );
   const renderData = buildNoteHighwayRenderData({
       clarity,
       containerWidth,
       lastHitIndex,
+      keyCount,
       shortestNoteDurationMs,
       visibleGameEvents,
       visualPlayheadMs,
       playbackEvents,
       playbackTimeline,
   });
+  const activeKeyboardMidi = useMemo(() => {
+    const active = new Map<number, string>();
+
+    renderData.forEach((data) => {
+      if (!data.isVisible || !data.isSounding) return;
+      const key = keyboardGeometry.keys[data.laneIndex];
+      if (key) active.set(key.midi, data.color);
+    });
+
+    return active;
+  }, [keyboardGeometry.keys, renderData]);
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col rounded-lg border border-gray-700 bg-gray-900 p-4 shadow overflow-hidden">
       <div className="flex-1 w-full overflow-hidden">
         <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950" id="highway-container">
+          <div className="absolute left-3 right-3 top-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
+            <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+              <Mic size={14} />
+              {pitchError
+                ? "Mic unavailable"
+                : detectedNote
+                  ? `${Note.pitchClass(detectedNote.note)} ${
+                      detectedNote.cents > 0 ? "+" : ""
+                    }${Math.round(detectedNote.cents)}c`
+                  : isPlaying
+                    ? "Listening"
+                    : "Press play"}
+            </span>
+            <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+              Clarity {clarity || "-"}
+            </span>
+          </div>
           
-          {Array.from({ length: 10 }).map((_, i) => (
+          {keyboardGeometry.keys.map((key) => (
             <div
-              key={`lane-track-${i}`}
+              key={`lane-track-${key.midi}`}
               className={`absolute bottom-0 top-0 border-x border-gray-800/20 ${
-                i % 2 === 0 ? "bg-white/[0.03]" : "bg-transparent"
+                key.isBlack ? "bg-violet-950/25" : "bg-white/[0.03]"
               }`}
-              style={{ left: `${(i / 10) * 100}%`, width: "10%" }}
+              style={{ left: `${key.leftPct}%`, width: `${key.widthPct}%` }}
             >
-              <div className="mt-2 text-center text-[10px] font-bold text-gray-700">{i + 1}</div>
+              {!key.isBlack && (
+                <div className="mt-2 text-center text-[9px] font-bold text-gray-700">
+                  {key.index}
+                </div>
+              )}
             </div>
           ))}
-
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none">
-              {renderData.map(data => data.isVisible && (
-                  <path 
-                      key={data.key}
-                      d={data.pathD}
-                      fill={data.color}
-                      stroke={data.wasHit ? "white" : "black"}
-                      strokeWidth={data.wasHit ? 0.3 : 0.15}
-                      strokeLinejoin="round"
-                      vectorEffect="non-scaling-stroke"
-                      className={data.wasHit ? "drop-shadow-[0_0_8px_rgba(52,211,153,1)]" : "drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"}
-                  />
-              ))}
-          </svg>
 
           {renderData.map(data => data.isVisible && (
               <div
                   key={`overlay-${data.key}`}
-                  className={`absolute box-border flex items-center justify-center text-xs font-bold ${data.wasHit ? "z-[60]" : "z-30"}`}
+                  className={`absolute box-border flex items-center justify-center rounded-[18px] border text-xs font-bold shadow-[0_10px_24px_rgba(0,0,0,0.38)] ${data.wasHit ? "z-[60] border-white drop-shadow-[0_0_8px_rgba(52,211,153,1)]" : "z-30 border-black/50"}`}
                   style={{
                       left: `${data.htmlLeft}%`,
                       top: `${data.htmlTop}%`,
                       width: `${data.htmlWidth}%`,
                       height: `${data.htmlHeight}%`,
+                      backgroundColor: data.color,
                   }}
               >
                   {data.isOverblow && (
@@ -145,36 +171,21 @@ export const NoteHighway = ({
           ))}
 
           <div
-            className="pointer-events-none absolute left-0 right-0 h-20 -translate-y-1/2 z-[40]"
-            style={{ top: `${NOTE_TARGET_LINE_PERCENT}%` }}
+            className="pointer-events-none absolute bottom-0 left-0 right-0 h-36 z-[40]"
           >
-            <svg width="100%" height="100%" preserveAspectRatio="none" className="drop-shadow-2xl">
-              <defs>
-                <linearGradient id="bodyGrad" x1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4b5563" />
-                  <stop offset="50%" stopColor="#1f2937" />
-                  <stop offset="100%" stopColor="#111827" />
-                </linearGradient>
-                <mask id="holeMask">
-                  <rect width="100%" height="100%" fill="white" />
-                  {Array.from({ length: 10 }).map((_, i) => (
-                    <circle 
-                      key={i} 
-                      cx={`${(i / 10) * 100 + 5}%`} 
-                      cy="50%" 
-                      r="20" 
-                      fill="black" 
-                    />
-                  ))}
-                </mask>
-              </defs>
-              <rect 
-                width="100%" 
-                height="100%" 
-                fill="url(#bodyGrad)" 
-                mask="url(#holeMask)"
-              />
-            </svg>
+            <MelodicaKeyboard
+              formatPitchClass={(pitchClass) => pitchClass}
+              getKeyState={(key) => ({
+                activeColor: activeKeyboardMidi.get(key.midi),
+                isActive: activeKeyboardMidi.has(key.midi),
+              })}
+              heightClassName="h-36"
+              innerInsetClassName="inset-0"
+              layout={melodicaLayout}
+              minWhiteKeyWidthPx={0}
+              showOctaves
+              showNoteNames
+            />
           </div>
             
           <div
@@ -182,35 +193,17 @@ export const NoteHighway = ({
             style={{ top: `${NOTE_TARGET_LINE_PERCENT}%`, zIndex: 35 }}
           />
 
-          {Array.from({ length: 10 }).map((_, i) => (
+          {keyboardGeometry.keys.map((key) => (
             <div
-              key={`hole-label-${i}`}
+              key={`key-label-${key.midi}`}
               className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-[50] pointer-events-none"
-              style={{ left: `${(i / 10) * 100 + 5}%`, top: `${NOTE_TARGET_LINE_PERCENT}%` }}
+              style={{ left: `${key.centerPct}%`, top: `${NOTE_TARGET_LINE_PERCENT}%` }}
             >
-               <span className="text-lg font-extrabold leading-none text-white drop-shadow-[0_2px_3px_rgba(0,0,0,1)]">
-                {i + 1}
+               <span className="sr-only">
+                {key.name}
               </span>
             </div>
           ))}
-
-          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
-            <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-              <Mic size={14} />
-              {pitchError
-                ? "Mic unavailable"
-                : detectedNote
-                  ? `${Note.pitchClass(detectedNote.note)} ${
-                      detectedNote.cents > 0 ? "+" : ""
-                    }${Math.round(detectedNote.cents)}c`
-                  : isPlaying
-                    ? "Listening"
-                    : "Press play"}
-            </span>
-            <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-              Clarity {clarity || "-"}
-            </span>
-          </div>
         </div>
       </div>
     </div>

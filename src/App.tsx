@@ -6,7 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import Menu from "./Menu";
-import Harmonica from "./Harmonica/Harmonica";
+import Melodica from "./Melodica/Melodica";
 import { PlaybackToolbarProvider } from "./PlaybackToolbarProvider";
 
 const Circle = lazy(() => import("./Circle/Circle"));
@@ -29,10 +29,11 @@ function App() {
             >
               <Routes>
                 <Route path="/circle" element={<Circle />} />
-                <Route path="/harmonica" element={<Harmonica />} />
+                <Route path="/melodica" element={<Melodica />} />
                 <Route path="/practice" element={<Practice />} />
                 <Route path="/musicxml" element={<MusicXML />} />
-                <Route path="/" element={<Navigate to="/harmonica" replace />} />
+                <Route path="/harmonica" element={<Navigate to="/melodica" replace />} />
+                <Route path="/" element={<Navigate to="/melodica" replace />} />
               </Routes>
             </Suspense>
           </main>

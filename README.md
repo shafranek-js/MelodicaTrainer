@@ -1,76 +1,63 @@
-# 🪗 HarpTrainer - Advanced Harmonica Learning Tool
+# MelodicaTrainer
 
-[👉 Try the Live Demo](https://shafranek-js.github.io/HarpTrainer/)
+MelodicaTrainer is an interactive React application for melodica practice. It combines real-time microphone pitch detection, a selectable melodica keyboard range, MusicXML/Guitar Pro playback, a note-highway practice view, and a circle-of-fifths theory explorer.
 
-HarpTrainer is a comprehensive interactive application designed for harmonica players of all levels. It combines real-time pitch detection, music theory visualization, and a gamified learning experience to help you master the harmonica.
+## Key Features
 
----
+### Real-Time Pitch Detection
 
-## 🧩 Key Features
+- Select common melodica ranges: 25, 27, 32, or 37 keys.
+- See the detected note on a virtual keyboard.
+- Check pitch accuracy in cents.
 
-### 🎙️ Real-Time Pitch Detection & Visualizer
-- **Interactive Layout:** See exactly which hole and action (blow, draw, bend) you are playing on a virtual harmonica.
-- **High Precision:** Uses advanced frequency estimation to show your accuracy in cents — perfect for mastering precise bends.
-- **Multi-Key Support:** Instantly switch between any harmonica key (C, G, A, D, Bb, etc.) and the layout updates automatically.
+### Note Highway
 
-### 🛣️ Note Highway (Interactive Practice)
-- **Gamified Learning:** Practice songs with a "Note Highway" interface. Play the notes in real-time as they approach the target zone.
-- **MusicXML & Guitar Pro Support:** Load any MusicXML or Guitar Pro file to see standard notation synced with harmonica tablature.
-- **Repeat (Reprise) Expansion:** Advanced parser automatically expands repeated sections for a continuous, linear practice experience.
-- **Smart Transposition:** Automatically transpose songs to fit your harmonica's key, with filters to avoid impossible notes (like overblows or specific bends).
-- **Scoring System:** Get instant feedback on your performance with hit detection, streaks, and overall accuracy percentages.
+- Load MusicXML, MXL, and Guitar Pro files.
+- Practice against synced playback and target lanes.
+- Auto-transpose material into the selected melodica range.
+- Track hits, misses, streak, and accuracy.
 
-### 🌀 Circle of Fifths & Music Theory
-- **Interactive Theory:** Explore scales, modes, and chords visually.
-- **Harmonica Integration:** Understand how positions and scales map to your instrument.
+### Practice
 
-### 🎯 Practice Mode
-- **Targeted Training:** Dedicated mode for practicing specific intervals, bends, and accuracy targets to build muscle memory.
+- Practice notes from selected scales.
+- Use scale, chord-tone, and 12-bar blues modes.
+- Filter pitch detection to the selected melodica range.
 
----
+### Circle of Fifths
 
-## 🛠️ Technical Stack
+- Explore roots, modes, scales, triads, and scale degrees.
+- Use the theory view independently from a fixed instrument tuning.
 
-- **Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool:** [Vite](https://vitejs.dev/)
-- **Audio Engine:** [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) + [SpessaSynth](https://github.com/spessas/SpessaSynth) (SoundFont synthesis)
-- **Pitch Detection:** [pitchy](https://www.npmjs.com/package/pitchy)
-- **Notation:** [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) & [alphaTab](https://www.alphatab.net/)
-- **Animations:** [GSAP](https://greensock.com/gsap/)
-- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
+## SoundFont Note
 
----
+The repository includes `public/melodica_vib`, which contains an SFZ file and WAV samples. The current playback engine uses SpessaSynth and expects SF2/SF3/DLS-style sound banks, so the SFZ set should be converted to SF2 or SF3 before it can be used as the default melodica sound.
 
-## 🚀 Getting Started
+## Technical Stack
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) (Latest LTS recommended)
-- A microphone (for pitch detection features)
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS 4
+- Web Audio API + SpessaSynth
+- Pitchy
+- OpenSheetMusicDisplay
+- alphaTab
+- Tonal
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/shafranek-js/HarpTrainer.git
-   cd HarpTrainer
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+## Getting Started
 
----
+```bash
+npm ci
+npm run dev
+```
 
-## 📖 Related Documentation
+Useful checks:
 
-- [Knowledge Base](./KNOWLEDGE_BASE.md) - Consolidated technical map of the app, current architecture, conventions, and known documentation drift.
-- [Archived Notes](./docs/archive/) - Historical planning and implementation notes that have been consolidated into the knowledge base.
+```bash
+npm test
+npm run lint
+npm run build
+```
 
----
+## License
 
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+See [LICENSE](LICENSE).

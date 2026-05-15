@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   createFirstStaffDisplayXml,
-  injectHarmonicaTabs,
+  injectMelodicaLabels,
 } from "./musicXmlTransform";
 import { parsePlaybackEvents } from "./playbackParser";
+import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent } from "./types";
 import type { ScoreFileContent } from "./useScoreFileLoader";
 
 type UseMusicXmlScoreOptions = {
-  harmonicaKey: string;
+  keyCount: MelodicaKeyCount;
   isGpFile: boolean;
   rawFileContent: ScoreFileContent | null;
   setDetectedTempoBpm: (tempoBpm: number) => void;
@@ -17,7 +18,7 @@ type UseMusicXmlScoreOptions = {
 };
 
 export const useMusicXmlScore = ({
-  harmonicaKey,
+  keyCount,
   isGpFile,
   rawFileContent,
   setDetectedTempoBpm,
@@ -41,15 +42,15 @@ export const useMusicXmlScore = ({
 
     try {
       setFileContent(
-        injectHarmonicaTabs(rawFileContent, {
-          selectedKey: harmonicaKey,
+        injectMelodicaLabels(rawFileContent, {
+          keyCount,
           transpose,
         })
       );
     } catch (err) {
       console.error(err);
     }
-  }, [harmonicaKey, isGpFile, rawFileContent, transpose]);
+  }, [isGpFile, keyCount, rawFileContent, transpose]);
 
   useEffect(() => {
     if (isGpFile || !displayFileContent) return;
