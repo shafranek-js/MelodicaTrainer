@@ -125,7 +125,9 @@ export const NoteHighway = ({
           {renderData.map(data => data.isVisible && (
               <div
                   key={`overlay-${data.key}`}
-                  className={`absolute box-border flex items-center justify-center rounded-[18px] border-[1.5px] border-white/50 text-xs font-bold ${
+                  className={`absolute box-border flex items-center justify-center border-[1.5px] border-white/50 text-xs font-bold ${
+                    keyboardGeometry.keys[data.laneIndex]?.isBlack ? "rounded-[4px]" : "rounded-[18px]"
+                  } ${
                     data.wasHit ? "z-[60]" : "z-30"
                   }`}
                   style={{
