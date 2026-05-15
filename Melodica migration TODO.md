@@ -2,11 +2,11 @@
 
 ## In progress
 
-- [ ] Wire a converted melodica SoundFont once an SF2/SF3 is available.
+- [x] Wire a converted melodica SoundFont once an SF2/SF3 is available.
 
 ## Pending
 
-- [ ] Convert `public/melodica_vib/melodica vib.sfz` to SF2 or SF3.
+- [x] Convert `public/melodica_vib/melodica vib.sfz` to SF2 or SF3.
 
 ## Done
 

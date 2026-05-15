@@ -42,7 +42,12 @@ const routeStatusClassNames: Record<RouteStatusTone, string> = {
 };
 
 const SOUNDFONTS = [
+    { label: "Melodica", value: "melodica.sf2" },
     { label: "General MIDI Reed", value: "MS_Basic.sf3" },
+    { label: "Florestan Harmonica", value: "022_Florestan_Harmonica.sf2" },
+    { label: "Harmonica Essentials", value: "Harmonica_Essentials.sf2" },
+    { label: "Monsoons Hohner C", value: "Monsoons Hohner C Harmonica.sf2" },
+    { label: "Sonivox", value: "soundfont/sonivox.sf2" },
 ];
 
 const sanitizeFiniteNumber = (value: unknown): number | undefined =>
@@ -56,7 +61,7 @@ const sanitizeString = (value: unknown): string | undefined =>
 
 const sanitizeSoundFont = (value: unknown): string | undefined => {
   if (typeof value !== "string") return undefined;
-  return SOUNDFONTS.some((soundFont) => soundFont.value === value) ? value : "MS_Basic.sf3";
+  return SOUNDFONTS.some((soundFont) => soundFont.value === value) ? value : "melodica.sf2";
 };
 
 const sanitizeMelodicaKeyCount = (value: unknown): MelodicaKeyCount | undefined => {
@@ -76,8 +81,8 @@ const TestFileLoader: React.FC = () => {
   const handleSetTempo = useCallback((newTempo: number) => {
     setUserTempoBpm(newTempo);
   }, [setUserTempoBpm]);
-  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "MS_Basic.sf3", { sanitize: sanitizeSoundFont });
-  const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:22", { sanitize: sanitizeString });
+  const [selectedSf, setSelectedSf] = usePersistentState<string>("harptrainer_soundfont", "melodica.sf2", { sanitize: sanitizeSoundFont });
+  const [selectedPreset, setSelectedPreset] = usePersistentState<string>("harptrainer_preset", "0:0", { sanitize: sanitizeString });
   const keyCount = normalizeMelodicaKeyCount(selectedKeyCount);
 
   // VOLATILE STATES
