@@ -125,13 +125,21 @@ export const NoteHighway = ({
           {renderData.map(data => data.isVisible && (
               <div
                   key={`overlay-${data.key}`}
-                  className={`absolute box-border flex items-center justify-center rounded-[18px] border text-xs font-bold shadow-[0_10px_24px_rgba(0,0,0,0.38)] ${data.wasHit ? "z-[60] border-white drop-shadow-[0_0_8px_rgba(52,211,153,1)]" : "z-30 border-black/50"}`}
+                  className={`absolute box-border flex items-center justify-center rounded-[18px] border-[1.5px] border-white/50 text-xs font-bold ${
+                    data.wasHit ? "z-[60]" : "z-30"
+                  }`}
                   style={{
                       left: `${data.htmlLeft}%`,
                       top: `${data.htmlTop}%`,
                       width: `${data.htmlWidth}%`,
                       height: `${data.htmlHeight}%`,
                       backgroundColor: data.color,
+                      backgroundImage: "linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.2) 100%)",
+                      boxShadow: data.wasHit 
+                          ? `inset 0 4px 8px rgba(255,255,255,0.7), inset 0 -4px 8px rgba(0,0,0,0.3), 0 0 20px 4px rgba(255,255,255,0.5), 0 0 10px 2px ${data.color}`
+                          : "inset 0 4px 6px rgba(255,255,255,0.6), inset 0 -4px 6px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.4)",
+                      opacity: 0.88,
+                      backdropFilter: "blur(6px)"
                   }}
               >
                   {data.isOverblow && (
