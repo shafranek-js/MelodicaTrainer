@@ -224,7 +224,7 @@ const MusicXML: React.FC = () => {
   });
   
 
-  const phantomStates = usePhantomHand(
+  const { fingerStates: phantomStates, activeMidi, activeFinger } = usePhantomHand(
     fingerAssignments ?? [],
     playbackEvents,
     playbackTimeline,
@@ -232,32 +232,47 @@ const MusicXML: React.FC = () => {
     showVirtualHand,
   );
 
+  const studyModeTimeRef = useRef(currentGameTimeMs);
+  studyModeTimeRef.current = currentGameTimeMs;
+
   // ── Study mode: freeze clock at unplayed events ──
+  // Polls every 100ms instead of on every render tick.
   useEffect(() => {
     if (!isStudyMode || !isPlaying || playbackEvents.length === 0) {
-      studyModeFreezeRef.current = false;
-      setIsWaiting(false);
+      if (studyModeFreezeRef.current) {
+        studyModeFreezeRef.current = false;
+        setIsWaiting(false);
+      }
       return;
     }
-    const now = currentGameTimeMs;
-    for (let i = studyModeNextIndexRef.current; i < playbackEvents.length; i++) {
-      const timing = playbackTimeline[i];
-      if (!timing) continue;
-      const ev = playbackEvents[i];
-      const hasNotes = ev.notes.some(n => n.shouldPlay);
-      if (!hasNotes) continue;
-      if (now >= timing.startMs) {
-        studyModeNextIndexRef.current = i;
-        studyModeFreezeRef.current = true;
-        setIsWaiting(true);
-        return;
+
+    const check = () => {
+      const now = studyModeTimeRef.current;
+      for (let i = studyModeNextIndexRef.current; i < playbackEvents.length; i++) {
+        const timing = playbackTimeline[i];
+        if (!timing) continue;
+        const ev = playbackEvents[i];
+        const hasNotes = ev.notes.some(n => n.shouldPlay);
+        if (!hasNotes) continue;
+        if (now >= timing.startMs) {
+          studyModeNextIndexRef.current = i;
+          if (!studyModeFreezeRef.current) {
+            studyModeFreezeRef.current = true;
+            setIsWaiting(true);
+          }
+          return;
+        }
       }
-      // Timeline is ordered, but there may be gaps with no notes.
-      // Don't break — keep scanning in case an earlier event has no playable notes.
-    }
-    studyModeFreezeRef.current = false;
-    setIsWaiting(false);
-  }, [isStudyMode, isPlaying, currentGameTimeMs, playbackEvents, playbackTimeline, currentEventIndex]);
+      if (studyModeFreezeRef.current) {
+        studyModeFreezeRef.current = false;
+        setIsWaiting(false);
+      }
+    };
+
+    check();
+    const interval = setInterval(check, 100);
+    return () => clearInterval(interval);
+  }, [isStudyMode, isPlaying, playbackEvents, playbackTimeline, currentEventIndex]);
 
   useEffect(() => {
     // When playback stops/restarts, reset the study mode pointer
@@ -269,22 +284,16 @@ const MusicXML: React.FC = () => {
   const { pitch, clarity, error: pitchError } = usePitchDetector(0.82, isPlaying && playbackEvents.length > 0, { allowedMidiNumbers: playableMidiNumbers, minRms: 0.012, stableFrames: 2 });
   const detectedNote = useMemo(() => pitch ? freqToNoteAndCents(Number(pitch)) : null, [pitch]);
   const handleStudyModeHit = useCallback((eventIndex: number) => {
-    // Accept hits for the expected note even before freeze engages
-    // (race condition: mic picks up note 2 while clock hasn't frozen yet).
     if (eventIndex !== studyModeNextIndexRef.current) return;
-
-    // Always advance the pointer — the note has been played.
     studyModeNextIndexRef.current = eventIndex + 1;
     setCurrentEventIndex(eventIndex + 1);
-
-    // Unfreeze and resume clock ONLY if we were actually paused.
     if (studyModeFreezeRef.current) {
       studyModeFreezeRef.current = false;
       setIsWaiting(false);
-      gameClockOffsetMsRef.current = currentGameTimeMs;
+      gameClockOffsetMsRef.current = gameClockOffsetMsRef.current; // keep frozen value
       gameClockStartMsRef.current = performance.now();
     }
-  }, [setCurrentEventIndex, currentGameTimeMs, gameClockStartMsRef, gameClockOffsetMsRef]);
+  }, [setCurrentEventIndex]);
 
   const { accuracy, gameStats, lastHitIndex, resetScoring } = useNoteHighwayScoring({
     currentGameTimeMs,
@@ -603,7 +612,10 @@ const MusicXML: React.FC = () => {
                 isGp={isGpFile}
                 fingerAssignments={fingerMap}
                 showNumbers={showNumbers}
+                showVirtualHand={showVirtualHand}
                 phantomStates={phantomStates}
+                activeMidi={activeMidi}
+                activeFinger={activeFinger}
                 isWaiting={isWaiting}
               />
             </div>

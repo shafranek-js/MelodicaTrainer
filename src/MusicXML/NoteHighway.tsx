@@ -3,7 +3,6 @@ import { Note } from "tonal";
 import { useRef, useEffect, useMemo, useState } from "react";
 import { generateMelodicaLayout, getMelodicaKeyboardGeometry } from "../utils/utils";
 import type { MelodicaKeyCount, freqToNoteAndCents } from "../utils/utils";
-import { NOTE_TARGET_LINE_PERCENT } from "./constants";
 import { buildNoteHighwayRenderData } from "./noteHighwayLayout";
 import type { VisibleGameEvent } from "./types";
 import { MelodicaKeyboard } from "../Melodica/MelodicaKeyboard";
@@ -27,6 +26,9 @@ type NoteHighwayProps = {
   fingerAssignments?: Map<string, number>;
   showNumbers?: boolean;
   phantomStates?: FingerVisualState[];
+  activeMidi?: number | null;
+  activeFinger?: number | null;
+  showVirtualHand?: boolean;
   isWaiting?: boolean;
 };
 
@@ -44,11 +46,17 @@ export const NoteHighway = ({
   fingerAssignments,
   showNumbers,
   phantomStates,
+  activeMidi,
+  activeFinger,
+  showVirtualHand,
   isWaiting,
 }: NoteHighwayProps) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const keyboardRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
+  const [keyboardHeightPx, setKeyboardHeightPx] = useState(176);
 
   useEffect(() => {
       const el = containerRef.current;
@@ -56,17 +64,47 @@ export const NoteHighway = ({
       const observer = new ResizeObserver(entries => {
           for (const entry of entries) {
               setContainerWidth(entry.contentRect.width);
+              setContainerHeight(entry.contentRect.height);
           }
       });
       observer.observe(el);
       return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+      const el = keyboardRef.current;
+      if (!el) return;
+      const observer = new ResizeObserver(entries => {
+          for (const entry of entries) {
+              setKeyboardHeightPx(entry.contentRect.height);
+          }
+      });
+      observer.observe(el);
+      return () => observer.disconnect();
+  }, []);
+
+  const targetLinePercent = containerHeight > 0
+    ? ((containerHeight - keyboardHeightPx) / containerHeight) * 100
+    : 65; // fallback
+
   const melodicaLayout = useMemo(() => generateMelodicaLayout(keyCount), [keyCount]);
   const keyboardGeometry = useMemo(
     () => getMelodicaKeyboardGeometry(melodicaLayout),
     [melodicaLayout]
   );
+
+  // Compute hand horizontal offset so the active fingertip aligns with its key.
+  const handOffsetPct = useMemo(() => {
+    if (activeMidi == null || activeFinger == null || containerWidth === 0) return 0;
+    const key = keyboardGeometry.keys.find(k => k.midi === activeMidi);
+    if (!key) return 0;
+    const fingerTipX: Record<number, number> = { 1: 15, 2: 55, 3: 100, 4: 140, 5: 175 };
+    const tipX = fingerTipX[activeFinger] ?? 100;
+    const svgWidth = containerWidth >= 640 ? 356 : 316; // h-[374px] vs h-[332px] scaled
+    const keyCenterPx = (key.centerPct / 100) * containerWidth;
+    const fingerScreenPx = (containerWidth - svgWidth) / 2 + (tipX / 200) * svgWidth;
+    return ((keyCenterPx - fingerScreenPx) / svgWidth) * 100;
+  }, [activeMidi, activeFinger, containerWidth, keyboardGeometry.keys]);
   const renderData = buildNoteHighwayRenderData({
       clarity,
       containerWidth,
@@ -76,6 +114,7 @@ export const NoteHighway = ({
       visibleGameEvents,
       visualPlayheadMs,
       fingerAssignments,
+      targetLinePercent,
   });
   const activeKeyboardMidi = useMemo(() => {
     const active = new Map<number, string>();
@@ -258,6 +297,7 @@ export const NoteHighway = ({
 
           {/* Bottom keyboard overlay */}
           <div
+            ref={keyboardRef}
             className="pointer-events-none absolute bottom-0 left-0 right-0 h-44 lg:h-56 z-[40]"
           >
             <MelodicaKeyboard
@@ -278,7 +318,8 @@ export const NoteHighway = ({
           {/* Phantom hand overlay */}
           <PhantomHand
             fingerStates={phantomStates ?? ["idle","idle","idle","idle","idle"]}
-            visible={(phantomStates?.some(s => s !== "idle")) ?? false}
+            visible={showVirtualHand ?? false}
+            handOffsetPct={handOffsetPct}
           />
 
           {/* Target line — pulses in study mode */}
@@ -288,7 +329,7 @@ export const NoteHighway = ({
                 ? "bg-amber-400/90 animate-pulse shadow-[0_0_12px_4px_rgba(251,191,36,0.5)]"
                 : "bg-gray-600/60"
             }`}
-            style={{ top: `${NOTE_TARGET_LINE_PERCENT}%`, zIndex: 35 }}
+            style={{ top: `${targetLinePercent}%`, zIndex: 35 }}
           />
 
           {/* Screen-reader labels */}
@@ -296,7 +337,7 @@ export const NoteHighway = ({
             <div
               key={`key-label-${key.midi}`}
               className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center z-[50] pointer-events-none"
-              style={{ left: `${key.centerPct}%`, top: `${NOTE_TARGET_LINE_PERCENT}%` }}
+              style={{ left: `${key.centerPct}%`, top: `${targetLinePercent}%` }}
             >
                <span className="sr-only">
                 {key.name}

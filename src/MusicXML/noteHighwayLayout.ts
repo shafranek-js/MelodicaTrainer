@@ -1,7 +1,6 @@
 import { Note } from "tonal";
 import {
     NOTE_HIT_WINDOW_MS,
-    NOTE_TARGET_LINE_PERCENT,
 } from "./constants";
 import { generateMelodicaLayout, getMelodicaKeyboardGeometry, getCandyNoteColor } from "../utils/utils";
 import type { MelodicaKeyCount } from "../utils/utils";
@@ -40,6 +39,8 @@ type BuildNoteHighwayRenderDataOptions = {
     visualPlayheadMs: number;
     /** Map of "eventIndex-noteIndex" → finger 1–5 */
     fingerAssignments?: Map<string, number>;
+    /** Dynamic target-line position (% from top), based on keyboard height. */
+    targetLinePercent: number;
 };
 
 const CONTAINER_HEIGHT_PX = 520;
@@ -53,6 +54,7 @@ export const buildNoteHighwayRenderData = ({
     visibleGameEvents,
     visualPlayheadMs,
     fingerAssignments,
+    targetLinePercent,
 }: BuildNoteHighwayRenderDataOptions): NoteHighwayRenderItem[] => {
     const keyboardGeometry = getMelodicaKeyboardGeometry(generateMelodicaLayout(keyCount));
     const geometryByMidi = new Map(
@@ -74,13 +76,13 @@ export const buildNoteHighwayRenderData = ({
             const timeToHitMs = timing.startMs - visualPlayheadMs;
             const msPerPx = shortestNoteDurationMs / 40;
             const dynamicLookaheadMs = CONTAINER_HEIGHT_PX * msPerPx;
-            const percentPerMs = NOTE_TARGET_LINE_PERCENT / dynamicLookaheadMs;
+            const percentPerMs = targetLinePercent / dynamicLookaheadMs;
 
             const noteDurationRatio = event.durationBeats > 0 ? note.durationBeats / event.durationBeats : 1;
             const noteDurationMs = timing.durationMs * noteDurationRatio;
             const noteEndMs = timing.startMs + noteDurationMs;
 
-            const topPercent = NOTE_TARGET_LINE_PERCENT - timeToHitMs * percentPerMs;
+            const topPercent = targetLinePercent - timeToHitMs * percentPerMs;
             const heightPercent = noteDurationMs * percentPerMs;
 
             const minWidthPct = containerWidth > 0 ? (28 / containerWidth) * 100 : 2.8;

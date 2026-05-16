@@ -52,14 +52,15 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
   useEffect(() => {
     if (rawFileContent) return;
 
-    fetch(`${import.meta.env.BASE_URL}IntroSong.musicxml`)
+    const defaultFile = "Aloutte (10-Hole Diatonic Harmonica).gp";
+    fetch(`${import.meta.env.BASE_URL}${defaultFile}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load IntroSong.musicxml");
-        return res.text();
+        if (!res.ok) throw new Error(`Failed to load ${defaultFile}`);
+        return res.arrayBuffer();
       })
-      .then((text) => {
-        setFileName("IntroSong.musicxml");
-        setRawFileContent(text);
+      .then((buf) => {
+        setFileName(defaultFile);
+        setRawFileContent(new Uint8Array(buf));
       })
       .catch(onDefaultLoadError);
   }, [onDefaultLoadError, rawFileContent, setFileName, setRawFileContent]);

@@ -36,6 +36,7 @@ const build = (
     shortestNoteDurationMs: 500,
     visibleGameEvents,
     visualPlayheadMs,
+    targetLinePercent: 65,
 });
 
 describe("noteHighwayLayout", () => {
