@@ -1,4 +1,5 @@
 import type { FingerVisualState } from "./usePhantomHand";
+import { useEffect, useRef } from "react";
 
 const FINGER_TIPS: { cx: number; cy: number; r: number }[] = [
   { cx: 15, cy: 95, r: 7 },   // Thumb
@@ -19,9 +20,22 @@ type PhantomHandProps = {
   visible: boolean;
   handOffsetPct?: number;
   className?: string;
+  onSvgWidthChange?: (width: number) => void;
 };
 
-export const PhantomHand = ({ fingerStates, visible, handOffsetPct = 0, className = "" }: PhantomHandProps) => {
+export const PhantomHand = ({ fingerStates, visible, handOffsetPct = 0, className = "", onSvgWidthChange }: PhantomHandProps) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || !onSvgWidthChange) return;
+    const observer = new ResizeObserver(() => {
+      onSvgWidthChange(el.getBoundingClientRect().width);
+    });
+    observer.observe(el);
+    onSvgWidthChange(el.getBoundingClientRect().width);
+    return () => observer.disconnect();
+  }, [onSvgWidthChange]);
   if (!visible) return null;
 
   return (
@@ -30,6 +44,7 @@ export const PhantomHand = ({ fingerStates, visible, handOffsetPct = 0, classNam
       style={{ zIndex: 45, bottom: "-134px" }}
     >
       <svg
+        ref={svgRef}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 200 210"
         className="h-[332px] sm:h-[374px] w-auto max-w-full"

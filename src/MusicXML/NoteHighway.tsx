@@ -57,6 +57,7 @@ export const NoteHighway = ({
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
   const [keyboardHeightPx, setKeyboardHeightPx] = useState(176);
+  const [measuredSvgWidth, setMeasuredSvgWidth] = useState(316);
 
   useEffect(() => {
       const el = containerRef.current;
@@ -100,11 +101,11 @@ export const NoteHighway = ({
     if (!key) return 0;
     const fingerTipX: Record<number, number> = { 1: 15, 2: 55, 3: 100, 4: 140, 5: 175 };
     const tipX = fingerTipX[activeFinger] ?? 100;
-    const svgWidth = containerWidth >= 640 ? 356 : 316; // h-[374px] vs h-[332px] scaled
+    const svgWidth = measuredSvgWidth > 0 ? measuredSvgWidth : 316;
     const keyCenterPx = (key.centerPct / 100) * containerWidth;
     const fingerScreenPx = (containerWidth - svgWidth) / 2 + (tipX / 200) * svgWidth;
     return ((keyCenterPx - fingerScreenPx) / svgWidth) * 100;
-  }, [activeMidi, activeFinger, containerWidth, keyboardGeometry.keys]);
+  }, [activeMidi, activeFinger, containerWidth, measuredSvgWidth, keyboardGeometry.keys]);
   const renderData = buildNoteHighwayRenderData({
       clarity,
       containerWidth,
@@ -320,6 +321,7 @@ export const NoteHighway = ({
             fingerStates={phantomStates ?? ["idle","idle","idle","idle","idle"]}
             visible={showVirtualHand ?? false}
             handOffsetPct={handOffsetPct}
+            onSvgWidthChange={setMeasuredSvgWidth}
           />
 
           {/* Target line — pulses in study mode */}
