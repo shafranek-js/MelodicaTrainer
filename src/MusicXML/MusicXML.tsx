@@ -109,6 +109,7 @@ const MusicXML: React.FC = () => {
   const [isRightDrawerHovered, setIsRightDrawerHovered] = useState(false);
   const [isTopDrawerHovered, setIsTopDrawerHovered] = useState(false);
   const [isBpmOverlayVisible, setIsBpmOverlayVisible] = useState(false);
+  const [showEndStats, setShowEndStats] = useState(false);
   const [routeStatus, setRouteStatus] = useState<RouteStatus | null>({ tone: "info", message: "Ready." });
   const handleDefaultScoreLoadError = useCallback((err: unknown) => {
     console.error("Intro song load error:", err);
@@ -420,6 +421,32 @@ const MusicXML: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePlayback, stopPlayback, handleSetTempo, tempo]);
 
+  // ── End-of-song stats overlay (when top drawer is hidden) ──
+  const topDrawerHidden = !isTopDrawerPinned && !isTopDrawerHovered;
+  const prevPlayingRef = useRef(isPlaying);
+  useEffect(() => {
+    const wasPlaying = prevPlayingRef.current;
+    prevPlayingRef.current = isPlaying;
+    // Trigger only on the transition from playing → stopped
+    if (!wasPlaying || isPlaying) return;
+    if (topDrawerHidden) {
+      setShowEndStats(true);
+    }
+  }, [isPlaying, topDrawerHidden, gameStats.hits]);
+
+
+  // Dismiss end stats on any interaction
+  useEffect(() => {
+    if (!showEndStats) return;
+    const dismiss = () => setShowEndStats(false);
+    window.addEventListener("keydown", dismiss);
+    window.addEventListener("click", dismiss);
+    return () => {
+      window.removeEventListener("keydown", dismiss);
+      window.removeEventListener("click", dismiss);
+    };
+  }, [showEndStats]);
+
   // BPM Overlay timer
   useEffect(() => {
     setIsBpmOverlayVisible(true);
@@ -649,6 +676,27 @@ const MusicXML: React.FC = () => {
           </div>
         </div>
       </div>
+    {showEndStats && (
+      <div
+        className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        onClick={() => setShowEndStats(false)}
+      >
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl px-12 py-8 text-center space-y-4">
+          <h2 className="text-2xl font-black text-white tracking-widest uppercase">Song Complete!</h2>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-lg">
+            <span className="text-gray-400 text-right">Hits</span>
+            <span className="text-emerald-400 font-black text-left">{gameStats.hits}</span>
+            <span className="text-gray-400 text-right">Misses</span>
+            <span className="text-red-400 font-black text-left">{gameStats.misses}</span>
+            <span className="text-gray-400 text-right">Streak</span>
+            <span className="text-amber-400 font-black text-left">{gameStats.streak}</span>
+            <span className="text-gray-400 text-right">Accuracy</span>
+            <span className="text-white font-black text-left">{accuracy}%</span>
+          </div>
+          <p className="text-gray-500 text-xs mt-4">Press any key or click to continue</p>
+        </div>
+      </div>
+    )}
     </div>
   );
 };
