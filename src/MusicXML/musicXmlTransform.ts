@@ -1,5 +1,6 @@
 import { Note } from "tonal";
 import {
+  generateLayout,
   generateMelodicaLayout,
   getHarmonicaHoleForNote,
   getMelodicaKeyLabelForNote,
@@ -61,10 +62,10 @@ const getNotationInsertBefore = (note: Element) =>
     ["lyric", "play", "listen"].includes(child.tagName)
   );
 
-const replaceHarmonicaFingering = (
+const replaceFingeringText = (
   xmlDoc: XMLDocument,
   note: Element,
-  tab: string | null
+  text: string | null
 ) => {
   const notations = getDirectChildren(note, "notations");
 
@@ -74,7 +75,7 @@ const replaceHarmonicaFingering = (
     );
   });
 
-  if (!tab) return;
+  if (!text) return;
 
   let notation = notations[0];
   if (!notation) {
@@ -90,14 +91,14 @@ const replaceHarmonicaFingering = (
 
   const fingering = xmlDoc.createElement("fingering");
   fingering.setAttribute("placement", "below");
-  fingering.textContent = tab;
+  fingering.textContent = text;
   technical.appendChild(fingering);
 };
 
 const getFingeringText = (note: Element) =>
   note.getElementsByTagName("fingering")[0]?.textContent?.trim() || "";
 
-export const exportHarpTabsText = (xml: string): string => {
+export const exportMelodicaNotesText = (xml: string): string => {
   const xmlDoc = parseMusicXmlDocument(xml);
   const firstPart = getFirstPart(xmlDoc);
   const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
@@ -304,7 +305,7 @@ export const injectHarmonicaTabs = (
     note.removeAttribute("relative-y");
 
     const tab = getHarmonicaHoleForNote(selectedKey, transposedNote);
-    replaceHarmonicaFingering(xmlDoc, note, tab);
+    replaceFingeringText(xmlDoc, note, tab);
   });
 
   return new XMLSerializer().serializeToString(xmlDoc);
@@ -316,6 +317,49 @@ type AutoTransposeOptions = {
   noBend: boolean;
 };
 
+const createHarmonicaTabByMidi = (selectedKey: string) => {
+  const layout = generateLayout(selectedKey);
+  const tabByMidi = new Map<number, string>();
+  const formatHole = (
+    index: number,
+    bend: number,
+    isBlow: boolean,
+    isOverdrawOrOverblow: boolean
+  ) => {
+    const hole = isBlow ? index + 1 : -(index + 1);
+    const apostrophes = `'`.repeat(bend);
+    const overnote = isOverdrawOrOverblow ? "o" : "";
+    return `${hole}${apostrophes}${overnote}`;
+  };
+  const put = (
+    noteName: string | null,
+    index: number,
+    bend: number,
+    isBlow: boolean,
+    isOverdrawOrOverblow: boolean
+  ) => {
+    if (!noteName) return;
+    const midi = Note.midi(noteName);
+    if (midi !== null && !tabByMidi.has(midi)) {
+      tabByMidi.set(midi, formatHole(index, bend, isBlow, isOverdrawOrOverblow));
+    }
+  };
+
+  for (let index = 0; index < 10; index += 1) {
+    put(layout.blow[index]?.name ?? null, index, 0, true, false);
+    put(layout.wholeStepBlowBend[index]?.name ?? null, index, 2, true, false);
+    put(layout.HalfStepBlowBend[index]?.name ?? null, index, 1, true, false);
+    put(layout.draw[index]?.name ?? null, index, 0, false, false);
+    put(layout.halfStepDrawBendOverdraw[index]?.name ?? null, index, 1, false, false);
+    put(layout.wholeStepDrawBend[index]?.name ?? null, index, 2, false, false);
+    put(layout.oneAndHalfStepDrawBend[index]?.name ?? null, index, 3, false, false);
+    put(layout.overblow[index]?.name ?? null, index, 0, true, true);
+    put(layout.overdraw[index]?.name ?? null, index, 0, false, true);
+  }
+
+  return tabByMidi;
+};
+
 export const findBestTransposeIntervals = (
     midiNumbers: number[],
     { selectedKey, noOverblowOrDraw, noBend }: AutoTransposeOptions
@@ -323,6 +367,7 @@ export const findBestTransposeIntervals = (
     const uniqueMidi = Array.from(new Set(midiNumbers));
     if (uniqueMidi.length === 0) return [];
 
+    const tabByMidi = createHarmonicaTabByMidi(selectedKey);
     const results: {
         interval: number;
         unplayableCount: number;
@@ -337,8 +382,7 @@ export const findBestTransposeIntervals = (
 
         for (const midi of uniqueMidi) {
             const transposedMidi = midi + interval;
-            const transposedNoteName = Note.fromMidi(transposedMidi);
-            const tab = getHarmonicaHoleForNote(selectedKey, transposedNoteName);
+            const tab = tabByMidi.get(transposedMidi);
 
             if (!tab) {
                 unplayableCount += 1;
@@ -396,7 +440,7 @@ export const injectMelodicaLabels = (
     note.removeAttribute("relative-y");
 
     const label = getMelodicaKeyLabelForNote(keyCount, transposedNote, labelMode);
-    replaceHarmonicaFingering(xmlDoc, note, label);
+    replaceFingeringText(xmlDoc, note, label);
   });
 
   return new XMLSerializer().serializeToString(xmlDoc);

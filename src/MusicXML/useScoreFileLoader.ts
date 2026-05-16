@@ -27,16 +27,25 @@ type UseScoreFileLoaderOptions = {
   onDefaultLoadError: (error: unknown) => void;
 };
 
+const LEGACY_STORAGE_KEYS = {
+  fileName: ["harptrainer_file_name"],
+  rawContent: ["harptrainer_raw_content"],
+} as const;
+
 export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOptions) => {
   const [rawFileContent, setRawFileContent] = usePersistentState<ScoreFileContent | null>(
-    "harptrainer_raw_content",
+    "melodicatrainer_raw_content",
     null,
-    { sanitize: sanitizeScoreFileContent, warnSerializedLength: 1_500_000 }
+    {
+      legacyKeys: LEGACY_STORAGE_KEYS.rawContent,
+      sanitize: sanitizeScoreFileContent,
+      warnSerializedLength: 1_500_000,
+    }
   );
   const [fileName, setFileName] = usePersistentState<string | null>(
-    "harptrainer_file_name",
+    "melodicatrainer_file_name",
     null,
-    { sanitize: sanitizeFileName }
+    { legacyKeys: LEGACY_STORAGE_KEYS.fileName, sanitize: sanitizeFileName }
   );
   const isGpFile = useMemo(() => isGuitarProFileName(fileName), [fileName]);
 

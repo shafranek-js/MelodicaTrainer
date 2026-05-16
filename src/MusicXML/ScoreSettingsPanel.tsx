@@ -1,4 +1,4 @@
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Pin, PinOff } from "lucide-react";
 import type { ChangeEvent } from "react";
 import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 
@@ -29,6 +29,7 @@ type ScoreSettingsPanelProps = {
   keyCount: MelodicaKeyCount;
   melodicaRanges: readonly MelodicaRangeOption[];
   isGpFile: boolean;
+  isPinned: boolean;
   onDownloadMelodicaNotes: () => void;
   onDownloadTransposedXml: () => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -36,6 +37,7 @@ type ScoreSettingsPanelProps = {
   onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
   onSoundFontChange: (soundFont: string) => void;
+  onTogglePin: () => void;
   routeStatus: RouteStatus | null;
   routeStatusClassNames: Record<RouteStatusTone, string>;
   selectedGpTrackIndex: number;
@@ -52,6 +54,7 @@ export const ScoreSettingsPanel = ({
   keyCount,
   melodicaRanges,
   isGpFile,
+  isPinned,
   onDownloadMelodicaNotes,
   onDownloadTransposedXml,
   onFileChange,
@@ -59,6 +62,7 @@ export const ScoreSettingsPanel = ({
   onMelodicaRangeChange,
   onSelectedPresetChange,
   onSoundFontChange,
+  onTogglePin,
   routeStatus,
   routeStatusClassNames,
   selectedGpTrackIndex,
@@ -66,9 +70,17 @@ export const ScoreSettingsPanel = ({
   selectedSoundFont,
   soundFonts,
 }: ScoreSettingsPanelProps) => (
-  <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar">
+  <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar relative">
+    <button
+      onClick={onTogglePin}
+      className="hidden lg:flex absolute top-3 right-3 text-gray-500 hover:text-gray-300 transition-colors p-1"
+      title={isPinned ? "Unpin panel" : "Pin panel"}
+    >
+      {isPinned ? <Pin size={16} className="text-emerald-500" /> : <PinOff size={16} />}
+    </button>
+
     {routeStatus && (
-      <div className={`rounded-lg border px-3 py-2 text-sm font-medium ${routeStatusClassNames[routeStatus.tone]}`}>
+      <div className={`rounded-lg border px-3 py-2 text-sm font-medium mt-4 ${routeStatusClassNames[routeStatus.tone]}`}>
         {routeStatus.message}
       </div>
     )}

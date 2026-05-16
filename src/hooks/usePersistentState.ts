@@ -17,6 +17,7 @@ type PersistentStateEnvelope = {
 };
 
 type PersistentStateOptions<T> = {
+  legacyKeys?: readonly string[];
   sanitize?: (value: unknown) => T | undefined;
   warnSerializedLength?: number;
 };
@@ -77,9 +78,15 @@ export function usePersistentState<T>(
   defaultValue: T,
   options: PersistentStateOptions<T> = {}
 ): [T, (value: T) => void] {
+  const legacyKeySignature = options.legacyKeys?.join("\u0000") ?? "";
+
   const [state, setState] = useState<T>(() => {
-    const saved = localStorage.getItem(key);
-    if (saved !== null) {
+    const keysToTry = [key, ...(options.legacyKeys ?? [])];
+
+    for (const storageKey of keysToTry) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved === null) continue;
+
       try {
         const decoded = decodePersistentValue(saved);
         if (options.sanitize) {
@@ -89,9 +96,10 @@ export function usePersistentState<T>(
           return decoded as T;
         }
       } catch (e) {
-        console.error(`Error parsing localStorage key "${key}":`, e);
+        console.error(`Error parsing localStorage key "${storageKey}":`, e);
       }
     }
+
     return defaultValue;
   });
 
@@ -103,7 +111,13 @@ export function usePersistentState<T>(
       );
     }
     localStorage.setItem(key, serialized);
-  }, [key, options.warnSerializedLength, state]);
+    if (legacyKeySignature) {
+      legacyKeySignature
+        .split("\u0000")
+        .filter(Boolean)
+        .forEach((legacyKey) => localStorage.removeItem(legacyKey));
+    }
+  }, [key, legacyKeySignature, options.warnSerializedLength, state]);
 
   return [state, setState];
 }

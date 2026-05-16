@@ -3,26 +3,31 @@ import {
     NOTE_HIT_WINDOW_MS,
     NOTE_TARGET_LINE_PERCENT,
 } from "./constants";
-import { generateMelodicaLayout, getMelodicaKeyboardGeometry, getSuzukiNoteColor } from "../utils/utils";
+import { generateMelodicaLayout, getMelodicaKeyboardGeometry, getCandyNoteColor } from "../utils/utils";
 import type { MelodicaKeyCount } from "../utils/utils";
-import type { PlaybackEvent, PlaybackTiming, VisibleGameEvent } from "./types";
+import type { VisibleGameEvent } from "./types";
 
 export type NoteHighwayRenderItem = {
     key: string;
     color: string;
+    colorBody: string;
     wasHit: boolean;
     isVisible: boolean;
     showClarity: string | false | null;
     clarityValue: number;
     noteName: string;
-    isOverblow: boolean;
-    bendDepth: number;
     laneIndex: number;
     htmlLeft: number;
     htmlTop: number;
     htmlHeight: number;
     htmlWidth: number;
     isSounding: boolean;
+    /** Deterministic seed for sparkle placement on this candy block. */
+    sparkleSeed: number;
+    /** Whether this note is a black key (sharp/flat) — controls corner rounding. */
+    isBlack: boolean;
+    /** Finger number 1–5, if finger hints are enabled. */
+    finger?: number;
 };
 
 type BuildNoteHighwayRenderDataOptions = {
@@ -33,32 +38,11 @@ type BuildNoteHighwayRenderDataOptions = {
     shortestNoteDurationMs: number;
     visibleGameEvents: VisibleGameEvent[];
     visualPlayheadMs: number;
-    playbackEvents: PlaybackEvent[];
-    playbackTimeline: PlaybackTiming[];
+    /** Map of "eventIndex-noteIndex" → finger 1–5 */
+    fingerAssignments?: Map<string, number>;
 };
 
 const CONTAINER_HEIGHT_PX = 520;
-
-export const getBendDepth = (tab: string) => {
-    const bendMatch = tab.match(/('+|"+)$/);
-    if (!bendMatch) return 0;
-
-    return bendMatch[1].includes('"') ? 2 : bendMatch[1].length;
-};
-
-export const getTargetWidthPct = (tab: string, containerWidthPx: number) => {
-    const isOverblow = tab.toLowerCase().endsWith("o");
-    const bendDepth = getBendDepth(tab);
-    const minWidthPct = containerWidthPx > 0 ? (40 / containerWidthPx) * 100 : 4.0;
-
-    let targetPct = 8.4; // Natural note
-    if (isOverblow) targetPct = 11;
-    else if (bendDepth === 1) targetPct = 6.5;
-    else if (bendDepth === 2) targetPct = 4.8;
-    else if (bendDepth >= 3) targetPct = 3.0;
-
-    return Math.max(targetPct, minWidthPct);
-};
 
 export const buildNoteHighwayRenderData = ({
     clarity,
@@ -68,8 +52,7 @@ export const buildNoteHighwayRenderData = ({
     shortestNoteDurationMs,
     visibleGameEvents,
     visualPlayheadMs,
-    playbackEvents,
-    playbackTimeline,
+    fingerAssignments,
 }: BuildNoteHighwayRenderDataOptions): NoteHighwayRenderItem[] => {
     const keyboardGeometry = getMelodicaKeyboardGeometry(generateMelodicaLayout(keyCount));
     const geometryByMidi = new Map(
@@ -80,7 +63,9 @@ export const buildNoteHighwayRenderData = ({
         return event.notes.map((note, noteIndex) => {
             if (!note.shouldPlay) return null;
 
-            const tab = event.tabs[noteIndex] || event.tabs[0] || "";
+            const fingerKey = `${globalEventIndex}-${noteIndex}`;
+            const finger = fingerAssignments?.get(fingerKey);
+
             const noteMidi = Note.midi(note.name);
             const melodicaKey = noteMidi === null ? null : geometryByMidi.get(noteMidi);
             if (!melodicaKey) return null;
@@ -100,75 +85,44 @@ export const buildNoteHighwayRenderData = ({
 
             const minWidthPct = containerWidth > 0 ? (28 / containerWidth) * 100 : 2.8;
             const targetWidth = Math.max(melodicaKey.widthPct * 0.66, minWidthPct);
-            let bottomWidth = targetWidth;
-            const topWidth = targetWidth;
 
-            let yBottom = topPercent;
             const yTop = topPercent - heightPercent;
-
-            let isScoop = false;
-
-            if (globalEventIndex > 0) {
-                const prevTiming = playbackTimeline[globalEventIndex - 1];
-                if (prevTiming && Math.abs(prevTiming.endMs - timing.startMs) < 10) {
-                    const prevEvent = playbackEvents[globalEventIndex - 1];
-                    const prevNoteIndex = prevEvent.notes.findIndex((prevNote) => {
-                        const previousMidi = Note.midi(prevNote.name);
-                        const previousKey = previousMidi === null ? null : geometryByMidi.get(previousMidi);
-                        return previousKey?.index === melodicaKey.index;
-                    });
-                    if (prevNoteIndex !== -1) {
-                        const prevTab = prevEvent.tabs[prevNoteIndex];
-                        if (prevTab !== tab) {
-                            bottomWidth = targetWidth;
-                            isScoop = true;
-                        }
-                    }
-                }
-            }
-
-            if (!isScoop) {
-                yBottom -= 0.4;
-            }
+            const yBottom = topPercent - 0.4;
 
             const isHitWindow = visualPlayheadMs >= timing.startMs - NOTE_HIT_WINDOW_MS && visualPlayheadMs <= noteEndMs + NOTE_HIT_WINDOW_MS;
-            const isStrictlyActive = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= noteEndMs;
             const wasHit = lastHitIndex === globalEventIndex && isHitWindow;
             const isSounding = visualPlayheadMs >= timing.startMs && visualPlayheadMs <= noteEndMs;
 
-            let color = "#374151";
+            const candy = getCandyNoteColor(note.name);
+            let color = candy.shell;
+            let colorBody = candy.body;
             if (wasHit) {
                 color = "#34d399";
-            } else if (isStrictlyActive) {
-                color = getSuzukiNoteColor(note.name);
-            } else {
-                color = getSuzukiNoteColor(note.name);
+                colorBody = "#059669";
             }
 
-            const isOverblow = false;
-            const bendDepth = 0;
             const centerX = melodicaKey.centerPct;
-
             const isVisible = !(yBottom < -10 || yTop > 110);
-            const maxHtmlWidth = Math.max(topWidth, bottomWidth);
 
             return {
                 key: `${globalEventIndex}-${note.name}-${noteIndex}`,
                 color,
+                colorBody,
                 wasHit,
                 isVisible,
                 showClarity: isHitWindow && !wasHit && clarity,
                 clarityValue: clarity ? parseFloat(clarity) : 0,
                 noteName: Note.pitchClass(note.name),
-                isOverblow,
-                bendDepth,
                 laneIndex,
-                htmlLeft: centerX - maxHtmlWidth / 2,
+                htmlLeft: centerX - targetWidth / 2,
                 htmlTop: yTop,
                 htmlHeight: heightPercent,
-                htmlWidth: maxHtmlWidth,
+                htmlWidth: targetWidth,
                 isSounding,
+                sparkleSeed: globalEventIndex * 100 + noteIndex,
+                isBlack: melodicaKey.isBlack,
+                finger,
             };
-        }).filter((item): item is NoteHighwayRenderItem => item !== null);
+        }).filter((item): item is NonNullable<typeof item> => item !== null);
     });
 };

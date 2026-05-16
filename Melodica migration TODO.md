@@ -2,14 +2,26 @@
 
 ## In progress
 
-- [x] Wire a converted melodica SoundFont once an SF2/SF3 is available.
+- [ ] Continue remaining `CODE_REVIEW.md` medium-risk hardening items.
 
 ## Pending
 
+- [ ] Add a React error boundary around route rendering.
+- [ ] Add a hard timeout to SoundFont preset polling.
+- [ ] Review whether `usePitchDetector` should reuse `AudioContext` across listen toggles.
+- [ ] Name note-highway timing and sizing constants currently embedded as magic numbers.
 - [x] Convert `public/melodica_vib/melodica vib.sfz` to SF2 or SF3.
 
 ## Done
 
+- [x] Create code-review fix plan from `CODE_REVIEW.md`.
+- [x] Rename `TestFileLoader` to `MusicXML`.
+- [x] Move active localStorage keys to `melodicatrainer_*` with one-time migration from `harptrainer_*`.
+- [x] Remove dead bend/overblow rendering data from the melodica note highway.
+- [x] Delete the unused `src/Harmonica/Harmonica.tsx` route component.
+- [x] Rename active export helpers from HarpTabs wording to melodica notes wording.
+- [x] Optimize legacy harmonica transpose search to build the layout lookup once per run.
+- [x] Wire a converted melodica SoundFont once an SF2/SF3 is available.
 - [x] Read migration brief.
 - [x] Create migration plan.
 - [x] Add a melodica domain model with keyboard ranges and note/key mapping.

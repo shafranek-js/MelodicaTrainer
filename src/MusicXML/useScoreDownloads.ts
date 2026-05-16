@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { exportHarpTabsText } from "./musicXmlTransform";
+import { exportMelodicaNotesText } from "./musicXmlTransform";
 
 type DownloadFileOptions = {
   content: BlobPart;
@@ -14,9 +14,6 @@ type UseScoreDownloadsOptions = {
 
 export const getTransposedXmlDownloadFileName = (fileName: string | null) =>
   fileName ? `transposed_${fileName}` : "transposed.musicxml";
-
-export const getHarpTabsDownloadFileName = (fileName: string | null) =>
-  fileName ? `${fileName.replace(/\.[^/.]+$/, "")}_tabs.txt` : "tabs.txt";
 
 export const getMelodicaNotesDownloadFileName = (fileName: string | null) =>
   fileName ? `${fileName.replace(/\.[^/.]+$/, "")}_melodica_notes.txt` : "melodica_notes.txt";
@@ -56,7 +53,7 @@ export const useScoreDownloads = ({
     if (!fileContent) return;
 
     downloadBrowserFile({
-      content: exportHarpTabsText(fileContent),
+      content: exportMelodicaNotesText(fileContent),
       fileName: getMelodicaNotesDownloadFileName(fileName),
       mimeType: "text/plain",
     });

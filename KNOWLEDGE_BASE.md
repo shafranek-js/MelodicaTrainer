@@ -36,6 +36,23 @@ Primary route files:
 - `src/Practice/Practice.tsx`: practice and bend trainer.
 - `src/Circle/Circle.tsx`: circle-of-fifths theory explorer.
 
+## UI Layout and Controls
+
+The application uses an immersive, full-screen layout where supporting panels are implemented as collapsible, sliding drawers to maximize the space available for the Note Highway:
+
+- **Menu Panel (Top, cascading):** Hovering the absolute top edge of the screen reveals the global menu.
+- **Score Panel (Top, underneath Menu):** Contains OSMD/AlphaTab sheet music. Slides down when hovering the area just below the menu.
+- **Settings Panel (Left):** Hovering the left edge slides out score settings.
+- **Transpose Controls (Right):** Hovering the right edge slides out transposition and view options.
+- **Pinning:** Each panel has a "Pin" button to toggle persistent visibility (saved in local storage).
+- **Global Toggle:** Right-clicking anywhere on the Note Highway immediately toggles the pinned state of all four panels at once.
+
+**Playback Controls:**
+- `Space` or `Left-Click` on Note Highway: Toggle Play/Pause.
+- `Escape`: Stop playback and rewind to the start.
+- `+` / `-` keys: Increase / Decrease tempo by 5 BPM.
+- `Mouse Wheel` on Note Highway: Scroll up/down to adjust tempo by 5 BPM (triggers a temporary visual BPM overlay).
+
 ## Commands And Validation
 
 Use these commands:
@@ -165,6 +182,7 @@ Hit detection currently requires:
 - Detected MIDI membership in the target event's MIDI set.
 - Absolute cents deviation less than or equal to `NOTE_PITCH_TOLERANCE_CENTS`.
 - Pitch detector output has already passed clarity/RMS/stability filtering.
+- Re-articulation for consecutive identical notes (a previously "consumed" pitch must stop or change before it can be scored again).
 
 Miss detection:
 

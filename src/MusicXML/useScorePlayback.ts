@@ -52,6 +52,7 @@ type UseScorePlaybackOptions = {
   sheetScrollRef: MutableRefObject<HTMLDivElement | null>;
   shortestNoteDurationMs: number;
   stopGpCursorAnimation: () => void;
+  studyModeFreezeRef?: MutableRefObject<boolean>;
   tempoScaleRef: MutableRefObject<number>;
 };
 
@@ -87,6 +88,7 @@ export const useScorePlayback = ({
   sheetScrollRef,
   shortestNoteDurationMs,
   stopGpCursorAnimation,
+  studyModeFreezeRef,
   tempoScaleRef,
 }: UseScorePlaybackOptions) => {
   const clearPlaybackResources = useCallback(() => {
@@ -166,10 +168,18 @@ export const useScorePlayback = ({
     setCurrentEventIndex(startIndex);
     moveCursorThroughEventRef.current(startIndex, durMs);
     playNotes(event.notes, effTempo);
-    playbackTimerRef.current = window.setTimeout(() => {
+
+    const scheduleNext = () => {
       if (playbackRunRef.current !== runId) return;
-      schedulePlayback(startIndex + 1, runId);
-    }, durMs);
+      if (studyModeFreezeRef?.current) {
+        // Poll until unfrozen
+        playbackTimerRef.current = window.setTimeout(scheduleNext, 50);
+      } else {
+        schedulePlayback(startIndex + 1, runId);
+      }
+    };
+
+    playbackTimerRef.current = window.setTimeout(scheduleNext, durMs);
   }, [
     audioContextRef,
     gameClockOffsetMsRef,
@@ -183,6 +193,7 @@ export const useScorePlayback = ({
     setCurrentEventIndex,
     shortestNoteDurationMs,
     stopPlayback,
+    studyModeFreezeRef,
     tempoScaleRef,
   ]);
 
@@ -276,11 +287,26 @@ export const useScorePlayback = ({
   useEffect(() => {
     if (!isPlaying) return;
 
+    let wasFrozen = false;
+
     const updateClock = () => {
-      setCurrentGameTimeMs(
-        gameClockOffsetMsRef.current +
-        (performance.now() - gameClockStartMsRef.current) * tempoScaleRef.current
-      );
+      const isFrozen = studyModeFreezeRef?.current;
+      
+      if (isFrozen) {
+        if (!wasFrozen) {
+          // Just froze. Bake the accumulated time into the offset.
+          gameClockOffsetMsRef.current += (performance.now() - gameClockStartMsRef.current) * tempoScaleRef.current;
+          wasFrozen = true;
+        }
+        // Keep sliding the start time forward so elapsed time stays 0 while frozen.
+        gameClockStartMsRef.current = performance.now();
+      } else {
+        wasFrozen = false;
+        setCurrentGameTimeMs(
+          gameClockOffsetMsRef.current +
+          (performance.now() - gameClockStartMsRef.current) * tempoScaleRef.current
+        );
+      }
       gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
     };
 
@@ -298,6 +324,7 @@ export const useScorePlayback = ({
     isPlaying,
     setCurrentGameTimeMs,
     tempoScaleRef,
+    studyModeFreezeRef,
   ]);
 
   return {

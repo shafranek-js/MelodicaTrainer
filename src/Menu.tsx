@@ -1,10 +1,15 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gauge, Github, Pause, Play, RotateCcw } from "lucide-react";
+import { Gauge, Github, Minus, Pause, Play, Plus, RotateCcw, Pin, PinOff } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
 import { usePlaybackToolbarState } from "./PlaybackToolbarContext";
 
-const Menu: React.FC = () => {
+type MenuProps = {
+  isPinned: boolean;
+  onTogglePin: () => void;
+};
+
+const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
   const location = useLocation();
   const isTabsPage = location.pathname === "/musicxml";
   const tabsState = usePlaybackToolbarState();
@@ -22,7 +27,7 @@ const Menu: React.FC = () => {
   } = tabsState ?? {};
 
   return (
-    <nav className="flex flex-col border-b border-gray-700 bg-gray-900 shadow-lg shrink-0 z-50">
+    <nav className="flex flex-col border-b border-gray-700 bg-gray-900 shadow-lg shrink-0 z-50 relative">
       <div className="flex flex-wrap items-center justify-between gap-4 p-2 sm:px-6">
         {/* Navigation Links */}
         <div className="flex items-center gap-4 sm:gap-6">
@@ -85,17 +90,33 @@ const Menu: React.FC = () => {
 
             {/* Tempo Slider */}
             {tempo !== undefined && setTempo && (
-              <div className="flex items-center gap-2 rounded bg-gray-800/50 px-2 py-1 border border-gray-700/50">
-                <Gauge size={12} className="text-gray-400" />
+              <div className="flex items-center gap-1.5 rounded bg-gray-800/50 px-2 py-1 border border-gray-700/50">
+                <Gauge size={12} className="text-gray-400 shrink-0" />
+                <button
+                  type="button"
+                  onClick={() => setTempo(Math.max(20, tempo - 5))}
+                  className="flex h-5 w-5 items-center justify-center rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition shrink-0"
+                  title="-5 BPM"
+                >
+                  <Minus size={10} />
+                </button>
                 <input
                   type="range"
                   min="20"
                   max="240"
                   value={tempo}
                   onChange={(e) => setTempo(Number(e.target.value))}
-                  className="w-20 h-1 accent-emerald-500"
+                  className="w-28 h-1 accent-emerald-500"
                 />
-                <span className="min-w-[45px] text-[10px] font-mono text-emerald-400">{tempo} BPM</span>
+                <button
+                  type="button"
+                  onClick={() => setTempo(Math.min(240, tempo + 5))}
+                  className="flex h-5 w-5 items-center justify-center rounded bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition shrink-0"
+                  title="+5 BPM"
+                >
+                  <Plus size={10} />
+                </button>
+                <span className="min-w-[45px] text-[10px] font-mono text-emerald-400 text-right">{tempo} BPM</span>
               </div>
             )}
 
@@ -121,6 +142,13 @@ const Menu: React.FC = () => {
 
         {/* Right-side Utils */}
         <div className="flex items-center gap-4">
+          <button
+            onClick={onTogglePin}
+            className="hidden lg:flex text-gray-500 hover:text-gray-300 transition-colors p-1"
+            title={isPinned ? "Unpin menu" : "Pin menu"}
+          >
+            {isPinned ? <Pin size={16} className="text-emerald-500" /> : <PinOff size={16} />}
+          </button>
           <div className="shrink-0 rounded bg-cyan-800/50 px-2 py-0.5 text-[10px] text-white border border-cyan-700/50">
             <NotationSwitch />
           </div>

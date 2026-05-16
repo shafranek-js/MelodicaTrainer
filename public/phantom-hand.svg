@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280" fill="none">
+  <!-- Right hand, top-down view, semi-transparent phantom style -->
+
+  <!-- Palm -->
+  <path id="palm" d="M120 120 Q200 60 280 100 Q320 120 310 160 Q300 200 250 210 Q180 220 130 190 Q100 170 110 140 Z"
+        fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+
+  <!-- Finger 1: Thumb -->
+  <g id="right-finger-1" class="phantom-finger">
+    <path d="M120 140 Q90 120 70 80 Q55 50 75 40 Q95 32 110 60 Q125 90 130 130 Z"
+          fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+    <ellipse cx="72" cy="48" rx="14" ry="10" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+  </g>
+
+  <!-- Finger 2: Index -->
+  <g id="right-finger-2" class="phantom-finger">
+    <path d="M155 115 Q150 55 155 20 Q158 5 168 8 Q178 12 175 30 Q170 65 168 115 Z"
+          fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+    <ellipse cx="163" cy="16" rx="12" ry="10" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+  </g>
+
+  <!-- Finger 3: Middle -->
+  <g id="right-finger-3" class="phantom-finger">
+    <path d="M200 110 Q200 45 202 10 Q204 0 215 2 Q226 4 224 20 Q220 55 216 110 Z"
+          fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+    <ellipse cx="210" cy="8" rx="12" ry="11" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+  </g>
+
+  <!-- Finger 4: Ring -->
+  <g id="right-finger-4" class="phantom-finger">
+    <path d="M245 115 Q250 55 255 20 Q258 8 268 12 Q278 16 274 35 Q268 65 262 115 Z"
+          fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+    <ellipse cx="260" cy="16" rx="11" ry="10" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+  </g>
+
+  <!-- Finger 5: Pinky -->
+  <g id="right-finger-5" class="phantom-finger">
+    <path d="M290 120 Q305 70 308 35 Q310 22 320 28 Q330 34 325 50 Q318 80 305 125 Z"
+          fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+    <ellipse cx="314" cy="32" rx="10" ry="9" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+  </g>
+</svg>

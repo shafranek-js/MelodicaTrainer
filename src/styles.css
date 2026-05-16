@@ -36,3 +36,51 @@
 .alpha-tab-dark .at-cursor-bar {
     background: rgba(52, 211, 153, 0.2) !important;
 }
+
+/* ── Candy Note Highway Animations ── */
+
+/* Block springs in from above with a bounce */
+@keyframes candyDrop {
+  0%   { transform: translateY(-24px) scale(0.75); opacity: 0; }
+  60%  { transform: translateY(2px) scale(1.04); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Quick scale-pop when the note is hit */
+@keyframes candyPop {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* Flash overlay that expands and fades on hit */
+@keyframes candyFlash {
+  0%   { opacity: 0.7; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+/* Single sparkle particle flies outward */
+@keyframes candySparkle1 {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(-16px, -20px) scale(0); opacity: 0; }
+}
+@keyframes candySparkle2 {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(16px, -18px) scale(0); opacity: 0; }
+}
+@keyframes candySparkle3 {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(-18px, 14px) scale(0); opacity: 0; }
+}
+@keyframes candySparkle4 {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(18px, 16px) scale(0); opacity: 0; }
+}
+@keyframes candySparkle5 {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(0px, -24px) scale(0); opacity: 0; }
+}
+@keyframes candySparkle6 {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(0px, 20px) scale(0); opacity: 0; }
+}

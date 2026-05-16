@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
 import type { freqToNoteAndCents } from "../utils/utils";
 import {
   getMissedEventIndexes,
@@ -15,6 +16,9 @@ type UseNoteHighwayScoringOptions = {
   playbackEvents: PlaybackEvent[];
   playbackTimeline: PlaybackTiming[];
   targetEventIndex: number | null;
+  isStudyMode?: boolean;
+  studyModeNextIndexRef?: MutableRefObject<number>;
+  studyModeOnHit?: (eventIndex: number) => void;
 };
 
 const emptyGameStats: GameStats = {
@@ -30,16 +34,50 @@ export const useNoteHighwayScoring = ({
   playbackEvents,
   playbackTimeline,
   targetEventIndex,
+  isStudyMode,
+  studyModeNextIndexRef,
+  studyModeOnHit,
 }: UseNoteHighwayScoringOptions) => {
   const [gameStats, setGameStats] = useState<GameStats>(emptyGameStats);
   const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
   const scoredEventIndexesRef = useRef(new Set<number>());
+  const consumedPitchNameRef = useRef<string | null>(null);
+
+  // Clear consumed pitch lock when the user stops playing or changes notes.
+  useEffect(() => {
+    if (!detectedNote) {
+      consumedPitchNameRef.current = null;
+    } else if (consumedPitchNameRef.current && detectedNote.note !== consumedPitchNameRef.current) {
+      consumedPitchNameRef.current = null;
+    }
+  }, [detectedNote]);
 
   const isCurrentHit = isDetectedPitchHit({
     currentGameEvent,
     detectedNote,
     targetEventIndex,
   });
+
+  // In study mode, override the target to the next unplayed event.
+  // time-based targetEventIndex can get stuck on an already-scored event
+  // when consecutive events share the same startMs.
+  const effectiveTarget = isStudyMode && studyModeNextIndexRef
+    ? studyModeNextIndexRef.current
+    : targetEventIndex;
+
+  // Similarly, check the hit against the effective target event.
+  const effectiveHit = isStudyMode && studyModeNextIndexRef
+    ? (effectiveTarget !== null &&
+       detectedNote &&
+       isDetectedPitchHit({
+         currentGameEvent: playbackEvents[effectiveTarget],
+         detectedNote,
+         targetEventIndex: effectiveTarget,
+       }))
+    : isCurrentHit;
+    
+  const isFreshHit = Boolean(effectiveHit && detectedNote && detectedNote.note !== consumedPitchNameRef.current);
+
   const accuracy =
     gameStats.hits + gameStats.misses > 0
       ? Math.round((gameStats.hits / (gameStats.hits + gameStats.misses)) * 100)
@@ -49,25 +87,34 @@ export const useNoteHighwayScoring = ({
     setGameStats(emptyGameStats);
     setLastHitIndex(null);
     scoredEventIndexesRef.current = new Set();
+    consumedPitchNameRef.current = null;
   }, []);
 
   useEffect(() => {
     if (
-      targetEventIndex === null ||
-      !isCurrentHit ||
-      scoredEventIndexesRef.current.has(targetEventIndex)
+      effectiveTarget === null ||
+      !isFreshHit ||
+      scoredEventIndexesRef.current.has(effectiveTarget)
     ) {
       return;
     }
 
-    scoredEventIndexesRef.current.add(targetEventIndex);
-    setLastHitIndex(targetEventIndex);
+    scoredEventIndexesRef.current.add(effectiveTarget);
+    setLastHitIndex(effectiveTarget);
+    if (detectedNote) {
+      consumedPitchNameRef.current = detectedNote.note;
+    }
+    
     setGameStats((stats) => ({
       ...stats,
       hits: stats.hits + 1,
       streak: stats.streak + 1,
     }));
-  }, [isCurrentHit, targetEventIndex]);
+    // Study mode: always notify on hit. The handler checks freeze state.
+    if (isStudyMode && effectiveTarget !== null) {
+      studyModeOnHit?.(effectiveTarget);
+    }
+  }, [isFreshHit, effectiveTarget, isStudyMode, studyModeOnHit, detectedNote]);
 
   useEffect(() => {
     const missedIndexes = getMissedEventIndexes({

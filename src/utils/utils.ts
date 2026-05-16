@@ -16,7 +16,8 @@ export {
   harmonicaLayoutDisplayRows,
 } from "./harmonicaLayout";
 export { freqToNoteAndCents } from "./pitch";
-export { getSuzukiNoteColor } from "./noteColors";
+export { getSuzukiNoteColor, getCandyNoteColor } from "./noteColors";
+export type { CandyColor } from "./noteColors";
 export type {
   MelodicaKey,
   MelodicaKeyCount,

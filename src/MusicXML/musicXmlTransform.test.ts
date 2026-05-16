@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createFirstStaffDisplayXml,
-  exportHarpTabsText,
+  exportMelodicaNotesText,
   injectHarmonicaTabs,
   transposeKeySignatureFifths,
   transposeNoteName,
@@ -237,9 +237,9 @@ describe("createFirstStaffDisplayXml", () => {
   });
 });
 
-describe("exportHarpTabsText", () => {
+describe("exportMelodicaNotesText", () => {
   it("exports first-staff fingerings as measure lines", () => {
-    const output = exportHarpTabsText(`
+    const output = exportMelodicaNotesText(`
       <score-partwise>
         <part>
           <measure>
