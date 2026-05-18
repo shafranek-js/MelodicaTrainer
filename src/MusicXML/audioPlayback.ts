@@ -187,6 +187,22 @@ export class AudioPlaybackService {
     this.synth?.stopAll();
   }
 
+  releaseSynthesizer() {
+    this.initGeneration += 1;
+    this.pendingSfName = null;
+    this.initPromise = null;
+    this.stopAudioNodes();
+
+    try {
+      (this.synth as { disconnect?: () => void } | null)?.disconnect?.();
+    } catch {
+      // Some synth implementations do not expose a stable disconnect lifecycle.
+    }
+
+    this.synth = null;
+    this.currentSfName = null;
+  }
+
   getAudioOutputLatencyMs(audioContext: AudioContext | null) {
     if (!audioContext) return 0;
 
@@ -248,6 +264,8 @@ export const changeInstrument = (program: number, bank: number = 0) =>
 
 export const stopAudioNodes = (nodes?: Set<AudioScheduledSourceNode>) =>
   audioPlaybackService.stopAudioNodes(nodes);
+
+export const releaseSynthesizer = () => audioPlaybackService.releaseSynthesizer();
 
 export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) =>
   audioPlaybackService.getAudioOutputLatencyMs(audioContext);

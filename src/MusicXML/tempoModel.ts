@@ -21,6 +21,16 @@ export const getEffectiveTempoBpm = ({
   userTempoBpm,
 }: TempoState) => userTempoBpm ?? detectedTempoBpm;
 
+export const getTempoScale = ({
+  detectedTempoBpm,
+  userTempoBpm,
+}: TempoState) => {
+  const effectiveTempoBpm = getEffectiveTempoBpm({ detectedTempoBpm, userTempoBpm });
+  const baseTempoBpm = clampTempoBpm(detectedTempoBpm);
+
+  return effectiveTempoBpm / baseTempoBpm;
+};
+
 export const getResetTempoState = (): TempoState => ({
   detectedTempoBpm: DEFAULT_TEMPO_BPM,
   userTempoBpm: null,

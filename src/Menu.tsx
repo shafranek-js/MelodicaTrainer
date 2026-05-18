@@ -63,6 +63,14 @@ const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
           >
             Practice
           </Link>
+          <Link
+            to="/help"
+            className={`whitespace-nowrap text-sm font-bold transition-colors ${
+              location.pathname === "/help" ? "text-green-400" : "text-white hover:text-green-400"
+            }`}
+          >
+            Help
+          </Link>
         </div>
 
         {/* Global Controls & Stats (Only on Tabs page) */}

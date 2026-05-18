@@ -11,6 +11,7 @@ import { PlaybackToolbarProvider } from "./PlaybackToolbarProvider";
 import { usePersistentState } from "./hooks/usePersistentState";
 
 const Circle = lazy(() => import("./Circle/Circle"));
+const Help = lazy(() => import("./Help/Help"));
 const MusicXML = lazy(() => import("./MusicXML/MusicXML"));
 const Practice = lazy(() => import("./Practice/Practice"));
 
@@ -63,6 +64,7 @@ function App() {
                 <Route path="/melodica" element={<Melodica />} />
                 <Route path="/practice" element={<Practice />} />
                 <Route path="/musicxml" element={<MusicXML />} />
+                <Route path="/help" element={<Help />} />
                 <Route path="/harmonica" element={<Navigate to="/melodica" replace />} />
                 <Route path="/" element={<Navigate to="/melodica" replace />} />
               </Routes>

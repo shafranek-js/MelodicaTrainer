@@ -1,24 +1,15 @@
 import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import * as alphaTab from "@coderline/alphatab";
 import { parseAlphaTabScore } from "./alphaTabParser";
-import { onAlphaTabEvent, onAlphaTabEventOf } from "./alphaTabEvents";
-import { createAlphaTabSettings } from "./alphaTabSettings";
-import { getAutoFitZoom, measureRenderedContentHeight } from "./alphaTabAutoFit";
 import {
     applySelectedTrackRenderState,
-    getSelectedTrack,
     getTracksInfo,
-    hideScoreHeaderFooter,
     type TrackInfo,
 } from "./alphaTabTrack";
 import { musicXmlDebugLogger } from "./debugLogger";
+import { useAlphaTabApi } from "./useAlphaTabApi";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent } from "./types";
-
-type WindowWithAlphaTabDebug = Window & {
-    alphaTabApi?: alphaTab.AlphaTabApi;
-    alphaTabScore?: alphaTab.model.Score;
-};
 
 export interface AlphaTabViewerRef {
     playPause: () => void;
@@ -111,9 +102,9 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
                 }
             }
         },
-        setTempo: (tempo: number) => {
+        setTempo: (tempoScale: number) => {
             if (apiRef.current) {
-                apiRef.current.playbackSpeed = tempo / 100;
+                apiRef.current.playbackSpeed = tempoScale;
             }
         },
         setTickPosition: (tick: number) => {
@@ -127,161 +118,26 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
         }
     }));
 
-    useEffect(() => {
-        if (!alphaTabRef.current || !containerRef.current || !fileData) return;
-
-        let api: alphaTab.AlphaTabApi | null = null;
-        onReadyChangeRef.current?.(false);
-        lastTickRef.current = 0;
-        resetAutoFitZoom();
-
-        try {
-            const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/+$/, '') + '/';
-            const sfPath = `${baseUrl}soundfont/sonivox.sf2`;
-            
-            musicXmlDebugLogger.log("AlphaTab: Initializing API core...");
-
-            api = new alphaTab.AlphaTabApi(
-                alphaTabRef.current,
-                createAlphaTabSettings({
-                    baseUrl,
-                    scrollElement: containerRef.current,
-                    soundFontPath: sfPath,
-                })
-            );
-
-            apiRef.current = api;
-            (window as WindowWithAlphaTabDebug).alphaTabApi = api;
-
-            const scheduleAutoFit = () => {
-                if (autoFitFrameRef.current !== null) {
-                    window.cancelAnimationFrame(autoFitFrameRef.current);
-                }
-
-                autoFitFrameRef.current = window.requestAnimationFrame(() => {
-                    autoFitFrameRef.current = null;
-
-                    const scoreZoomElement = scoreZoomRef.current;
-                    const scoreElement = alphaTabRef.current;
-                    const containerElement = containerRef.current;
-                    if (apiRef.current !== api || !scoreZoomElement || !scoreElement || !containerElement) return;
-
-                    resetAutoFitZoom();
-                    const availableHeight = containerElement.clientHeight;
-                    const renderedHeight = measureRenderedContentHeight(scoreElement);
-                    if (renderedHeight > 0) {
-                        onRenderedHeightChangeRef.current?.(renderedHeight);
-                    }
-                    const nextZoom = getAutoFitZoom(availableHeight, renderedHeight);
-                    if (nextZoom === null) {
-                        return;
-                    }
-
-                    scoreZoomElement.style.setProperty("zoom", String(nextZoom));
-                });
-            };
-
-            const notifyScoreLoaded = (score: alphaTab.model.Score) => {
-                const selected = getSelectedTrack(score, trackIndexRef.current);
-                const selectedTrackIndex = selected?.index ?? 0;
-                const { events, tempo } = parseAlphaTabScore(score, keyCountRef.current, selectedTrackIndex, transposeRef.current);
-                onScoreLoadedRef.current(events, score, getTracksInfo(score), tempo);
-            };
-
-            onAlphaTabEventOf(api.scoreLoaded, (score) => {
-                musicXmlDebugLogger.log("AlphaTab: Score loaded into API.");
-                (window as WindowWithAlphaTabDebug).alphaTabScore = score;
-                hideScoreHeaderFooter(score);
-
-                try {
-                    if (renderFrameRef.current !== null) {
-                        window.cancelAnimationFrame(renderFrameRef.current);
-                    }
-                    renderFrameRef.current = window.requestAnimationFrame(() => {
-                        renderFrameRef.current = null;
-                        try {
-                            applySelectedTrackRenderState(api, trackIndexRef.current, transposeRef.current);
-                        } catch {
-                            musicXmlDebugLogger.warn("AlphaTab: Failed to apply selected track.");
-                        }
-                    });
-                } catch {
-                    musicXmlDebugLogger.warn("AlphaTab: Failed to apply selected track.");
-                }
-                
-                notifyScoreLoaded(score);
-            });
-
-            onAlphaTabEvent(api.postRenderFinished, () => {
-                musicXmlDebugLogger.log("AlphaTab: Render finished.");
-                scheduleAutoFit();
-            });
-
-            onAlphaTabEvent(api.playerReady, () => {
-                musicXmlDebugLogger.log("AlphaTab: Player ready.");
-                onReadyChangeRef.current?.(true);
-                if (lastTickRef.current > 0) {
-                    api!.tickPosition = lastTickRef.current;
-                }
-            });
-
-            onAlphaTabEventOf(api.playerPositionChanged, (args) => {
-                lastTickRef.current = args.currentTick;
-                onTimeUpdateRef.current(args.currentTick);
-                if (!isPlaybackActiveRef.current) return;
-
-                // Internal Centered Scrolling
-                const container = containerRef.current;
-                const cursor = alphaTabRef.current?.querySelector(".at-cursor-beat") as HTMLElement;
-                if (container && cursor) {
-                    const containerRect = container.getBoundingClientRect();
-                    const cursorRect = cursor.getBoundingClientRect();
-                    const targetLeft = containerRect.width * 0.4;
-                    const offset = cursorRect.left - containerRect.left - targetLeft;
-
-                    // We use direct manipulation for speed during playback
-                    container.scrollLeft = Math.max(0, container.scrollLeft + offset);
-                }
-            });
-            onAlphaTabEvent(api.playerFinished, () => onPlaybackFinishedRef.current());
-
-            let dataToLoad: string | Uint8Array = fileData;
-            if (typeof fileData !== 'string' && !(fileData instanceof Uint8Array)) {
-                dataToLoad = new Uint8Array(Object.values(fileData));
-            }
-
-            api.load(dataToLoad);
-
-        } catch (e) {
-            console.error("AlphaTab: API Init Error", e);
-        }
-
-        return () => {
-            if (api) {
-                musicXmlDebugLogger.log("AlphaTab: Destroying API instance");
-                if (renderFrameRef.current !== null) {
-                    window.cancelAnimationFrame(renderFrameRef.current);
-                    renderFrameRef.current = null;
-                }
-                if (autoFitFrameRef.current !== null) {
-                    window.cancelAnimationFrame(autoFitFrameRef.current);
-                    autoFitFrameRef.current = null;
-                }
-                resetAutoFitZoom();
-                try {
-                    api.destroy();
-                } catch {
-                    musicXmlDebugLogger.warn("AlphaTab: Destroy failed.");
-                }
-                if (apiRef.current === api) {
-                    apiRef.current = null;
-                    delete (window as WindowWithAlphaTabDebug).alphaTabApi;
-                }
-                onReadyChangeRef.current?.(false);
-            }
-        };
-    }, [fileData, resetAutoFitZoom]);
-
+    useAlphaTabApi({
+        alphaTabRef,
+        apiRef,
+        autoFitFrameRef,
+        containerRef,
+        fileData,
+        isPlaybackActiveRef,
+        keyCountRef,
+        lastTickRef,
+        onPlaybackFinishedRef,
+        onReadyChangeRef,
+        onRenderedHeightChangeRef,
+        onScoreLoadedRef,
+        onTimeUpdateRef,
+        renderFrameRef,
+        resetAutoFitZoom,
+        scoreZoomRef,
+        trackIndexRef,
+        transposeRef,
+    });
 
     useEffect(() => {
         const api = apiRef.current;

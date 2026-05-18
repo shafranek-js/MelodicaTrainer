@@ -4,12 +4,14 @@ import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 type UseOsmdScoreOptions = {
   displayFileContent: string | null;
   isGpFile: boolean;
+  onRenderError: (error: unknown) => void;
   onRendered: () => void;
 };
 
 export const useOsmdScore = ({
   displayFileContent,
   isGpFile,
+  onRenderError,
   onRendered,
 }: UseOsmdScoreOptions) => {
   const osmdRef = useRef<HTMLDivElement>(null);
@@ -36,12 +38,18 @@ export const useOsmdScore = ({
       });
     }
 
-    osmdInstanceRef.current.load(displayFileContent).then(() => {
-      if (renderRunRef.current !== renderRun) return;
-      osmdInstanceRef.current?.render();
-      onRendered();
-    });
-  }, [displayFileContent, isGpFile, onRendered]);
+    osmdInstanceRef.current
+      .load(displayFileContent)
+      .then(() => {
+        if (renderRunRef.current !== renderRun) return;
+        osmdInstanceRef.current?.render();
+        onRendered();
+      })
+      .catch((error: unknown) => {
+        if (renderRunRef.current !== renderRun) return;
+        onRenderError(error);
+      });
+  }, [displayFileContent, isGpFile, onRenderError, onRendered]);
 
   return {
     osmdInstanceRef,

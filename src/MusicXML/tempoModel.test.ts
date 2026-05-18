@@ -7,6 +7,7 @@ import {
   DEFAULT_TEMPO_BPM,
   getEffectiveTempoBpm,
   getResetTempoState,
+  getTempoScale,
   sanitizeNullableTempo,
 } from "./tempoModel";
 
@@ -86,6 +87,12 @@ describe("tempo model", () => {
   it("uses manual tempo override over detected tempo", () => {
     expect(getEffectiveTempoBpm({ detectedTempoBpm: 200, userTempoBpm: null })).toBe(200);
     expect(getEffectiveTempoBpm({ detectedTempoBpm: 200, userTempoBpm: 90 })).toBe(90);
+  });
+
+  it("converts manual tempo to a playback scale relative to the detected tempo", () => {
+    expect(getTempoScale({ detectedTempoBpm: 120, userTempoBpm: null })).toBe(1);
+    expect(getTempoScale({ detectedTempoBpm: 120, userTempoBpm: 90 })).toBe(0.75);
+    expect(getTempoScale({ detectedTempoBpm: 120, userTempoBpm: 180 })).toBe(1.5);
   });
 
   it("sanitizes persisted manual tempo values", () => {

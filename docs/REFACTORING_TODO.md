@@ -80,3 +80,22 @@
 - [x] Вынести file import/reset flow из `MusicXML.tsx`.
 - [x] Вынести derived playback/highway view model из `MusicXML.tsx`.
 - [x] Проверить `MusicXML.tsx` на оставшиеся route-level обязанности и не дробить UI без практической пользы.
+
+## 13. Domain Split Follow-up
+- [x] Оставить `musicXmlTransform.ts` facade-файлом и разнести transform helpers по внутренним модулям.
+- [x] Разделить `fingerAssigner.ts` на fingering geometry, costs, candidates и search без изменения алгоритма.
+- [x] Вынести pure playback timing math из `useScorePlayback.ts`.
+- [x] Добавить focused tests для playback timing helpers.
+- [x] Сохранить public entrypoints: `musicXmlTransform.ts`, `assignFingers`, `FingerAssignment`, `useScorePlayback`.
+
+## 14. Runtime / Adapter Split
+- [x] Сохранить текущий baseline через `npm run lint`, `npm test`, `npm run build` и browser smoke перед новыми runtime-правками.
+- [x] Вынести playback scheduler из `useScorePlayback.ts` в internal `usePlaybackScheduler`.
+- [x] Вынести game clock loop из `useScorePlayback.ts` в internal `useGameClock`.
+- [x] Сохранить внешний контракт `useScorePlayback(options)` и группировку `callbacks / refs / state`.
+- [x] Вынести lifecycle создания/уничтожения AlphaTab API в `useAlphaTabApi`.
+- [x] Вынести wiring событий AlphaTab в `useAlphaTabEvents`.
+- [x] Сохранить `AlphaTabViewerRef` без изменения методов.
+- [x] Разделить dumb rendering дорожек, нотных плиток, keyboard/hand overlay и target-line в `NoteHighwayPanels`.
+- [x] Сохранить props `NoteHighway` и текущий scoring/timing data flow.
+- [ ] Будущий этап: убрать или реализовать явно неиспользуемое поведение `isGp` в `NoteHighway`.

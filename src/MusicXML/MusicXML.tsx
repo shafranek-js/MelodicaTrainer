@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pin, PinOff, Gauge } from "lucide-react";
 import {
   freqToNoteAndCents,
   melodicaRangeOptions,
@@ -7,7 +6,6 @@ import {
 } from "../utils/utils";
 import type { MelodicaKeyCount } from "../utils/utils";
 import { usePitchDetector } from "../hooks/usePitchDetector";
-import { NoteHighway } from "./NoteHighway";
 import { useNoteHighwayScoring } from "./useNoteHighwayScoring";
 import { usePersistentState } from "../hooks/usePersistentState";
 import { useScoreFileLoader } from "./useScoreFileLoader";
@@ -21,19 +19,28 @@ import { useScoreFileImport } from "./useScoreFileImport";
 import { useSoundFontPresets } from "./useSoundFontPresets";
 import { usePlaybackViewModel } from "./usePlaybackViewModel";
 import { useTransposeOptimizer } from "./useTransposeOptimizer";
-import { ScoreSettingsPanel } from "./ScoreSettingsPanel";
-import { TransposeControls } from "./TransposeControls";
-import AlphaTabViewer from "./AlphaTabViewer";
 import type { AlphaTabViewerRef } from "./AlphaTabViewer";
-import { useSetPlaybackToolbarState } from "../PlaybackToolbarContext";
 import {
   DEFAULT_TEMPO_BPM,
   getEffectiveTempoBpm,
+  getTempoScale,
   sanitizeNullableTempo,
 } from "./tempoModel";
 import type { PlaybackEvent } from "./types";
 import { assignFingers } from "./fingerAssigner";
 import { usePhantomHand } from "./usePhantomHand";
+import { releaseSynthesizer } from "./audioPlayback";
+import { useMusicXmlPanels } from "./useMusicXmlPanels";
+import { useStudyModePlayback } from "./useStudyModePlayback";
+import { usePlaybackToolbarSync } from "./usePlaybackToolbarSync";
+import { useMusicXmlKeyboardShortcuts } from "./useMusicXmlKeyboardShortcuts";
+import { useBpmOverlay } from "./useBpmOverlay";
+import { useEndStatsOverlay } from "./useEndStatsOverlay";
+import {
+  EndStatsOverlay,
+  MusicXmlWorkspace,
+  ScoreWindowPanel,
+} from "./MusicXmlRoutePanels";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string; };
@@ -81,17 +88,12 @@ const LEGACY_STORAGE_KEYS = {
 } as const;
 
 const MusicXML: React.FC = () => {
-  const setPlaybackToolbarState = useSetPlaybackToolbarState();
-  
   // PERSISTENT STATES
   const [transpose, setTranspose] = usePersistentState<number>("melodicatrainer_transpose", 0, { legacyKeys: LEGACY_STORAGE_KEYS.transpose, sanitize: sanitizeFiniteNumber });
   const [selectedKeyCount, setSelectedKeyCount] = usePersistentState<MelodicaKeyCount>("melodicatrainer_key_count", 32, { sanitize: sanitizeMelodicaKeyCount });
   const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("melodicatrainer_show_note_names", true, { legacyKeys: LEGACY_STORAGE_KEYS.showNoteNames, sanitize: sanitizeBoolean });
   const [fingeringGuide, setFingeringGuide] = usePersistentState<string>("melodicatrainer_fingering_guide", "numbers", { sanitize: sanitizeString });
   const [isStudyMode, setIsStudyMode] = usePersistentState<boolean>("melodicatrainer_study_mode", false, { sanitize: sanitizeBoolean });
-  const studyModeFreezeRef = useRef(false);
-  const studyModeNextIndexRef = useRef(0);
-  const [isWaiting, setIsWaiting] = useState(false);
   const [userTempoBpm, setUserTempoBpm] = usePersistentState<number | null>("melodicatrainer_user_tempo", null, { legacyKeys: LEGACY_STORAGE_KEYS.tempo, sanitize: sanitizeNullableTempo });
 
   const handleSetTempo = useCallback((newTempo: number) => {
@@ -99,17 +101,10 @@ const MusicXML: React.FC = () => {
   }, [setUserTempoBpm]);
   const [selectedSf, setSelectedSf] = usePersistentState<string>("melodicatrainer_soundfont", "melodica.sf2", { legacyKeys: LEGACY_STORAGE_KEYS.soundfont, sanitize: sanitizeSoundFont });
   const [selectedPreset, setSelectedPreset] = usePersistentState<string>("melodicatrainer_preset", "0:0", { legacyKeys: LEGACY_STORAGE_KEYS.preset, sanitize: sanitizeString });
-  const [isDrawerPinned, setIsDrawerPinned] = usePersistentState<boolean>("melodicatrainer_drawer_pinned", true, { sanitize: sanitizeBoolean });
-  const [isRightDrawerPinned, setIsRightDrawerPinned] = usePersistentState<boolean>("melodicatrainer_right_drawer_pinned", true, { sanitize: sanitizeBoolean });
-  const [isTopDrawerPinned, setIsTopDrawerPinned] = usePersistentState<boolean>("melodicatrainer_top_drawer_pinned", true, { sanitize: sanitizeBoolean });
   const keyCount = normalizeMelodicaKeyCount(selectedKeyCount);
+  const panels = useMusicXmlPanels();
 
   // VOLATILE STATES
-  const [isDrawerHovered, setIsDrawerHovered] = useState(false);
-  const [isRightDrawerHovered, setIsRightDrawerHovered] = useState(false);
-  const [isTopDrawerHovered, setIsTopDrawerHovered] = useState(false);
-  const [isBpmOverlayVisible, setIsBpmOverlayVisible] = useState(false);
-  const [showEndStats, setShowEndStats] = useState(false);
   const [routeStatus, setRouteStatus] = useState<RouteStatus | null>({ tone: "info", message: "Ready." });
   const handleDefaultScoreLoadError = useCallback((err: unknown) => {
     console.error("Intro song load error:", err);
@@ -126,7 +121,7 @@ const MusicXML: React.FC = () => {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
   const [isSheetReady, setIsSheetReady] = useState(false);
-  const [hasSheetRenderError] = useState(false);
+  const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
   const [playbackEvents, setPlaybackEvents] = useState<PlaybackEvent[]>([]);
 
   const showNumbers = fingeringGuide === "numbers" || fingeringGuide === "debugBoth";
@@ -193,19 +188,32 @@ const MusicXML: React.FC = () => {
     isGpFile,
     rawFileContent,
     setDetectedTempoBpm,
+    setIsSheetReady,
     setPlaybackEvents,
+    setRouteStatus,
     transpose,
   });
   const handleOsmdRendered = useCallback(() => {
+    setHasSheetRenderError(false);
     setIsSheetReady(true);
+  }, []);
+  const handleOsmdRenderError = useCallback((err: unknown) => {
+    console.error("OSMD render error:", err);
+    setHasSheetRenderError(true);
+    setIsSheetReady(false);
+    setRouteStatus({
+      tone: "error",
+      message: "Failed to render MusicXML score.",
+    });
   }, []);
   const { osmdInstanceRef, osmdRef } = useOsmdScore({
     displayFileContent,
     isGpFile,
+    onRenderError: handleOsmdRenderError,
     onRendered: handleOsmdRendered,
   });
   
-  const tempoScale = tempo / 100; // Simplified for both
+  const tempoScale = getTempoScale({ detectedTempoBpm, userTempoBpm });
   const tempoScaleRef = useRef(tempoScale);
   useEffect(() => { tempoScaleRef.current = tempoScale; }, [tempoScale]);
 
@@ -233,68 +241,23 @@ const MusicXML: React.FC = () => {
     showVirtualHand,
   );
 
-  const studyModeTimeRef = useRef(currentGameTimeMs);
-  studyModeTimeRef.current = currentGameTimeMs;
-
-  // ── Study mode: freeze clock at unplayed events ──
-  // Polls every 100ms instead of on every render tick.
-  useEffect(() => {
-    if (!isStudyMode || !isPlaying || playbackEvents.length === 0) {
-      if (studyModeFreezeRef.current) {
-        studyModeFreezeRef.current = false;
-        setIsWaiting(false);
-      }
-      return;
-    }
-
-    const check = () => {
-      const now = studyModeTimeRef.current;
-      for (let i = studyModeNextIndexRef.current; i < playbackEvents.length; i++) {
-        const timing = playbackTimeline[i];
-        if (!timing) continue;
-        const ev = playbackEvents[i];
-        const hasNotes = ev.notes.some(n => n.shouldPlay);
-        if (!hasNotes) continue;
-        if (now >= timing.startMs) {
-          studyModeNextIndexRef.current = i;
-          if (!studyModeFreezeRef.current) {
-            studyModeFreezeRef.current = true;
-            setIsWaiting(true);
-          }
-          return;
-        }
-      }
-      if (studyModeFreezeRef.current) {
-        studyModeFreezeRef.current = false;
-        setIsWaiting(false);
-      }
-    };
-
-    check();
-    const interval = setInterval(check, 100);
-    return () => clearInterval(interval);
-  }, [isStudyMode, isPlaying, playbackEvents, playbackTimeline, currentEventIndex]);
-
-  useEffect(() => {
-    // When playback stops/restarts, reset the study mode pointer
-    if (currentEventIndex === 0) {
-      studyModeNextIndexRef.current = 0;
-    }
-  }, [currentEventIndex]);
-
   const { pitch, clarity, error: pitchError } = usePitchDetector(0.82, isPlaying && playbackEvents.length > 0, { allowedMidiNumbers: playableMidiNumbers, minRms: 0.012, stableFrames: 2 });
   const detectedNote = useMemo(() => pitch ? freqToNoteAndCents(Number(pitch)) : null, [pitch]);
-  const handleStudyModeHit = useCallback((eventIndex: number) => {
-    if (eventIndex !== studyModeNextIndexRef.current) return;
-    studyModeNextIndexRef.current = eventIndex + 1;
-    setCurrentEventIndex(eventIndex + 1);
-    if (studyModeFreezeRef.current) {
-      studyModeFreezeRef.current = false;
-      setIsWaiting(false);
-      gameClockOffsetMsRef.current = gameClockOffsetMsRef.current; // keep frozen value
-      gameClockStartMsRef.current = performance.now();
-    }
-  }, [setCurrentEventIndex]);
+  const {
+    handleStudyModeHit,
+    isWaiting,
+    studyModeFreezeRef,
+    studyModeNextIndexRef,
+  } = useStudyModePlayback({
+    currentEventIndex,
+    currentGameTimeMs,
+    gameClockStartMsRef,
+    isPlaying,
+    isStudyMode,
+    playbackEvents,
+    playbackTimeline,
+    setCurrentEventIndex,
+  });
 
   const { accuracy, gameStats, lastHitIndex, resetScoring } = useNoteHighwayScoring({
     currentGameTimeMs,
@@ -327,40 +290,47 @@ const MusicXML: React.FC = () => {
   });
 
   const { stopPlayback, togglePlayback } = useScorePlayback({
-    alphaTabRef,
-    audioContextRef,
-    canPlayback,
-    currentEventIndex,
-    currentGameTimeMs,
-    cursorEventIndexRef,
-    fileName,
-    gameClockFrameRef,
-    gameClockOffsetMsRef,
-    gameClockStartMsRef,
-    isGpPlaybackReady,
-    isGpFile,
-    isPlaying,
-    isPlayingRef,
-    isSheetReady,
-    moveCursorThroughEventRef,
-    osmdInstanceRef,
-    playbackEvents,
-    playbackRunRef,
-    playbackTimerRef,
-    playbackTimeline,
-    resetScoring,
-    selectedPreset,
-    selectedSf,
-    setCurrentEventIndex,
-    setCurrentGameTimeMs,
-    setIsPlaying,
-    setRouteStatus,
-    sheetScrollRef,
-    shortestNoteDurationMs,
-    stopGpCursorAnimation,
-    studyModeFreezeRef,
-    tempoScaleRef,
+    callbacks: {
+      resetScoring,
+      setCurrentEventIndex,
+      setCurrentGameTimeMs,
+      setIsPlaying,
+      setRouteStatus,
+      stopGpCursorAnimation,
+    },
+    refs: {
+      alphaTabRef,
+      audioContextRef,
+      cursorEventIndexRef,
+      gameClockFrameRef,
+      gameClockOffsetMsRef,
+      gameClockStartMsRef,
+      isPlayingRef,
+      moveCursorThroughEventRef,
+      osmdInstanceRef,
+      playbackRunRef,
+      playbackTimerRef,
+      sheetScrollRef,
+      studyModeFreezeRef,
+      tempoScaleRef,
+    },
+    state: {
+      canPlayback,
+      currentEventIndex,
+      currentGameTimeMs,
+      fileName,
+      isGpFile,
+      isGpPlaybackReady,
+      isPlaying,
+      isSheetReady,
+      playbackEvents,
+      playbackTimeline,
+      selectedPreset,
+      selectedSf,
+      shortestNoteDurationMs,
+    },
   });
+  const handleRestartPlayback = useCallback(() => stopPlayback(true), [stopPlayback]);
 
   useEffect(() => {
     moveCursorThroughEventRef.current = moveCursorThroughEvent;
@@ -369,92 +339,45 @@ const MusicXML: React.FC = () => {
   // Sync tempo to AlphaTab
   useEffect(() => {
     if (isGpFile && alphaTabRef.current) {
-        alphaTabRef.current.setTempo(tempo);
+        alphaTabRef.current.setTempo(tempoScale);
     }
-  }, [tempo, isGpFile]);
+  }, [tempoScale, isGpFile]);
 
-  // SYNC STATE TO GLOBAL MENU
-  useEffect(() => {
-    setPlaybackToolbarState({
-      isPlaying,
-      isPaused: !isPlaying && currentGameTimeMs > 0,
-      onTogglePlayback: togglePlayback,
-      onRestartPlayback: () => stopPlayback(true),
-      tempo,
-      setTempo: handleSetTempo,
-      progress,
-      gameStats,
-      accuracy,
-      canPlayback,
-    });
-  }, [setPlaybackToolbarState, isPlaying, currentGameTimeMs, tempo, handleSetTempo, progress, gameStats, accuracy, canPlayback, togglePlayback, stopPlayback]);
-
-  useEffect(() => () => setPlaybackToolbarState(null), [setPlaybackToolbarState]);
+  usePlaybackToolbarSync({
+    accuracy,
+    canPlayback,
+    currentGameTimeMs,
+    gameStats,
+    isPlaying,
+    onRestartPlayback: handleRestartPlayback,
+    onSetTempo: handleSetTempo,
+    onTogglePlayback: togglePlayback,
+    progress,
+    tempo,
+  });
 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
 
   // Handle unmount only
-  useEffect(() => () => stopPlayback(true), [stopPlayback]);
+  useEffect(() => () => {
+    stopPlayback(true);
+    releaseSynthesizer();
+    void audioContextRef.current?.close();
+    audioContextRef.current = null;
+  }, [stopPlayback]);
 
-  // Keyboard playback controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input or select
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
-        return;
-      }
+  useMusicXmlKeyboardShortcuts({
+    onResetPlayback: handleRestartPlayback,
+    onSetTempo: handleSetTempo,
+    onTogglePlayback: togglePlayback,
+    tempo,
+  });
 
-      if (e.code === "Space") {
-        e.preventDefault(); // Prevent page scroll
-        togglePlayback();
-      } else if (e.code === "Escape") {
-        e.preventDefault();
-        stopPlayback(true);
-      } else if (e.key === "+" || e.key === "=") {
-        handleSetTempo(Math.min(240, tempo + 5));
-      } else if (e.key === "-" || e.key === "_") {
-        handleSetTempo(Math.max(20, tempo - 5));
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlayback, stopPlayback, handleSetTempo, tempo]);
-
-  // ── End-of-song stats overlay (when top drawer is hidden) ──
-  const topDrawerHidden = !isTopDrawerPinned && !isTopDrawerHovered;
-  const prevPlayingRef = useRef(isPlaying);
-  useEffect(() => {
-    const wasPlaying = prevPlayingRef.current;
-    prevPlayingRef.current = isPlaying;
-    // Trigger only on the transition from playing → stopped
-    if (!wasPlaying || isPlaying) return;
-    if (topDrawerHidden) {
-      setShowEndStats(true);
-    }
-  }, [isPlaying, topDrawerHidden, gameStats.hits]);
-
-
-  // Dismiss end stats on any interaction
-  useEffect(() => {
-    if (!showEndStats) return;
-    const dismiss = () => setShowEndStats(false);
-    window.addEventListener("keydown", dismiss);
-    window.addEventListener("click", dismiss);
-    return () => {
-      window.removeEventListener("keydown", dismiss);
-      window.removeEventListener("click", dismiss);
-    };
-  }, [showEndStats]);
-
-  // BPM Overlay timer
-  useEffect(() => {
-    setIsBpmOverlayVisible(true);
-    const timer = setTimeout(() => {
-      setIsBpmOverlayVisible(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [tempo]);
+  const isBpmOverlayVisible = useBpmOverlay(tempo);
+  const { dismissEndStats, showEndStats } = useEndStatsOverlay({
+    isPlaying,
+    topDrawerHidden: panels.topDrawerHidden,
+  });
 
   const { autoTransposeWithFilters, optimalVariantsCount } = useTransposeOptimizer({
     gpOriginalMidiNumbers,
@@ -484,219 +407,123 @@ const MusicXML: React.FC = () => {
 
   return (
     <div className="h-full w-full flex flex-col bg-gray-950 text-white overflow-hidden max-w-full relative">
-      {/* Invisible Drawer Trigger Zone (Top edge) */}
-      <div 
-        className="absolute left-0 right-0 top-0 h-4 z-40 hidden lg:block cursor-ns-resize"
-        onMouseEnter={() => setIsTopDrawerHovered(true)}
+      <ScoreWindowPanel
+        alphaTabProps={{
+          fileData: rawFileContent as Uint8Array,
+          isPlaybackActive: isPlaying,
+          keyCount,
+          onPlaybackFinished: handleRestartPlayback,
+          onReadyChange: setIsGpPlaybackReady,
+          onRenderedHeightChange: setGpScoreHeightPx,
+          onScoreLoaded: handleGpScoreLoaded,
+          onTimeUpdate: () => {
+            if (isPlayingRef.current) {
+              scrollSheetToCursor();
+            }
+          },
+          trackIndex: selectedGpTrackIndex,
+          transpose,
+        }}
+        alphaTabRef={alphaTabRef}
+        gpScorePaneHeightPx={gpScorePaneHeightPx}
+        isGpFile={isGpFile}
+        isTopDrawerHovered={panels.isTopDrawerHovered}
+        isTopDrawerPinned={panels.isTopDrawerPinned}
+        onTopDrawerHoverChange={panels.setIsTopDrawerHovered}
+        onToggleTopPinned={() => panels.setIsTopDrawerPinned(!panels.isTopDrawerPinned)}
+        osmdRef={osmdRef}
+        sheetScrollRef={sheetScrollRef}
       />
 
-      {/* SECTION 1: Score Window */}
-      <div 
-        className={`w-full shrink-0 transition-all duration-300 ease-in-out grid bg-white relative z-30
-          ${isTopDrawerHovered || isTopDrawerPinned ? 'grid-rows-[1fr] opacity-100 border-b border-gray-800 shadow-2xl' : 'grid-rows-[0fr] opacity-0 border-b-0 shadow-none'}
-        `}
-        onMouseLeave={() => setIsTopDrawerHovered(false)}
-      >
-        <div className="overflow-hidden w-full max-w-full relative">
-          <button
-            onClick={() => setIsTopDrawerPinned(!isTopDrawerPinned)}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 z-50 bg-white/80 rounded"
-            title={isTopDrawerPinned ? "Unpin score" : "Pin score"}
-          >
-            {isTopDrawerPinned ? <Pin size={16} className="text-emerald-500" /> : <PinOff size={16} />}
-          </button>
-          <div
-            ref={sheetScrollRef}
-            className={`${isGpFile ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black scrollbar-hide`}
-            style={isGpFile ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
-          >
-          {!isGpFile ? (
-            <div ref={osmdRef} className="h-full flex items-center min-w-max" />
-          ) : (
-            <AlphaTabViewer
-              ref={alphaTabRef}
-              fileData={rawFileContent as Uint8Array}
-              keyCount={keyCount}
-              isPlaybackActive={isPlaying}
-              trackIndex={selectedGpTrackIndex}
-              transpose={transpose}
-              onScoreLoaded={handleGpScoreLoaded}
-              onReadyChange={setIsGpPlaybackReady}
-              onTimeUpdate={() => {
-                // AlphaTab emits position updates during score load; ignore them before
-                // our scheduler starts so a newly loaded score remains at Play/lead-in.
-                if (isPlayingRef.current) {
-                  scrollSheetToCursor();
-                }
-              }}
-              onPlaybackFinished={() => stopPlayback(true)}
-              onRenderedHeightChange={setGpScoreHeightPx}
-            />
-          )}
-          </div>
-        </div>
-      </div>
-      <div className="flex-1 w-full overflow-hidden bg-gray-950 relative">
-        {/* Invisible Drawer Trigger Zone (Left edge) */}
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-6 z-40 hidden lg:block cursor-ew-resize"
-          onMouseEnter={() => setIsDrawerHovered(true)}
+      <MusicXmlWorkspace
+        isBpmOverlayVisible={isBpmOverlayVisible}
+        isDrawerHovered={panels.isDrawerHovered}
+        isDrawerPinned={panels.isDrawerPinned}
+        isRightDrawerHovered={panels.isRightDrawerHovered}
+        isRightDrawerPinned={panels.isRightDrawerPinned}
+        noteHighwayProps={{
+          activeFinger,
+          activeMidi,
+          clarity,
+          detectedNote,
+          fingerAssignments: fingerMap,
+          isGp: isGpFile,
+          isPlaying,
+          isWaiting,
+          keyCount,
+          lastHitIndex,
+          phantomStates,
+          pitchError,
+          shortestNoteDurationMs,
+          showNoteNames,
+          showNumbers,
+          showVirtualHand,
+          visibleGameEvents,
+          visualPlayheadMs,
+        }}
+        onCenterContextMenu={panels.toggleAllPanels}
+        onCenterWheel={(deltaY) => {
+          if (deltaY < 0) {
+            handleSetTempo(Math.min(240, tempo + 5));
+          } else if (deltaY > 0) {
+            handleSetTempo(Math.max(20, tempo - 5));
+          }
+        }}
+        onDrawerHoverChange={panels.setIsDrawerHovered}
+        onRightDrawerHoverChange={panels.setIsRightDrawerHovered}
+        onTogglePlayback={togglePlayback}
+        scoreSettingsProps={{
+          availablePresets,
+          canUseProcessedScore,
+          fileName,
+          gpTracks,
+          isGpFile,
+          isPinned: panels.isDrawerPinned,
+          keyCount,
+          melodicaRanges: melodicaRangeOptions,
+          onDownloadMelodicaNotes: downloadMelodicaNotes,
+          onDownloadTransposedXml: downloadTransposedXml,
+          onFileChange: handleFileChange,
+          onGpTrackChange: (trackIndex) => handleGpTrackChange(trackIndex, handleRestartPlayback),
+          onMelodicaRangeChange: setSelectedKeyCount,
+          onSelectedPresetChange: setSelectedPreset,
+          onSoundFontChange: (soundFont) => {
+            setSelectedSf(soundFont);
+            stopPlayback();
+          },
+          onTogglePin: () => panels.setIsDrawerPinned(!panels.isDrawerPinned),
+          routeStatus,
+          routeStatusClassNames,
+          selectedGpTrackIndex,
+          selectedPreset,
+          selectedSoundFont: selectedSf,
+          soundFonts: SOUNDFONTS,
+        }}
+        tempo={tempo}
+        transposeControlsProps={{
+          fingeringGuide,
+          isPinned: panels.isRightDrawerPinned,
+          isStudyMode,
+          onAutoTranspose: autoTransposeWithFilters,
+          onFingeringGuideChange: setFingeringGuide,
+          onResetTranspose: () => setTranspose(0),
+          onShowNoteNamesChange: setShowNoteNames,
+          onStudyModeChange: setIsStudyMode,
+          onTogglePin: () => panels.setIsRightDrawerPinned(!panels.isRightDrawerPinned),
+          onTransposeChange: handleTransposeChange,
+          optimalVariantsCount,
+          showNoteNames,
+          transpose,
+        }}
+      />
+
+      {showEndStats && (
+        <EndStatsOverlay
+          accuracy={accuracy}
+          gameStats={gameStats}
+          onDismiss={dismissEndStats}
         />
-        {/* Invisible Drawer Trigger Zone (Right edge) */}
-        <div 
-          className="absolute right-0 top-0 bottom-0 w-6 z-40 hidden lg:block cursor-ew-resize"
-          onMouseEnter={() => setIsRightDrawerHovered(true)}
-        />
-        
-        <div className="h-full w-full p-4 sm:p-6 overflow-hidden flex flex-col">
-          <div className="flex flex-col lg:flex-row gap-4 h-full items-start w-full">
-            
-            {/* COLUMN 1: Score & Track Settings (Left) */}
-            <div 
-              className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 lg:h-full
-                ${isDrawerHovered || isDrawerPinned ? 'lg:w-[288px] lg:opacity-100' : 'lg:w-0 lg:opacity-0'}
-              `}
-              onMouseLeave={() => setIsDrawerHovered(false)}
-            >
-              {/* Force the inner panel to maintain its width even while the container shrinks, to avoid layout reflows inside it */}
-              <div className="w-full lg:w-72 h-full">
-                <ScoreSettingsPanel
-                  availablePresets={availablePresets}
-                  canUseProcessedScore={canUseProcessedScore}
-                  fileName={fileName}
-                  gpTracks={gpTracks}
-                  keyCount={keyCount}
-                  melodicaRanges={melodicaRangeOptions}
-                  isGpFile={isGpFile}
-                  isPinned={isDrawerPinned}
-                  onDownloadMelodicaNotes={downloadMelodicaNotes}
-                  onDownloadTransposedXml={downloadTransposedXml}
-                  onFileChange={handleFileChange}
-                  onGpTrackChange={(trackIndex) => handleGpTrackChange(trackIndex, () => stopPlayback(true))}
-                  onMelodicaRangeChange={setSelectedKeyCount}
-                  onSelectedPresetChange={setSelectedPreset}
-                  onSoundFontChange={(soundFont) => {
-                    setSelectedSf(soundFont);
-                    stopPlayback();
-                  }}
-                  onTogglePin={() => setIsDrawerPinned(!isDrawerPinned)}
-                  routeStatus={routeStatus}
-                  routeStatusClassNames={routeStatusClassNames}
-                  selectedGpTrackIndex={selectedGpTrackIndex}
-                  selectedPreset={selectedPreset}
-                  selectedSoundFont={selectedSf}
-                  soundFonts={SOUNDFONTS}
-                />
-              </div>
-            </div>
-
-            {/* COLUMN 2: Note Highway (Center) */}
-            <div 
-              className="flex-[1_1_auto] w-full h-full overflow-hidden flex flex-col min-w-0 order-first lg:order-none cursor-pointer relative"
-              onClick={togglePlayback}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                const areAllPinned = isDrawerPinned && isRightDrawerPinned && isTopDrawerPinned;
-                const targetState = !areAllPinned;
-                setIsDrawerPinned(targetState);
-                setIsRightDrawerPinned(targetState);
-                setIsTopDrawerPinned(targetState);
-                window.dispatchEvent(new CustomEvent("toggle-all-panels", { detail: { pinned: targetState } }));
-              }}
-              onWheel={(e) => {
-                if (e.deltaY < 0) {
-                  handleSetTempo(Math.min(240, tempo + 5));
-                } else if (e.deltaY > 0) {
-                  handleSetTempo(Math.max(20, tempo - 5));
-                }
-              }}
-            >
-              {/* Temporary BPM Overlay */}
-              <div 
-                className={`absolute inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-500 ease-in-out
-                  ${isBpmOverlayVisible ? 'opacity-100' : 'opacity-0'}
-                `}
-              >
-                <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 shadow-2xl rounded-2xl p-6 flex flex-col items-center gap-2 transform scale-110">
-                  <Gauge size={48} className="text-emerald-500 opacity-80" />
-                  <span className="text-4xl font-black tracking-tighter text-white">
-                    {tempo} <span className="text-xl text-emerald-500/80">BPM</span>
-                  </span>
-                </div>
-              </div>
-
-              <NoteHighway
-                clarity={clarity}
-                detectedNote={detectedNote}
-                isPlaying={isPlaying}
-                keyCount={keyCount}
-                lastHitIndex={lastHitIndex}
-                pitchError={pitchError}
-                shortestNoteDurationMs={shortestNoteDurationMs}
-                showNoteNames={showNoteNames}
-                visibleGameEvents={visibleGameEvents}
-                visualPlayheadMs={visualPlayheadMs}
-                isGp={isGpFile}
-                fingerAssignments={fingerMap}
-                showNumbers={showNumbers}
-                showVirtualHand={showVirtualHand}
-                phantomStates={phantomStates}
-                activeMidi={activeMidi}
-                activeFinger={activeFinger}
-                isWaiting={isWaiting}
-              />
-            </div>
-
-            {/* COLUMN 3: Transpose & Optimizer (Right) */}
-            <div 
-              className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 lg:h-full
-                ${isRightDrawerHovered || isRightDrawerPinned ? 'lg:w-[288px] lg:opacity-100' : 'lg:w-0 lg:opacity-0'}
-              `}
-              onMouseLeave={() => setIsRightDrawerHovered(false)}
-            >
-              {/* Force the inner panel to maintain its width even while the container shrinks */}
-              <div className="w-full lg:w-72 h-full">
-                <TransposeControls
-                  onAutoTranspose={autoTransposeWithFilters}
-                  onResetTranspose={() => setTranspose(0)}
-                  onFingeringGuideChange={setFingeringGuide}
-                  onShowNoteNamesChange={setShowNoteNames}
-                  onStudyModeChange={setIsStudyMode}
-                  onTransposeChange={handleTransposeChange}
-                  optimalVariantsCount={optimalVariantsCount}
-                  fingeringGuide={fingeringGuide}
-                  isStudyMode={isStudyMode}
-                  showNoteNames={showNoteNames}
-                  transpose={transpose}
-                  isPinned={isRightDrawerPinned}
-                  onTogglePin={() => setIsRightDrawerPinned(!isRightDrawerPinned)}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    {showEndStats && (
-      <div
-        className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-        onClick={() => setShowEndStats(false)}
-      >
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl px-12 py-8 text-center space-y-4">
-          <h2 className="text-2xl font-black text-white tracking-widest uppercase">Song Complete!</h2>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-lg">
-            <span className="text-gray-400 text-right">Hits</span>
-            <span className="text-emerald-400 font-black text-left">{gameStats.hits}</span>
-            <span className="text-gray-400 text-right">Misses</span>
-            <span className="text-red-400 font-black text-left">{gameStats.misses}</span>
-            <span className="text-gray-400 text-right">Streak</span>
-            <span className="text-amber-400 font-black text-left">{gameStats.streak}</span>
-            <span className="text-gray-400 text-right">Accuracy</span>
-            <span className="text-white font-black text-left">{accuracy}%</span>
-          </div>
-          <p className="text-gray-500 text-xs mt-4">Press any key or click to continue</p>
-        </div>
-      </div>
-    )}
+      )}
     </div>
   );
 };

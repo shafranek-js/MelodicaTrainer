@@ -32,6 +32,18 @@ const LEGACY_STORAGE_KEYS = {
   rawContent: ["harptrainer_raw_content"],
 } as const;
 
+const DEFAULT_SCORE_FILE = "Aloutte (10-Hole Diatonic Harmonica).gp";
+const LEGACY_DEFAULT_SCORE_FILES = new Set([
+  "IntroSong.musicxml",
+  "IntroSong-notebender.musicxml",
+]);
+
+export const shouldReplacePersistedDefaultScore = (
+  rawFileContent: ScoreFileContent | null,
+  fileName: string | null,
+) =>
+  Boolean(rawFileContent && fileName && LEGACY_DEFAULT_SCORE_FILES.has(fileName));
+
 export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOptions) => {
   const [rawFileContent, setRawFileContent] = usePersistentState<ScoreFileContent | null>(
     "melodicatrainer_raw_content",
@@ -50,20 +62,19 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
   const isGpFile = useMemo(() => isGuitarProFileName(fileName), [fileName]);
 
   useEffect(() => {
-    if (rawFileContent) return;
+    if (rawFileContent && !shouldReplacePersistedDefaultScore(rawFileContent, fileName)) return;
 
-    const defaultFile = "Aloutte (10-Hole Diatonic Harmonica).gp";
-    fetch(`${import.meta.env.BASE_URL}${defaultFile}`)
+    fetch(`${import.meta.env.BASE_URL}${DEFAULT_SCORE_FILE}`)
       .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load ${defaultFile}`);
+        if (!res.ok) throw new Error(`Failed to load ${DEFAULT_SCORE_FILE}`);
         return res.arrayBuffer();
       })
       .then((buf) => {
-        setFileName(defaultFile);
+        setFileName(DEFAULT_SCORE_FILE);
         setRawFileContent(new Uint8Array(buf));
       })
       .catch(onDefaultLoadError);
-  }, [onDefaultLoadError, rawFileContent, setFileName, setRawFileContent]);
+  }, [fileName, onDefaultLoadError, rawFileContent, setFileName, setRawFileContent]);
 
   const loadScoreFile = useCallback(async (file: File): Promise<LoadedScoreFile> => {
     const content = await readMusicXmlFile(file);

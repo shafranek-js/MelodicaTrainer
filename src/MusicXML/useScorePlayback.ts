@@ -1,62 +1,18 @@
 import { useCallback, useMemo, useRef } from "react";
-import type { MutableRefObject } from "react";
-import type { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import {
   changeInstrument,
   ensureAudioContext,
-  getAudioOutputLatencyMs,
   initSynthesizer,
   playPlaybackNotes,
   stopAudioNodes,
 } from "./audioPlayback";
-import type { AlphaTabViewerRef } from "./AlphaTabViewer";
 import { musicXmlDebugLogger } from "./debugLogger";
 import { getPlaybackStartIndex } from "./playbackStart";
+import type { UseScorePlaybackOptions } from "./scorePlaybackTypes";
+import { useGameClock } from "./useGameClock";
+import { usePlaybackScheduler } from "./usePlaybackScheduler";
 import { parsePresetSelection } from "./useSoundFontPresets";
-import type { PlaybackEvent, PlaybackTiming } from "./types";
-
-type RouteStatus = {
-  tone: "info" | "success" | "error";
-  message: string;
-};
-
-type UseScorePlaybackOptions = {
-  alphaTabRef: MutableRefObject<AlphaTabViewerRef | null>;
-  audioContextRef: MutableRefObject<AudioContext | null>;
-  canPlayback: boolean;
-  currentEventIndex: number;
-  currentGameTimeMs: number;
-  cursorEventIndexRef: MutableRefObject<number | null>;
-  fileName: string | null;
-  gameClockFrameRef: MutableRefObject<number | null>;
-  gameClockOffsetMsRef: MutableRefObject<number>;
-  gameClockStartMsRef: MutableRefObject<number>;
-  isGpPlaybackReady: boolean;
-  isGpFile: boolean;
-  isPlaying: boolean;
-  isPlayingRef: MutableRefObject<boolean>;
-  isSheetReady: boolean;
-  moveCursorThroughEventRef: MutableRefObject<
-    (eventIndex: number, durationMs: number) => void
-  >;
-  osmdInstanceRef: MutableRefObject<OpenSheetMusicDisplay | null>;
-  playbackEvents: PlaybackEvent[];
-  playbackRunRef: MutableRefObject<number>;
-  playbackTimerRef: MutableRefObject<number | null>;
-  playbackTimeline: PlaybackTiming[];
-  resetScoring: () => void;
-  selectedPreset: string;
-  selectedSf: string;
-  setCurrentEventIndex: (index: number) => void;
-  setCurrentGameTimeMs: (timeMs: number) => void;
-  setIsPlaying: (isPlaying: boolean) => void;
-  setRouteStatus: (status: RouteStatus) => void;
-  sheetScrollRef: MutableRefObject<HTMLDivElement | null>;
-  shortestNoteDurationMs: number;
-  stopGpCursorAnimation: () => void;
-  studyModeFreezeRef?: MutableRefObject<boolean>;
-  tempoScaleRef: MutableRefObject<number>;
-};
+import type { PlaybackEvent } from "./types";
 
 /**
  * Keeps the latest value available to stable callbacks without forcing those
@@ -72,8 +28,10 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
   const latestOptionsRef = useLatestRef(options);
 
   const clearPlaybackResources = useCallback(() => {
-    const { gameClockFrameRef, playbackTimerRef, stopGpCursorAnimation } =
-      latestOptionsRef.current;
+    const {
+      callbacks: { stopGpCursorAnimation },
+      refs: { gameClockFrameRef, playbackTimerRef },
+    } = latestOptionsRef.current;
 
     if (playbackTimerRef.current !== null) {
       window.clearTimeout(playbackTimerRef.current);
@@ -92,19 +50,21 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
   const stopPlayback = useCallback(
     (reset = false, shouldResetScoring = true) => {
       const {
-        alphaTabRef,
-        currentEventIndex,
-        currentGameTimeMs,
-        cursorEventIndexRef,
-        isGpFile,
-        isPlayingRef,
-        osmdInstanceRef,
-        playbackRunRef,
-        resetScoring,
-        setCurrentEventIndex,
-        setCurrentGameTimeMs,
-        setIsPlaying,
-        sheetScrollRef,
+        callbacks: {
+          resetScoring,
+          setCurrentEventIndex,
+          setCurrentGameTimeMs,
+          setIsPlaying,
+        },
+        refs: {
+          alphaTabRef,
+          cursorEventIndexRef,
+          isPlayingRef,
+          osmdInstanceRef,
+          playbackRunRef,
+          sheetScrollRef,
+        },
+        state: { currentEventIndex, currentGameTimeMs, isGpFile },
       } = latestOptionsRef.current;
 
       const wasPlaying = isPlayingRef.current;
@@ -149,7 +109,9 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
 
   const playNotes = useCallback(
     (notes: PlaybackEvent["notes"], tempoBpm: number) => {
-      const { audioContextRef } = latestOptionsRef.current;
+      const {
+        refs: { audioContextRef },
+      } = latestOptionsRef.current;
       const audioContext = ensureAudioContext(audioContextRef.current);
       audioContextRef.current = audioContext;
       playPlaybackNotes(notes, tempoBpm);
@@ -157,153 +119,36 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
     [latestOptionsRef],
   );
 
-  const schedulePlaybackRef = useRef<
-    (startIndex: number, runId: number) => void
-  >(() => {});
-
-  const schedulePlayback = useCallback(
-    (startIndex: number, runId: number) => {
-      const {
-        audioContextRef,
-        gameClockOffsetMsRef,
-        gameClockStartMsRef,
-        moveCursorThroughEventRef,
-        playbackEvents,
-        playbackRunRef,
-        playbackTimerRef,
-        playbackTimeline,
-        setCurrentEventIndex,
-        shortestNoteDurationMs,
-        studyModeFreezeRef,
-        tempoScaleRef,
-      } = latestOptionsRef.current;
-
-      const event = playbackEvents[startIndex];
-
-      if (!event) {
-        const msPerPx = shortestNoteDurationMs / 40;
-        const trailMs = 520 * msPerPx * 0.5;
-
-        playbackTimerRef.current = window.setTimeout(() => {
-          playbackTimerRef.current = null;
-          if (playbackRunRef.current !== runId) return;
-          stopPlayback(true, false);
-        }, trailMs / tempoScaleRef.current);
-
-        return;
-      }
-
-      const effTempo = Math.max(20, event.tempoBpm * tempoScaleRef.current);
-      const durMs = Math.max(80, (60000 / effTempo) * event.durationBeats);
-
-      gameClockOffsetMsRef.current =
-        (playbackTimeline[startIndex]?.startMs ?? 0) -
-        getAudioOutputLatencyMs(audioContextRef.current) *
-          tempoScaleRef.current;
-      gameClockStartMsRef.current = performance.now();
-
-      setCurrentEventIndex(startIndex);
-      moveCursorThroughEventRef.current(startIndex, durMs);
-      playNotes(event.notes, effTempo);
-
-      const scheduleNext = () => {
-        if (playbackRunRef.current !== runId) return;
-
-        if (studyModeFreezeRef?.current) {
-          playbackTimerRef.current = window.setTimeout(scheduleNext, 50);
-          return;
-        }
-
-        schedulePlaybackRef.current(startIndex + 1, runId);
-      };
-
-      playbackTimerRef.current = window.setTimeout(scheduleNext, durMs);
-    },
-    [latestOptionsRef, playNotes, stopPlayback],
-  );
-
-  schedulePlaybackRef.current = schedulePlayback;
-
-  const startGameClock = useCallback(() => {
-    const { gameClockFrameRef } = latestOptionsRef.current;
-
-    if (gameClockFrameRef.current !== null) {
-      window.cancelAnimationFrame(gameClockFrameRef.current);
-      gameClockFrameRef.current = null;
-    }
-
-    let wasFrozen = false;
-    let lastPublishedTimeMs = -1;
-
-    const updateClock = () => {
-      const {
-        gameClockFrameRef,
-        gameClockOffsetMsRef,
-        gameClockStartMsRef,
-        isPlayingRef,
-        setCurrentGameTimeMs,
-        studyModeFreezeRef,
-        tempoScaleRef,
-      } = latestOptionsRef.current;
-
-      if (!isPlayingRef.current) {
-        gameClockFrameRef.current = null;
-        return;
-      }
-
-      const isFrozen = studyModeFreezeRef?.current;
-
-      if (isFrozen) {
-        if (!wasFrozen) {
-          gameClockOffsetMsRef.current +=
-            (performance.now() - gameClockStartMsRef.current) *
-            tempoScaleRef.current;
-          wasFrozen = true;
-        }
-
-        gameClockStartMsRef.current = performance.now();
-      } else {
-        wasFrozen = false;
-
-        const nextTimeMs = Math.round(
-          gameClockOffsetMsRef.current +
-            (performance.now() - gameClockStartMsRef.current) *
-              tempoScaleRef.current,
-        );
-
-        if (nextTimeMs !== lastPublishedTimeMs) {
-          lastPublishedTimeMs = nextTimeMs;
-          setCurrentGameTimeMs(nextTimeMs);
-        }
-      }
-
-      gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
-    };
-
-    gameClockFrameRef.current = window.requestAnimationFrame(updateClock);
-  }, [latestOptionsRef]);
+  const { startGameClock } = useGameClock({ latestOptionsRef });
+  const { schedulePlaybackRef } = usePlaybackScheduler({
+    latestOptionsRef,
+    playNotes,
+    stopPlayback,
+  });
 
   const togglePlayback = useCallback(async () => {
     const {
-      alphaTabRef,
-      audioContextRef,
-      canPlayback,
-      currentEventIndex,
-      currentGameTimeMs,
-      fileName,
-      gameClockOffsetMsRef,
-      gameClockStartMsRef,
-      isGpFile,
-      isGpPlaybackReady,
-      isPlayingRef,
-      isSheetReady,
-      playbackEvents,
-      playbackRunRef,
-      resetScoring,
-      selectedPreset,
-      selectedSf,
-      setIsPlaying,
-      setRouteStatus,
+      callbacks: { resetScoring, setIsPlaying, setRouteStatus },
+      refs: {
+        alphaTabRef,
+        audioContextRef,
+        gameClockOffsetMsRef,
+        gameClockStartMsRef,
+        isPlayingRef,
+        playbackRunRef,
+      },
+      state: {
+        canPlayback,
+        currentEventIndex,
+        currentGameTimeMs,
+        fileName,
+        isGpFile,
+        isGpPlaybackReady,
+        isSheetReady,
+        playbackEvents,
+        selectedPreset,
+        selectedSf,
+      },
     } = latestOptionsRef.current;
 
     const playbackReady = canPlayback && (isGpFile ? isGpPlaybackReady : true);
@@ -380,7 +225,7 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
         message: "Failed to initialize high-quality sound.",
       });
     }
-  }, [latestOptionsRef, startGameClock, stopPlayback]);
+  }, [latestOptionsRef, schedulePlaybackRef, startGameClock, stopPlayback]);
 
   return useMemo(
     () => ({
