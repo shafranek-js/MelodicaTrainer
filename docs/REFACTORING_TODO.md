@@ -98,4 +98,13 @@
 - [x] Сохранить `AlphaTabViewerRef` без изменения методов.
 - [x] Разделить dumb rendering дорожек, нотных плиток, keyboard/hand overlay и target-line в `NoteHighwayPanels`.
 - [x] Сохранить props `NoteHighway` и текущий scoring/timing data flow.
-- [ ] Будущий этап: убрать или реализовать явно неиспользуемое поведение `isGp` в `NoteHighway`.
+- [x] Убрать неиспользуемый prop `isGp` из `NoteHighway`.
+
+## 15. App Route Cleanup
+- [x] Зафиксировать baseline после MusicXML/domain/runtime refactors отдельным коммитом.
+- [x] Вынести derived state Practice route в `usePracticeViewModel`.
+- [x] Вынести Practice UI в route-local dumb panels.
+- [x] Вынести Circle responsive sizing в `useCircleDimensions`.
+- [x] Вынести Circle diagram, controls, scale/triads и legend в dumb panels.
+- [x] Вынести Help Markdown/TOC helpers и покрыть slug/TOC/hash href тестами.
+- [x] Сохранить Help UI на английском гайде, русский guide оставить для будущей локализации.

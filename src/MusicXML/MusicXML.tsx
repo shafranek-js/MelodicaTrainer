@@ -447,7 +447,6 @@ const MusicXML: React.FC = () => {
           clarity,
           detectedNote,
           fingerAssignments: fingerMap,
-          isGp: isGpFile,
           isPlaying,
           isWaiting,
           keyCount,

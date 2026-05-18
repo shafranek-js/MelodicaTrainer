@@ -26,7 +26,6 @@ export type NoteHighwayProps = {
   showNoteNames: boolean;
   visibleGameEvents: VisibleGameEvent[];
   visualPlayheadMs: number;
-  isGp?: boolean;
   fingerAssignments?: Map<string, number>;
   showNumbers?: boolean;
   phantomStates?: FingerVisualState[];
