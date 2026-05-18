@@ -23,7 +23,7 @@ Do not switch the whole GP playback model until the sync surface is covered by f
 - [x] Replace private `masterTransposition` writes with public `changeTrackTranspositionPitch`.
 - [x] Remove score-model mutation hacks from `AlphaTabViewer` where possible.
 - [x] Make `AlphaTabViewer` report explicit player readiness to `MusicXML.tsx`.
-- [ ] Remove or intentionally implement unused `isGp` behavior in `NoteHighway`.
+- [x] Remove unused `isGp` behavior in `NoteHighway`.
 
 ## Phase 2: Improve GP Timeline And Sync
 
