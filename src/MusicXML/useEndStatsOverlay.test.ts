@@ -12,29 +12,26 @@ describe("shouldShowEndStatsOverlay", () => {
       shouldShowEndStatsOverlay({
         lastShownCompletionId: 1,
         playbackCompletionId: 1,
-        topDrawerHidden: true,
       }),
     ).toBe(false);
   });
 
-  it("shows when playback completion id increments and top drawer is hidden", () => {
+  it("shows when playback completion id increments", () => {
     expect(
       shouldShowEndStatsOverlay({
         lastShownCompletionId: 1,
         playbackCompletionId: 2,
-        topDrawerHidden: true,
       }),
     ).toBe(true);
   });
 
-  it("does not show when completion id increments while top drawer is visible", () => {
+  it("shows when playback completion id increments even if the top drawer is visible", () => {
     expect(
       shouldShowEndStatsOverlay({
         lastShownCompletionId: 1,
         playbackCompletionId: 2,
-        topDrawerHidden: false,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("does not show for the initial completion id", () => {
@@ -42,7 +39,6 @@ describe("shouldShowEndStatsOverlay", () => {
       shouldShowEndStatsOverlay({
         lastShownCompletionId: 0,
         playbackCompletionId: 0,
-        topDrawerHidden: true,
       }),
     ).toBe(false);
   });
@@ -59,7 +55,6 @@ describe("shouldShowEndStatsOverlay", () => {
     }) => {
       const { showEndStats } = useEndStatsOverlay({
         playbackCompletionId,
-        topDrawerHidden: true,
       });
 
       return createElement("div", {

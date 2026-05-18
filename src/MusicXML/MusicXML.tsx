@@ -378,7 +378,6 @@ const MusicXML: React.FC = () => {
   const isBpmOverlayVisible = useBpmOverlay(tempo);
   const { dismissEndStats, showEndStats } = useEndStatsOverlay({
     playbackCompletionId,
-    topDrawerHidden: panels.topDrawerHidden,
   });
 
   const { autoTransposeWithFilters, optimalVariantsCount } = useTransposeOptimizer({

@@ -2,25 +2,20 @@ import { useEffect, useRef, useState } from "react";
 
 type UseEndStatsOverlayOptions = {
   playbackCompletionId: number;
-  topDrawerHidden: boolean;
 };
 
 export const shouldShowEndStatsOverlay = ({
   lastShownCompletionId,
   playbackCompletionId,
-  topDrawerHidden,
 }: {
   lastShownCompletionId: number;
   playbackCompletionId: number;
-  topDrawerHidden: boolean;
 }) =>
   playbackCompletionId > 0 &&
-  playbackCompletionId !== lastShownCompletionId &&
-  topDrawerHidden;
+  playbackCompletionId !== lastShownCompletionId;
 
 export const useEndStatsOverlay = ({
   playbackCompletionId,
-  topDrawerHidden,
 }: UseEndStatsOverlayOptions) => {
   const [showEndStats, setShowEndStats] = useState(false);
   const lastShownCompletionIdRef = useRef(playbackCompletionId);
@@ -30,14 +25,13 @@ export const useEndStatsOverlay = ({
       shouldShowEndStatsOverlay({
         lastShownCompletionId: lastShownCompletionIdRef.current,
         playbackCompletionId,
-        topDrawerHidden,
       })
     ) {
       setShowEndStats(true);
     }
 
     lastShownCompletionIdRef.current = playbackCompletionId;
-  }, [playbackCompletionId, topDrawerHidden]);
+  }, [playbackCompletionId]);
 
   useEffect(() => {
     if (!showEndStats) return;
