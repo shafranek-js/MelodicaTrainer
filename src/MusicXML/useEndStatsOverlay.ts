@@ -1,25 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 
 type UseEndStatsOverlayOptions = {
-  isPlaying: boolean;
+  playbackCompletionId: number;
   topDrawerHidden: boolean;
 };
 
+export const shouldShowEndStatsOverlay = ({
+  lastShownCompletionId,
+  playbackCompletionId,
+  topDrawerHidden,
+}: {
+  lastShownCompletionId: number;
+  playbackCompletionId: number;
+  topDrawerHidden: boolean;
+}) =>
+  playbackCompletionId > 0 &&
+  playbackCompletionId !== lastShownCompletionId &&
+  topDrawerHidden;
+
 export const useEndStatsOverlay = ({
-  isPlaying,
+  playbackCompletionId,
   topDrawerHidden,
 }: UseEndStatsOverlayOptions) => {
   const [showEndStats, setShowEndStats] = useState(false);
-  const prevPlayingRef = useRef(isPlaying);
+  const lastShownCompletionIdRef = useRef(playbackCompletionId);
 
   useEffect(() => {
-    const wasPlaying = prevPlayingRef.current;
-    prevPlayingRef.current = isPlaying;
-    if (!wasPlaying || isPlaying) return;
-    if (topDrawerHidden) {
+    if (
+      shouldShowEndStatsOverlay({
+        lastShownCompletionId: lastShownCompletionIdRef.current,
+        playbackCompletionId,
+        topDrawerHidden,
+      })
+    ) {
       setShowEndStats(true);
     }
-  }, [isPlaying, topDrawerHidden]);
+
+    lastShownCompletionIdRef.current = playbackCompletionId;
+  }, [playbackCompletionId, topDrawerHidden]);
 
   useEffect(() => {
     if (!showEndStats) return;

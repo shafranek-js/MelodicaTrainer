@@ -44,6 +44,7 @@ export type UseScorePlaybackState = {
 };
 
 export type UseScorePlaybackCallbacks = {
+  onPlaybackComplete: () => void;
   resetScoring: () => void;
   setCurrentEventIndex: (index: number) => void;
   setCurrentGameTimeMs: (timeMs: number) => void;

@@ -27,7 +27,7 @@ export const usePlaybackScheduler = ({
   const schedulePlayback = useCallback(
     (startIndex: number, runId: number) => {
       const {
-        callbacks: { setCurrentEventIndex },
+        callbacks: { onPlaybackComplete, setCurrentEventIndex },
         refs: {
           audioContextRef,
           gameClockOffsetMsRef,
@@ -47,6 +47,7 @@ export const usePlaybackScheduler = ({
         playbackTimerRef.current = window.setTimeout(() => {
           playbackTimerRef.current = null;
           if (playbackRunRef.current !== runId) return;
+          onPlaybackComplete();
           stopPlayback(true, false);
         }, getPlaybackTrailDelayMs(shortestNoteDurationMs, tempoScaleRef.current));
 

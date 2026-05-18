@@ -123,6 +123,7 @@ const MusicXML: React.FC = () => {
   const [isSheetReady, setIsSheetReady] = useState(false);
   const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
   const [playbackEvents, setPlaybackEvents] = useState<PlaybackEvent[]>([]);
+  const [playbackCompletionId, setPlaybackCompletionId] = useState(0);
 
   const showNumbers = fingeringGuide === "numbers" || fingeringGuide === "debugBoth";
   const showVirtualHand = fingeringGuide === "virtualHand" || fingeringGuide === "debugBoth";
@@ -291,6 +292,7 @@ const MusicXML: React.FC = () => {
 
   const { stopPlayback, togglePlayback } = useScorePlayback({
     callbacks: {
+      onPlaybackComplete: () => setPlaybackCompletionId((id) => id + 1),
       resetScoring,
       setCurrentEventIndex,
       setCurrentGameTimeMs,
@@ -375,7 +377,7 @@ const MusicXML: React.FC = () => {
 
   const isBpmOverlayVisible = useBpmOverlay(tempo);
   const { dismissEndStats, showEndStats } = useEndStatsOverlay({
-    isPlaying,
+    playbackCompletionId,
     topDrawerHidden: panels.topDrawerHidden,
   });
 
