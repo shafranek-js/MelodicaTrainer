@@ -8,6 +8,7 @@ import {
 import Menu from "./Menu";
 import Melodica from "./Melodica/Melodica";
 import { PlaybackToolbarProvider } from "./PlaybackToolbarProvider";
+import { RouteErrorBoundary } from "./ErrorBoundary";
 import { usePersistentState } from "./hooks/usePersistentState";
 
 const Circle = lazy(() => import("./Circle/Circle"));
@@ -52,23 +53,25 @@ function App() {
           </div>
 
           <main className="min-h-0 w-full overflow-hidden relative">
-            <Suspense
-              fallback={
-                <div className="min-h-full bg-gray-950 p-6 text-white">
-                  Loading...
-                </div>
-              }
-            >
-              <Routes>
-                <Route path="/circle" element={<Circle />} />
-                <Route path="/melodica" element={<Melodica />} />
-                <Route path="/practice" element={<Practice />} />
-                <Route path="/musicxml" element={<MusicXML />} />
-                <Route path="/help" element={<Help />} />
-                <Route path="/harmonica" element={<Navigate to="/melodica" replace />} />
-                <Route path="/" element={<Navigate to="/melodica" replace />} />
-              </Routes>
-            </Suspense>
+            <RouteErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="min-h-full bg-gray-950 p-6 text-white">
+                    Loading...
+                  </div>
+                }
+              >
+                <Routes>
+                  <Route path="/circle" element={<Circle />} />
+                  <Route path="/melodica" element={<Melodica />} />
+                  <Route path="/practice" element={<Practice />} />
+                  <Route path="/musicxml" element={<MusicXML />} />
+                  <Route path="/help" element={<Help />} />
+                  <Route path="/harmonica" element={<Navigate to="/melodica" replace />} />
+                  <Route path="/" element={<Navigate to="/melodica" replace />} />
+                </Routes>
+              </Suspense>
+            </RouteErrorBoundary>
           </main>
         </div>
       </PlaybackToolbarProvider>

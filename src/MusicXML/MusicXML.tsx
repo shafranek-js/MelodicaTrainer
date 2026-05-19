@@ -333,10 +333,15 @@ const MusicXML: React.FC = () => {
     },
   });
   const handleRestartPlayback = useCallback(() => stopPlayback(true), [stopPlayback]);
+  const stopPlaybackRef = useRef(stopPlayback);
 
   useEffect(() => {
     moveCursorThroughEventRef.current = moveCursorThroughEvent;
   }, [moveCursorThroughEvent]);
+
+  useEffect(() => {
+    stopPlaybackRef.current = stopPlayback;
+  }, [stopPlayback]);
 
   // Sync tempo to AlphaTab
   useEffect(() => {
@@ -362,11 +367,11 @@ const MusicXML: React.FC = () => {
 
   // Handle unmount only
   useEffect(() => () => {
-    stopPlayback(true);
+    stopPlaybackRef.current(true);
     releaseSynthesizer();
     void audioContextRef.current?.close();
     audioContextRef.current = null;
-  }, [stopPlayback]);
+  }, []);
 
   useMusicXmlKeyboardShortcuts({
     onResetPlayback: handleRestartPlayback,
