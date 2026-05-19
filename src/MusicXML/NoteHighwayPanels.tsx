@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, memo } from "react";
 import type { CSSProperties } from "react";
 import { Mic } from "lucide-react";
 import { Note } from "tonal";
@@ -75,11 +75,12 @@ type NoteTilesProps = {
   showNumbers?: boolean;
 };
 
-export const NoteTiles = ({
+export const NoteTiles = memo(function NoteTiles({
   renderData,
   showNoteNames,
   showNumbers,
-}: NoteTilesProps) => (
+}: NoteTilesProps) {
+  return (
   <>
     {renderData.map(
       (data) =>
@@ -212,7 +213,8 @@ export const NoteTiles = ({
         ),
     )}
   </>
-);
+  );
+});
 
 type KeyboardAndHandOverlayProps = {
   activeKeyboardMidi: Map<number, string>;

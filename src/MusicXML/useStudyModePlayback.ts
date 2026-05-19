@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import type { PlaybackEvent, PlaybackTiming } from "./types";
+import { findStudyModeWaitTarget } from "./studyModeWaitTarget";
 
 type UseStudyModePlaybackOptions = {
   currentEventIndex: number;
@@ -25,10 +26,13 @@ export const useStudyModePlayback = ({
 }: UseStudyModePlaybackOptions) => {
   const studyModeFreezeRef = useRef(false);
   const studyModeNextIndexRef = useRef(0);
-  const studyModeTimeRef = useRef(currentGameTimeMs);
   const [isWaiting, setIsWaiting] = useState(false);
 
-  studyModeTimeRef.current = currentGameTimeMs;
+  useEffect(() => {
+    if (currentEventIndex === 0) {
+      studyModeNextIndexRef.current = 0;
+    }
+  }, [currentEventIndex]);
 
   useEffect(() => {
     if (!isStudyMode || !isPlaying || playbackEvents.length === 0) {
@@ -39,40 +43,26 @@ export const useStudyModePlayback = ({
       return;
     }
 
-    const check = () => {
-      const now = studyModeTimeRef.current;
-      for (let i = studyModeNextIndexRef.current; i < playbackEvents.length; i += 1) {
-        const timing = playbackTimeline[i];
-        if (!timing) continue;
-        const ev = playbackEvents[i];
-        const hasNotes = ev.notes.some((note) => note.shouldPlay);
-        if (!hasNotes) continue;
-        if (now >= timing.startMs) {
-          studyModeNextIndexRef.current = i;
-          if (!studyModeFreezeRef.current) {
-            studyModeFreezeRef.current = true;
-            setIsWaiting(true);
-          }
-          return;
-        }
+    const targetIndex = findStudyModeWaitTarget(
+      playbackEvents,
+      playbackTimeline,
+      studyModeNextIndexRef.current,
+      currentGameTimeMs,
+    );
+    if (targetIndex !== null) {
+      studyModeNextIndexRef.current = targetIndex;
+      if (!studyModeFreezeRef.current) {
+        studyModeFreezeRef.current = true;
+        setIsWaiting(true);
       }
-
-      if (studyModeFreezeRef.current) {
-        studyModeFreezeRef.current = false;
-        setIsWaiting(false);
-      }
-    };
-
-    check();
-    const interval = setInterval(check, 100);
-    return () => clearInterval(interval);
-  }, [isStudyMode, isPlaying, playbackEvents, playbackTimeline, currentEventIndex]);
-
-  useEffect(() => {
-    if (currentEventIndex === 0) {
-      studyModeNextIndexRef.current = 0;
+      return;
     }
-  }, [currentEventIndex]);
+
+    if (studyModeFreezeRef.current) {
+      studyModeFreezeRef.current = false;
+      setIsWaiting(false);
+    }
+  }, [currentEventIndex, currentGameTimeMs, isStudyMode, isPlaying, playbackEvents, playbackTimeline]);
 
   const handleStudyModeHit = useCallback((eventIndex: number) => {
     if (eventIndex !== studyModeNextIndexRef.current) return;

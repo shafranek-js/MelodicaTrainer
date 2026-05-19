@@ -13,6 +13,7 @@ import { useGameClock } from "./useGameClock";
 import { usePlaybackScheduler } from "./usePlaybackScheduler";
 import { parsePresetSelection } from "./useSoundFontPresets";
 import type { PlaybackEvent } from "./types";
+import { createPlaybackStartGate } from "./playbackStartGate";
 
 /**
  * Keeps the latest value available to stable callbacks without forcing those
@@ -26,6 +27,7 @@ const useLatestRef = <T>(value: T) => {
 
 export const useScorePlayback = (options: UseScorePlaybackOptions) => {
   const latestOptionsRef = useLatestRef(options);
+  const playbackStartGateRef = useRef(createPlaybackStartGate());
 
   const clearPlaybackResources = useCallback(() => {
     const {
@@ -168,6 +170,10 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
       return;
     }
 
+    if (playbackStartGateRef.current.isPending()) {
+      return;
+    }
+
     if (!playbackReady) {
       musicXmlDebugLogger.warn("Playback not ready", {
         isSheetReady,
@@ -178,53 +184,55 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
       return;
     }
 
-    try {
-      setRouteStatus({ tone: "info", message: "Initializing audio engine..." });
+    await playbackStartGateRef.current.run(async () => {
+      try {
+        setRouteStatus({ tone: "info", message: "Initializing audio engine..." });
 
-      const audioContext = ensureAudioContext(audioContextRef.current);
-      audioContextRef.current = audioContext;
-      await audioContext.resume();
+        const audioContext = ensureAudioContext(audioContextRef.current);
+        audioContextRef.current = audioContext;
+        await audioContext.resume();
 
-      await initSynthesizer(audioContext, selectedSf);
+        await initSynthesizer(audioContext, selectedSf);
 
-      const preset = parsePresetSelection(selectedPreset);
-      if (preset) {
-        changeInstrument(preset.program, preset.bank);
+        const preset = parsePresetSelection(selectedPreset);
+        if (preset) {
+          changeInstrument(preset.program, preset.bank);
+        }
+
+        setRouteStatus({
+          tone: "success",
+          message: fileName ? `Ready: ${fileName}.` : "Score ready.",
+        });
+
+        const startIndex = getPlaybackStartIndex({
+          currentEventIndex,
+          currentGameTimeMs,
+          playbackEvents,
+        });
+
+        if (startIndex === 0) {
+          resetScoring();
+        }
+
+        gameClockOffsetMsRef.current = currentGameTimeMs;
+        gameClockStartMsRef.current = performance.now();
+
+        const runId = playbackRunRef.current + 1;
+        playbackRunRef.current = runId;
+
+        isPlayingRef.current = true;
+        setIsPlaying(true);
+        startGameClock();
+
+        schedulePlaybackRef.current(startIndex, runId);
+      } catch (err) {
+        console.error("Playback error:", err);
+        setRouteStatus({
+          tone: "error",
+          message: "Failed to initialize high-quality sound.",
+        });
       }
-
-      setRouteStatus({
-        tone: "success",
-        message: fileName ? `Ready: ${fileName}.` : "Score ready.",
-      });
-
-      const startIndex = getPlaybackStartIndex({
-        currentEventIndex,
-        currentGameTimeMs,
-        playbackEvents,
-      });
-
-      if (startIndex === 0) {
-        resetScoring();
-      }
-
-      gameClockOffsetMsRef.current = currentGameTimeMs;
-      gameClockStartMsRef.current = performance.now();
-
-      const runId = playbackRunRef.current + 1;
-      playbackRunRef.current = runId;
-
-      isPlayingRef.current = true;
-      setIsPlaying(true);
-      startGameClock();
-
-      schedulePlaybackRef.current(startIndex, runId);
-    } catch (err) {
-      console.error("Playback error:", err);
-      setRouteStatus({
-        tone: "error",
-        message: "Failed to initialize high-quality sound.",
-      });
-    }
+    });
   }, [latestOptionsRef, schedulePlaybackRef, startGameClock, stopPlayback]);
 
   return useMemo(

@@ -109,7 +109,7 @@ export const NoteHighway = ({
     const fingerScreenPx = (containerWidth - svgWidth) / 2 + (tipX / 200) * svgWidth;
     return ((keyCenterPx - fingerScreenPx) / svgWidth) * 100;
   }, [activeMidi, activeFinger, containerWidth, measuredSvgWidth, keyboardGeometry.keys]);
-  const renderData = buildNoteHighwayRenderData({
+  const renderData = useMemo(() => buildNoteHighwayRenderData({
       clarity,
       containerWidth,
       lastHitIndex,
@@ -119,7 +119,17 @@ export const NoteHighway = ({
       visualPlayheadMs,
       fingerAssignments,
       targetLinePercent,
-  });
+  }), [
+    clarity,
+    containerWidth,
+    fingerAssignments,
+    keyCount,
+    lastHitIndex,
+    shortestNoteDurationMs,
+    targetLinePercent,
+    visibleGameEvents,
+    visualPlayheadMs,
+  ]);
   const activeKeyboardMidi = useMemo(() => {
     const active = new Map<number, string>();
 

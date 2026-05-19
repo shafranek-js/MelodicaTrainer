@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_ENVELOPE_TYPE = "MelodicaTrainerPersistentState";
 const STORAGE_VERSION = 1;
@@ -19,6 +19,14 @@ type PersistentStateEnvelope = {
 type PersistentStateOptions<T> = {
   legacyKeys?: readonly string[];
   sanitize?: (value: unknown) => T | undefined;
+  warnSerializedLength?: number;
+  writeDelayMs?: number;
+};
+
+type PendingPersistentWrite = {
+  key: string;
+  legacyKeySignature: string;
+  serialized: string;
   warnSerializedLength?: number;
 };
 
@@ -79,6 +87,35 @@ export function usePersistentState<T>(
   options: PersistentStateOptions<T> = {}
 ): [T, (value: T) => void] {
   const legacyKeySignature = options.legacyKeys?.join("\u0000") ?? "";
+  const writeDelayMs = options.writeDelayMs ?? 100;
+  const pendingWriteRef = useRef<PendingPersistentWrite | null>(null);
+  const writeTimerRef = useRef<number | null>(null);
+
+  const flushPendingWrite = useCallback(() => {
+    if (writeTimerRef.current !== null) {
+      window.clearTimeout(writeTimerRef.current);
+      writeTimerRef.current = null;
+    }
+
+    const pending = pendingWriteRef.current;
+    if (!pending) return;
+
+    if (pending.warnSerializedLength && pending.serialized.length > pending.warnSerializedLength) {
+      console.warn(
+        `localStorage key "${pending.key}" is large (${pending.serialized.length} chars). Consider loading this file manually instead of persisting it.`
+      );
+    }
+
+    localStorage.setItem(pending.key, pending.serialized);
+    if (pending.legacyKeySignature) {
+      pending.legacyKeySignature
+        .split("\u0000")
+        .filter(Boolean)
+        .forEach((legacyKey) => localStorage.removeItem(legacyKey));
+    }
+
+    pendingWriteRef.current = null;
+  }, []);
 
   const [state, setState] = useState<T>(() => {
     const keysToTry = [key, ...(options.legacyKeys ?? [])];
@@ -104,20 +141,27 @@ export function usePersistentState<T>(
   });
 
   useEffect(() => {
-    const serialized = encodePersistentValue(state);
-    if (options.warnSerializedLength && serialized.length > options.warnSerializedLength) {
-      console.warn(
-        `localStorage key "${key}" is large (${serialized.length} chars). Consider loading this file manually instead of persisting it.`
-      );
+    pendingWriteRef.current = {
+      key,
+      legacyKeySignature,
+      serialized: encodePersistentValue(state),
+      warnSerializedLength: options.warnSerializedLength,
+    };
+
+    if (writeTimerRef.current !== null) {
+      window.clearTimeout(writeTimerRef.current);
     }
-    localStorage.setItem(key, serialized);
-    if (legacyKeySignature) {
-      legacyKeySignature
-        .split("\u0000")
-        .filter(Boolean)
-        .forEach((legacyKey) => localStorage.removeItem(legacyKey));
-    }
-  }, [key, legacyKeySignature, options.warnSerializedLength, state]);
+
+    writeTimerRef.current = window.setTimeout(flushPendingWrite, writeDelayMs);
+  }, [flushPendingWrite, key, legacyKeySignature, options.warnSerializedLength, state, writeDelayMs]);
+
+  useEffect(() => {
+    window.addEventListener("pagehide", flushPendingWrite);
+    return () => {
+      window.removeEventListener("pagehide", flushPendingWrite);
+      flushPendingWrite();
+    };
+  }, [flushPendingWrite]);
 
   return [state, setState];
 }
