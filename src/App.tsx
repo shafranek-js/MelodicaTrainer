@@ -68,7 +68,7 @@ function App() {
                   <Route path="/musicxml" element={<MusicXML />} />
                   <Route path="/help" element={<Help />} />
                   <Route path="/harmonica" element={<Navigate to="/melodica" replace />} />
-                  <Route path="/" element={<Navigate to="/melodica" replace />} />
+                  <Route path="/" element={<Navigate to="/musicxml" replace />} />
                 </Routes>
               </Suspense>
             </RouteErrorBoundary>
