@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "npm run library:check && tsc -b && vite build && node scripts/prepare-sites-build.mjs",
     "library:check": "node scripts/validate-score-library.mjs",
+    "library:generate-cc0": "node scripts/generate-cc0-melodies.mjs",
     "library:generate-gp": "node scripts/generate-gp-library.mjs",
     "library:catalog": "node scripts/generate-score-library-catalog.mjs",
     "library:verify-pdmx": "node scripts/verify-pdmx-selection.mjs",

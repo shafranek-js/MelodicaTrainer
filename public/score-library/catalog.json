@@ -1955,6 +1955,682 @@
       "sha256": "da39040d950db31badd70a5f87bd05ee199463ffe83ead6e77f98aab264b3379"
     },
     {
+      "id": "pdmx-bingo",
+      "title": "B-I-N-G-O",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-bingo.mxl",
+      "fileName": "pdmx-bingo.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5932730"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3138,
+      "sha256": "4b53e714a42825c8a2a0a66601f92601a13ca3d9e51e141585600cbc9021b767"
+    },
+    {
+      "id": "pdmx-alouette",
+      "title": "Alouette",
+      "composer": "Traditional French Canadian",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-alouette.mxl",
+      "fileName": "pdmx-alouette.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6404873"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2849,
+      "sha256": "3dc496d93a9b0dde35cc54893bd9dc9a77fee28429d415a0613a63bc3f3fca19"
+    },
+    {
+      "id": "pdmx-alle-meine-entchen",
+      "title": "Alle meine Entchen",
+      "composer": "Traditional German",
+      "arranger": "M. Lorenz",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-alle-meine-entchen.mxl",
+      "fileName": "pdmx-alle-meine-entchen.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "german",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "168879"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3060,
+      "sha256": "4eefd1bfc662e3a53103c6eab42519f252b4af3f1b92a3b46d8a485ef930e1cb"
+    },
+    {
+      "id": "pdmx-kalinka",
+      "title": "Kalinka",
+      "composer": "Ivan Larionov",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-kalinka.mxl",
+      "fileName": "pdmx-kalinka.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5936071"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 6456,
+      "sha256": "265123610d7dc60ace044154f3398f11b4c138b9350e517d928e67d968c7ef48"
+    },
+    {
+      "id": "pdmx-korobeiniki",
+      "title": "Korobeiniki (Tetris Theme)",
+      "composer": "Traditional Russian",
+      "arranger": "Tamara Sanyshyn Peters",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-korobeiniki.mxl",
+      "fileName": "pdmx-korobeiniki.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6125453"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2559,
+      "sha256": "1174fb21fd3aa6098de1d68039d76c387a31ad85639fc82e502453b8b006c990"
+    },
+    {
+      "id": "pdmx-shchedryk",
+      "title": "Shchedryk (Carol of the Bells)",
+      "composer": "Mykola Leontovych",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-shchedryk.mxl",
+      "fileName": "pdmx-shchedryk.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "folk",
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6423399"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4144,
+      "sha256": "21186f0961ba90cc32807b5f05b5d7041867bc1eab8ccf2e9c7a54e3da1740c5"
+    },
+    {
+      "id": "pdmx-arirang",
+      "title": "Arirang",
+      "composer": "Korean Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-arirang.mxl",
+      "fileName": "pdmx-arirang.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5124521"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2807,
+      "sha256": "1aaabdf22f3738f5829c32a994c3a7fa9adf5cc497fddf536f66d120a11260dd"
+    },
+    {
+      "id": "pdmx-mo-li-hua",
+      "title": "Mo Li Hua (Jasmine Flower)",
+      "composer": "Chinese Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-mo-li-hua.mxl",
+      "fileName": "pdmx-mo-li-hua.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6377348"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3597,
+      "sha256": "9583d0c3017bbb736d8332ca534ca12e9020c98d779be7fc5f6bdd26e9b23f9e"
+    },
+    {
+      "id": "pdmx-la-cucaracha",
+      "title": "La Cucaracha",
+      "composer": "Traditional Mexican",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-la-cucaracha.mxl",
+      "fileName": "pdmx-la-cucaracha.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5650257"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 9022,
+      "sha256": "26ee5ef3adeea4b45723817797744192d3fc580b97ce3c642fef57c75cabc119"
+    },
+    {
+      "id": "pdmx-eine-kleine-nachtmusik",
+      "title": "Eine kleine Nachtmusik — Main Theme",
+      "composer": "Wolfgang Amadeus Mozart",
+      "arranger": "Clifton Jones",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-eine-kleine-nachtmusik.mxl",
+      "fileName": "pdmx-eine-kleine-nachtmusik.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5938176"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2555,
+      "sha256": "5b4093db84ac0eb5f5888ac879f14a3ab57fb13a3fb134c69f32f0aa2f5077fe"
+    },
+    {
+      "id": "pdmx-vivaldi-spring",
+      "title": "Spring from The Four Seasons",
+      "composer": "Antonio Vivaldi",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-vivaldi-spring.mxl",
+      "fileName": "pdmx-vivaldi-spring.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6383173"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 5882,
+      "sha256": "c8404dd4ef77d8286c062c399fd2acd16514ac500ad4c4895e173dfc19fde98c"
+    },
+    {
+      "id": "pdmx-new-world-largo",
+      "title": "New World Symphony — Largo Theme",
+      "composer": "Antonín Dvořák",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-new-world-largo.mxl",
+      "fileName": "pdmx-new-world-largo.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5747423"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2959,
+      "sha256": "3d57e1b203388ce51a7e9d1e5158fb460f4c2f8fe3ad5c065c257c0f3acc1eda"
+    },
+    {
+      "id": "pdmx-morning-mood",
+      "title": "Morning Mood",
+      "composer": "Edvard Grieg",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-morning-mood.mxl",
+      "fileName": "pdmx-morning-mood.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4812602"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 6720,
+      "sha256": "eab5a195a230b45c9f6aeb2d310b570682c9be708bc291e115de955d544a1320"
+    },
+    {
+      "id": "cc0-this-old-man",
+      "title": "This Old Man",
+      "composer": "Traditional",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-this-old-man.mxl",
+      "fileName": "cc0-this-old-man.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://abcnotation.com/tunePage?a=trillian.mit.edu%2F~jc%2Fmusic%2Fabc%2Fmirror%2Fmusicaviva.com%2Fanon%2Fthis-old-man%2Fthis-old-man-1%2F0000"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1271,
+      "sha256": "a6dca96a7b4458ea3957be60cc1629412ce4e733f32deb29d831dc1ad0d49a9b"
+    },
+    {
+      "id": "cc0-mulberry-bush",
+      "title": "Here We Go Round the Mulberry Bush",
+      "composer": "Traditional",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-mulberry-bush.mxl",
+      "fileName": "cc0-mulberry-bush.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://abcnotation.com/tunePage?a=trillian.mit.edu%2F~jc%2Fmusic%2Fbook%2FEverydaySongBook%2FEverydaySongBook2%2F0076"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1333,
+      "sha256": "91ce8d07e08dbcdd09b4f0a9393a860cfcdd9d00f3d782958131500b207d5202"
+    },
+    {
+      "id": "cc0-ring-around-rosie",
+      "title": "Ring a Ring o' Roses",
+      "composer": "Traditional",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-ring-around-rosie.mxl",
+      "fileName": "cc0-ring-around-rosie.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://abcnotation.com/tunePage?a=www.vwml.org%2Fcomponents%2Fcom_rbdmdtallis%2Fmedia%2Fabctranscriptions%2Fabc%2FCJS2-10-1747-0%2F0000"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1243,
+      "sha256": "da4a4117e910068856f0dc6f8677cea7e87ae4d44f78ae5715af160707eb3178"
+    },
+    {
+      "id": "cc0-hush-little-baby",
+      "title": "Hush, Little Baby",
+      "composer": "Traditional American",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-hush-little-baby.mxl",
+      "fileName": "cc0-hush-little-baby.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "lullaby",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://www.flutetunes.com/tunes.php?id=252"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1228,
+      "sha256": "23e70aeb996358affdd1f4264176c4192f74bd271c4d2e6fe10d0dd28ee095b0"
+    },
+    {
+      "id": "cc0-oranges-and-lemons",
+      "title": "Oranges and Lemons",
+      "composer": "Traditional English",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-oranges-and-lemons.mxl",
+      "fileName": "cc0-oranges-and-lemons.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://abcnotation.com/tunePage?a=tunearch.org%2Fwiki%2FOranges_and_Lemons.no-ext%2F0001"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1249,
+      "sha256": "90ecf3e029ff17685bcd2240ca04c6500af32dd7691476451e317c7d96e5c316"
+    },
+    {
+      "id": "cc0-bear-over-mountain",
+      "title": "The Bear Went Over the Mountain",
+      "composer": "Traditional",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-bear-over-mountain.mxl",
+      "fileName": "cc0-bear-over-mountain.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://abcnotation.com/tunePage?a=trillian.mit.edu%2F~jc%2Fmusic%2Fabc%2Fmirror%2Fback.numachi.com%2FBear_Went_Over_the_Mountain%2F0000"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1300,
+      "sha256": "32ae6338fdc18821dc9409c1341bcebfc578c2af0cfb4ddb13c47b1acafa8ac2"
+    },
+    {
+      "id": "cc0-londons-burning",
+      "title": "London's Burning",
+      "composer": "Traditional English",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-londons-burning.mxl",
+      "fileName": "cc0-londons-burning.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "round",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://noobnotes.net/londons-burning-traditional/"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1223,
+      "sha256": "b438a391c4762ea9566bb253cac79c4d1920f708c5198cb6cb0cead0e47f5a9f"
+    },
+    {
+      "id": "cc0-fuchs-gans",
+      "title": "Fuchs, du hast die Gans gestohlen",
+      "composer": "Traditional German",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-fuchs-gans.mxl",
+      "fileName": "cc0-fuchs-gans.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "german",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://abcnotation.com/tunePage?a=ifdo.ca%2F~seymour%2Frunabc%2Fesac%2Ffink0%2F0123"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1344,
+      "sha256": "4faede52121f33b71ec1ade224d5676d4cc0e97971aec45dc9b787beda557964"
+    },
+    {
+      "id": "cc0-kuckuck-wald",
+      "title": "Kuckuck, Kuckuck, ruft's aus dem Wald",
+      "composer": "Traditional Austrian / German",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-kuckuck-wald.mxl",
+      "fileName": "cc0-kuckuck-wald.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "german",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://www.deutsche-digitale-bibliothek.de/item/4YYKVUY77BU7ZDRXDMULMUFVESIKPTXN"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1312,
+      "sha256": "9658155d46f5c671511a5e390efae31384daa47fb04a55887fc0560794dd7000"
+    },
+    {
+      "id": "cc0-skakal-pes",
+      "title": "Skákal pes",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-skakal-pes.mxl",
+      "fileName": "cc0-skakal-pes.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://www.prodeticokoliv.cz/noty-skakal-pes/"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1220,
+      "sha256": "814e5e96b513660016883e36eb9e8504b09a280f0c6e0f7dfdfbdae4c45a4ba7"
+    },
+    {
+      "id": "cc0-kocka-leze-dirou",
+      "title": "Kočka leze dírou",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-kocka-leze-dirou.mxl",
+      "fileName": "cc0-kocka-leze-dirou.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://www.prodeticokoliv.cz/kocka-leze-dirou-text-noty/"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1279,
+      "sha256": "0664899e9baed288dde6e8014c1947f2f296dfc412ecd07c884e3262fdc874e0"
+    },
+    {
+      "id": "cc0-pec-nam-spadla",
+      "title": "Pec nám spadla",
+      "composer": "Traditional Czech / Slovak",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-pec-nam-spadla.mxl",
+      "fileName": "cc0-pec-nam-spadla.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "slovak",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://studiumna2.estranky.cz/fotoalbum/pisnicky/piiisnicky-iv_/pec-nam-spadla.jpg.-.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1261,
+      "sha256": "1ebf400f2020e397653be1f2e053f8725d22629c6280d23d61892aa7279e830a"
+    },
+    {
       "id": "gp-scarborough-fair",
       "title": "Scarborough Fair",
       "composer": "Traditional",

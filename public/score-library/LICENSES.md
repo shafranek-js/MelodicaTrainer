@@ -17,7 +17,7 @@ OpenScore Lieder is released under CC0. Selected `.mscx` sources were converted 
 - Source: https://github.com/OpenScore/Lieder
 - License: https://creativecommons.org/publicdomain/zero/1.0/
 
-## PDMX — 45 MusicXML files
+## PDMX — 58 MusicXML files
 
 The approved records come from the PDMX no-license-conflict, all-valid, deduplicated subsets. Paywalled and official-score records are excluded. Each selected record was also reviewed for a public-domain underlying composition and a non-conflicting arrangement. The entry preserves the upstream CC0 or Public Domain Mark status.
 
@@ -25,6 +25,12 @@ The approved records come from the PDMX no-license-conflict, all-valid, deduplic
 - Project: https://github.com/pnlong/PDMX
 - CC0: https://creativecommons.org/publicdomain/zero/1.0/
 - Public Domain Mark: https://creativecommons.org/publicdomain/mark/1.0/
+
+## Melodica Trainer CC0 transcriptions — 12 MusicXML files
+
+These are independent, one-part/one-staff transcriptions of traditional public-domain children's and folk melodies. The reviewed notation reference for each melody is preserved in its catalog entry, and the generated MusicXML transcription is dedicated to CC0 1.0. The deterministic source data lives in `scripts/library-selections/cc0-melodies.json`.
+
+- CC0 dedication: https://creativecommons.org/publicdomain/zero/1.0/
 
 ## Guitar Pro files — 12 files
 

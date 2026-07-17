@@ -15,6 +15,7 @@ const withAssetData = async (entry) => {
 const museTrainer = await readSelection("musetrainer");
 const openScore = await readSelection("openscore-lieder");
 const pdmx = await readSelection("pdmx");
+const cc0Melodies = await readSelection("cc0-melodies");
 
 const entries = [];
 for (const entry of museTrainer) {
@@ -86,6 +87,30 @@ for (const entry of pdmx) {
         ? "https://creativecommons.org/publicdomain/zero/1.0/"
         : "https://creativecommons.org/publicdomain/mark/1.0/",
       basis: "pdmx-filtered-and-manually-reviewed",
+    },
+    rightsReviewedAt: reviewedAt,
+  }));
+}
+
+for (const entry of cc0Melodies) {
+  entries.push(await withAssetData({
+    id: entry.id,
+    title: entry.title,
+    composer: entry.composer,
+    arranger: "Melodica Trainer",
+    format: "musicxml",
+    assetPath: `assets/cc0/${entry.id}.mxl`,
+    fileName: `${entry.id}.mxl`,
+    difficulty: entry.difficulty,
+    tags: entry.tags,
+    source: {
+      name: "Melodica Trainer CC0",
+      url: entry.sourceUrl,
+    },
+    license: {
+      kind: "CC0-1.0",
+      url: "https://creativecommons.org/publicdomain/zero/1.0/",
+      basis: "original-transcription-of-public-domain-melody",
     },
     rightsReviewedAt: reviewedAt,
   }));

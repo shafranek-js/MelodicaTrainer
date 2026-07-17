@@ -19,12 +19,12 @@ const readMusicXml = async (entry) => {
 };
 
 describe("committed MusicXML library content", () => {
-  it("contains exactly 75 scores with first-staff playback events", async () => {
-    expect(musicXmlEntries).toHaveLength(75);
+  it("contains exactly 100 scores with first-staff playback events", async () => {
+    expect(musicXmlEntries).toHaveLength(100);
     for (const entry of musicXmlEntries) {
       const xml = await readMusicXml(entry);
       const { events } = parsePlaybackEvents(xml, { addLeadIn: false });
       expect(events.some((event) => event.notes.some((note) => note.shouldPlay)), entry.id).toBe(true);
     }
-  }, 30_000);
+  }, 45_000);
 });
