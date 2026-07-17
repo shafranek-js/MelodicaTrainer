@@ -15,6 +15,31 @@ type UseScoreFileImportOptions = {
   stopPlayback: (reset?: boolean) => void;
 };
 
+type ResetImportedScoreOptions = Omit<UseScoreFileImportOptions, "loadScoreFile">;
+
+export const resetImportedScoreState = (
+  loadedFile: LoadedScoreFile,
+  {
+    resetGpScore,
+    setDetectedTempoBpm,
+    setIsSheetReady,
+    setPlaybackEvents,
+    setTranspose,
+    setUserTempoBpm,
+    stopPlayback,
+  }: ResetImportedScoreOptions,
+) => {
+  stopPlayback(true);
+  resetGpScore(loadedFile.isGpFile);
+  setPlaybackEvents([]);
+  setIsSheetReady(false);
+
+  const resetTempoState = getResetTempoState();
+  setUserTempoBpm(resetTempoState.userTempoBpm);
+  setDetectedTempoBpm(resetTempoState.detectedTempoBpm);
+  setTranspose(0);
+};
+
 export const useScoreFileImport = ({
   loadScoreFile,
   resetGpScore,
@@ -24,28 +49,20 @@ export const useScoreFileImport = ({
   setTranspose,
   setUserTempoBpm,
   stopPlayback,
-}: UseScoreFileImportOptions) =>
-  useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      try {
-        stopPlayback(true);
-        const loadedFile = await loadScoreFile(file);
-        resetGpScore(loadedFile.isGpFile);
-        setPlaybackEvents([]);
-        setIsSheetReady(false);
-
-        const resetTempoState = getResetTempoState();
-        setUserTempoBpm(resetTempoState.userTempoBpm);
-        setDetectedTempoBpm(resetTempoState.detectedTempoBpm);
-        setTranspose(0);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        event.target.value = "";
-      }
+}: UseScoreFileImportOptions) => {
+  const importScoreFile = useCallback(
+    async (file: File) => {
+      const loadedFile = await loadScoreFile(file);
+      resetImportedScoreState(loadedFile, {
+        resetGpScore,
+        setDetectedTempoBpm,
+        setIsSheetReady,
+        setPlaybackEvents,
+        setTranspose,
+        setUserTempoBpm,
+        stopPlayback,
+      });
+      return loadedFile;
     },
     [
       loadScoreFile,
@@ -56,5 +73,24 @@ export const useScoreFileImport = ({
       setTranspose,
       setUserTempoBpm,
       stopPlayback,
-    ]
+    ],
   );
+
+  const handleFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+        await importScoreFile(file);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [importScoreFile],
+  );
+
+  return { handleFileChange, importScoreFile };
+};

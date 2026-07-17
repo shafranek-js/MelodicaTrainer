@@ -16,6 +16,12 @@ import { useScoreCursor } from "./useScoreCursor";
 import { useScorePlayback } from "./useScorePlayback";
 import { useScoreDownloads } from "./useScoreDownloads";
 import { useScoreFileImport } from "./useScoreFileImport";
+import type { ScoreLibraryEntry } from "./scoreLibrary";
+import {
+  downloadScoreLibraryFile,
+  getScoreLibraryDownloadErrorMessage,
+  ScoreLibraryDownloadError,
+} from "./scoreLibraryDownload";
 import { useSoundFontPresets } from "./useSoundFontPresets";
 import { usePlaybackViewModel } from "./usePlaybackViewModel";
 import { useTransposeOptimizer } from "./useTransposeOptimizer";
@@ -400,7 +406,7 @@ const MusicXML: React.FC = () => {
     setTranspose(Number.isFinite(semitones) ? semitones : 0);
   };
 
-  const handleFileChange = useScoreFileImport({
+  const { handleFileChange, importScoreFile } = useScoreFileImport({
     loadScoreFile,
     resetGpScore,
     setPlaybackEvents,
@@ -410,6 +416,38 @@ const MusicXML: React.FC = () => {
     setTranspose,
     stopPlayback,
   });
+
+  const handleLibraryScoreLoad = useCallback(
+    async (entry: ScoreLibraryEntry, signal: AbortSignal) => {
+      setRouteStatus({
+        tone: "info",
+        message: `Downloading ${entry.title}...`,
+      });
+
+      try {
+        const file = await downloadScoreLibraryFile(entry, { signal });
+        await importScoreFile(file);
+        setRouteStatus({
+          tone: "success",
+          message: `${entry.title} loaded from MuseTrainer Library.`,
+        });
+      } catch (error) {
+        if (
+          error instanceof ScoreLibraryDownloadError &&
+          error.reason === "cancelled"
+        ) {
+          setRouteStatus({ tone: "info", message: "Library download cancelled." });
+        } else {
+          setRouteStatus({
+            tone: "error",
+            message: getScoreLibraryDownloadErrorMessage(error),
+          });
+        }
+        throw error;
+      }
+    },
+    [importScoreFile],
+  );
 
   return (
     <div className="h-full w-full flex flex-col bg-gray-950 text-white overflow-hidden max-w-full relative">
@@ -490,6 +528,7 @@ const MusicXML: React.FC = () => {
           onDownloadTransposedXml: downloadTransposedXml,
           onFileChange: handleFileChange,
           onGpTrackChange: (trackIndex) => handleGpTrackChange(trackIndex, handleRestartPlayback),
+          onLibraryScoreLoad: handleLibraryScoreLoad,
           onMelodicaRangeChange: setSelectedKeyCount,
           onSelectedPresetChange: setSelectedPreset,
           onSoundFontChange: (soundFont) => {

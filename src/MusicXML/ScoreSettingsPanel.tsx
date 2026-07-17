@@ -1,6 +1,9 @@
-import { FolderOpen, Pin, PinOff } from "lucide-react";
+import { FolderOpen, Library, Pin, PinOff } from "lucide-react";
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
+import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
+import type { ScoreLibraryEntry } from "./scoreLibrary";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string };
@@ -34,6 +37,7 @@ type ScoreSettingsPanelProps = {
   onDownloadTransposedXml: () => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onGpTrackChange: (trackIndex: number) => void;
+  onLibraryScoreLoad: (entry: ScoreLibraryEntry, signal: AbortSignal) => Promise<void>;
   onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
   onSoundFontChange: (soundFont: string) => void;
@@ -59,6 +63,7 @@ export const ScoreSettingsPanel = ({
   onDownloadTransposedXml,
   onFileChange,
   onGpTrackChange,
+  onLibraryScoreLoad,
   onMelodicaRangeChange,
   onSelectedPresetChange,
   onSoundFontChange,
@@ -69,8 +74,12 @@ export const ScoreSettingsPanel = ({
   selectedPreset,
   selectedSoundFont,
   soundFonts,
-}: ScoreSettingsPanelProps) => (
-  <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar relative">
+}: ScoreSettingsPanelProps) => {
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+
+  return (
+    <>
+      <div className="w-full lg:w-72 shrink-0 bg-gray-900 rounded-xl shadow-xl p-5 space-y-5 border border-gray-700 overflow-y-auto max-h-full custom-scrollbar relative">
     <button
       onClick={onTogglePin}
       className="hidden lg:flex absolute top-3 right-3 text-gray-500 hover:text-gray-300 transition-colors p-1"
@@ -151,7 +160,7 @@ export const ScoreSettingsPanel = ({
       )}
     </div>
 
-    <div className="pt-2">
+    <div className="space-y-2 pt-2">
       <label className="group relative flex items-center justify-center gap-2 cursor-pointer px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all w-full text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95">
         <FolderOpen size={16} />
         Load XML/GP
@@ -162,6 +171,14 @@ export const ScoreSettingsPanel = ({
           className="hidden"
         />
       </label>
+      <button
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-700 bg-emerald-950/60 px-4 py-3 text-xs font-black uppercase tracking-widest text-emerald-200 shadow-lg shadow-emerald-950/20 transition-all hover:bg-emerald-900/70 active:scale-95"
+        onClick={() => setIsLibraryOpen(true)}
+        type="button"
+      >
+        <Library size={16} />
+        Browse library
+      </button>
       {fileName && <p className="mt-2 text-[10px] text-gray-500 font-bold truncate text-center uppercase tracking-tighter">Loaded: {fileName}</p>}
     </div>
 
@@ -185,5 +202,12 @@ export const ScoreSettingsPanel = ({
         </button>
       </div>
     )}
-  </div>
-);
+      </div>
+      <ScoreLibraryDialog
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        onLoadScore={onLibraryScoreLoad}
+      />
+    </>
+  );
+};
