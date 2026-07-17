@@ -74,6 +74,11 @@ const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
   });
 };
 
+export const readBinaryScoreFile = async (file: File) => {
+  assertUploadSize(file);
+  return new Uint8Array(await readFileAsArrayBuffer(file));
+};
+
 const readFileAsText = async (file: File) => {
   if (typeof file.text === "function") {
     return file.text();
@@ -136,7 +141,7 @@ export const readMusicXmlFile = async (file: File) => {
   const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name);
 
   if (isGp) {
-    return new Uint8Array(await readFileAsArrayBuffer(file));
+    return readBinaryScoreFile(file);
   }
 
   const content = await (isMxl

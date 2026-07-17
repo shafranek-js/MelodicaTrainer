@@ -24,6 +24,7 @@ export type UseScorePlaybackRefs = {
   playbackTimerRef: MutableRefObject<number | null>;
   sheetScrollRef: MutableRefObject<HTMLDivElement | null>;
   studyModeFreezeRef?: MutableRefObject<boolean>;
+  studyModeNextIndexRef?: MutableRefObject<number>;
   tempoScaleRef: MutableRefObject<number>;
 };
 
@@ -34,6 +35,7 @@ export type UseScorePlaybackState = {
   fileName: string | null;
   isGpPlaybackReady: boolean;
   isGpFile: boolean;
+  isLooping: boolean;
   isPlaying: boolean;
   isSheetReady: boolean;
   playbackEvents: PlaybackEvent[];

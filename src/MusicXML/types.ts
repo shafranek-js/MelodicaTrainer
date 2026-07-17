@@ -1,6 +1,7 @@
 export type PlaybackNote = {
   name: string;
   durationBeats: number;
+  durationSeconds?: number;
   velocity: number;
   articulation: "normal" | "staccato" | "tenuto" | "accent";
   tieStart: boolean;
@@ -10,6 +11,7 @@ export type PlaybackNote = {
 
 export type PlaybackEvent = {
   durationBeats: number;
+  durationSeconds?: number;
   tempoBpm: number;
   notes: PlaybackNote[];
   tabs: string[];

@@ -28,6 +28,12 @@ describe("playback timing helpers", () => {
     expect(getPlaybackEventDurationMs(0.01, 240)).toBe(80);
   });
 
+  it("preserves exact MIDI seconds and scales them with the global tempo", () => {
+    expect(getPlaybackEventDurationMs(1, 120, 0.5, 1)).toBe(500);
+    expect(getPlaybackEventDurationMs(1, 120, 0.5, 2)).toBe(250);
+    expect(getPlaybackEventDurationMs(1, 120, 0.001, 1)).toBe(10);
+  });
+
   it("returns both effective tempo and duration for an event", () => {
     expect(getPlaybackEventTiming(event, 0.5)).toEqual({
       durationMs: 2000,

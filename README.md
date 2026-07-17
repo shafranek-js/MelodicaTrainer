@@ -1,6 +1,6 @@
 # MelodicaTrainer
 
-MelodicaTrainer is an interactive React application for melodica practice. It combines real-time microphone pitch detection, a selectable melodica keyboard range, MusicXML/Guitar Pro playback, a note-highway practice view, and a circle-of-fifths theory explorer.
+MelodicaTrainer is an interactive React application for melodica practice. It combines real-time microphone pitch detection, a selectable melodica keyboard range, MusicXML/Guitar Pro/MIDI playback, a note-highway practice view, and a circle-of-fifths theory explorer.
 
 ## Key Features
 
@@ -12,7 +12,7 @@ MelodicaTrainer is an interactive React application for melodica practice. It co
 
 ### Note Highway
 
-- Load MusicXML, MXL, and Guitar Pro files.
+- Load MusicXML, MXL, Guitar Pro, and MIDI files.
 - Browse a local, searchable library of 100 MusicXML scores and 12 Guitar Pro files, with difficulty, format, tag, source, and license filters.
 - Practice against synced playback and target lanes.
 - Auto-transpose material into the selected melodica range.

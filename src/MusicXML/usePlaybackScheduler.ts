@@ -11,13 +11,19 @@ import type { PlaybackEvent } from "./types";
 
 type UsePlaybackSchedulerOptions = {
   latestOptionsRef: MutableRefObject<UseScorePlaybackOptions>;
-  playNotes: (notes: PlaybackEvent["notes"], tempoBpm: number) => void;
+  playNotes: (
+    notes: PlaybackEvent["notes"],
+    tempoBpm: number,
+    tempoScale: number,
+  ) => void;
+  restartPlaybackLoop: (runId: number) => boolean;
   stopPlayback: (reset?: boolean, shouldResetScoring?: boolean) => void;
 };
 
 export const usePlaybackScheduler = ({
   latestOptionsRef,
   playNotes,
+  restartPlaybackLoop,
   stopPlayback,
 }: UsePlaybackSchedulerOptions) => {
   const schedulePlaybackRef = useRef<
@@ -44,9 +50,18 @@ export const usePlaybackScheduler = ({
       const event = playbackEvents[startIndex];
 
       if (!event) {
+        if (restartPlaybackLoop(runId)) {
+          schedulePlaybackRef.current(0, runId);
+          return;
+        }
+
         playbackTimerRef.current = window.setTimeout(() => {
           playbackTimerRef.current = null;
           if (playbackRunRef.current !== runId) return;
+          if (restartPlaybackLoop(runId)) {
+            schedulePlaybackRef.current(0, runId);
+            return;
+          }
           onPlaybackComplete();
           stopPlayback(true, false);
         }, getPlaybackTrailDelayMs(shortestNoteDurationMs, tempoScaleRef.current));
@@ -68,7 +83,7 @@ export const usePlaybackScheduler = ({
 
       setCurrentEventIndex(startIndex);
       moveCursorThroughEventRef.current(startIndex, durationMs);
-      playNotes(event.notes, effectiveTempoBpm);
+      playNotes(event.notes, effectiveTempoBpm, tempoScaleRef.current);
 
       const scheduleNext = () => {
         if (playbackRunRef.current !== runId) return;
@@ -83,7 +98,7 @@ export const usePlaybackScheduler = ({
 
       playbackTimerRef.current = window.setTimeout(scheduleNext, durationMs);
     },
-    [latestOptionsRef, playNotes, stopPlayback],
+    [latestOptionsRef, playNotes, restartPlaybackLoop, stopPlayback],
   );
 
   schedulePlaybackRef.current = schedulePlayback;

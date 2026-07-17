@@ -4,6 +4,8 @@ import type { ChangeEvent } from "react";
 import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
 import type { ScoreLibraryEntry } from "./scoreLibrary";
+import type { MidiPartInfo } from "./midiParser";
+import type { ScoreFormat } from "./scoreFormat";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string };
@@ -29,14 +31,15 @@ type ScoreSettingsPanelProps = {
   canUseProcessedScore: boolean;
   fileName: string | null;
   gpTracks: GpTrack[];
+  midiParts: MidiPartInfo[];
   keyCount: MelodicaKeyCount;
   melodicaRanges: readonly MelodicaRangeOption[];
-  isGpFile: boolean;
   isPinned: boolean;
   onDownloadMelodicaNotes: () => void;
   onDownloadTransposedXml: () => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onGpTrackChange: (trackIndex: number) => void;
+  onMidiPartChange: (partId: string) => void;
   onLibraryScoreLoad: (entry: ScoreLibraryEntry, signal: AbortSignal) => Promise<void>;
   onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
@@ -44,7 +47,9 @@ type ScoreSettingsPanelProps = {
   onTogglePin: () => void;
   routeStatus: RouteStatus | null;
   routeStatusClassNames: Record<RouteStatusTone, string>;
+  scoreFormat: ScoreFormat | null;
   selectedGpTrackIndex: number;
+  selectedMidiPartId: string | null;
   selectedPreset: string;
   selectedSoundFont: string;
   soundFonts: SoundFontOption[];
@@ -55,14 +60,15 @@ export const ScoreSettingsPanel = ({
   canUseProcessedScore,
   fileName,
   gpTracks,
+  midiParts,
   keyCount,
   melodicaRanges,
-  isGpFile,
   isPinned,
   onDownloadMelodicaNotes,
   onDownloadTransposedXml,
   onFileChange,
   onGpTrackChange,
+  onMidiPartChange,
   onLibraryScoreLoad,
   onMelodicaRangeChange,
   onSelectedPresetChange,
@@ -70,7 +76,9 @@ export const ScoreSettingsPanel = ({
   onTogglePin,
   routeStatus,
   routeStatusClassNames,
+  scoreFormat,
   selectedGpTrackIndex,
+  selectedMidiPartId,
   selectedPreset,
   selectedSoundFont,
   soundFonts,
@@ -142,7 +150,7 @@ export const ScoreSettingsPanel = ({
         </div>
       )}
 
-      {isGpFile && gpTracks.length > 0 && (
+      {scoreFormat === "guitar-pro" && gpTracks.length > 0 && (
         <div>
           <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">GP Track</label>
           <select
@@ -158,15 +166,32 @@ export const ScoreSettingsPanel = ({
           </select>
         </div>
       )}
+
+      {scoreFormat === "midi" && midiParts.length > 0 && selectedMidiPartId && (
+        <div>
+          <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">MIDI Part</label>
+          <select
+            value={selectedMidiPartId}
+            onChange={(e) => onMidiPartChange(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+          >
+            {midiParts.map((part) => (
+              <option key={part.id} value={part.id}>
+                {part.name} — Ch. {part.channel + 1}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
 
     <div className="space-y-2 pt-2">
       <label className="group relative flex items-center justify-center gap-2 cursor-pointer px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all w-full text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95">
         <FolderOpen size={16} />
-        Load XML/GP
+        Load XML/GP/MIDI
         <input
           type="file"
-          accept=".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx"
+          accept=".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi"
           onChange={onFileChange}
           className="hidden"
         />
@@ -182,7 +207,7 @@ export const ScoreSettingsPanel = ({
       {fileName && <p className="mt-2 text-[10px] text-gray-500 font-bold truncate text-center uppercase tracking-tighter">Loaded: {fileName}</p>}
     </div>
 
-    {!isGpFile && (
+    {scoreFormat === "musicxml" && (
       <div className="pt-2 grid grid-cols-2 gap-2">
         <button
           onClick={onDownloadTransposedXml}

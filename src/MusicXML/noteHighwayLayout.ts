@@ -79,7 +79,9 @@ export const buildNoteHighwayRenderData = ({
             const percentPerMs = targetLinePercent / dynamicLookaheadMs;
 
             const noteDurationRatio = event.durationBeats > 0 ? note.durationBeats / event.durationBeats : 1;
-            const noteDurationMs = timing.durationMs * noteDurationRatio;
+            const noteDurationMs = note.durationSeconds === undefined
+                ? timing.durationMs * noteDurationRatio
+                : note.durationSeconds * 1000;
             const noteEndMs = timing.startMs + noteDurationMs;
 
             const topPercent = targetLinePercent - timeToHitMs * percentPerMs;

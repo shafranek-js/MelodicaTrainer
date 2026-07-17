@@ -1,16 +1,17 @@
 import { useEffect, useRef } from "react";
 import { CursorType, OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import type { ScoreFormat } from "./scoreFormat";
 
 type UseOsmdScoreOptions = {
   displayFileContent: string | null;
-  isGpFile: boolean;
+  scoreFormat: ScoreFormat | null;
   onRenderError: (error: unknown) => void;
   onRendered: () => void;
 };
 
 export const useOsmdScore = ({
   displayFileContent,
-  isGpFile,
+  scoreFormat,
   onRenderError,
   onRendered,
 }: UseOsmdScoreOptions) => {
@@ -19,7 +20,7 @@ export const useOsmdScore = ({
   const renderRunRef = useRef(0);
 
   useEffect(() => {
-    if (isGpFile || !displayFileContent || !osmdRef.current) return;
+    if (scoreFormat !== "musicxml" || !displayFileContent || !osmdRef.current) return;
 
     const renderRun = renderRunRef.current + 1;
     renderRunRef.current = renderRun;
@@ -49,7 +50,7 @@ export const useOsmdScore = ({
         if (renderRunRef.current !== renderRun) return;
         onRenderError(error);
       });
-  }, [displayFileContent, isGpFile, onRenderError, onRendered]);
+  }, [displayFileContent, onRenderError, onRendered, scoreFormat]);
 
   return {
     osmdInstanceRef,

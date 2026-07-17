@@ -7,10 +7,11 @@ import { parsePlaybackEvents } from "./playbackParser";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent } from "./types";
 import type { ScoreFileContent } from "./useScoreFileLoader";
+import type { ScoreFormat } from "./scoreFormat";
 
 type UseMusicXmlScoreOptions = {
   keyCount: MelodicaKeyCount;
-  isGpFile: boolean;
+  scoreFormat: ScoreFormat | null;
   rawFileContent: ScoreFileContent | null;
   setDetectedTempoBpm: (tempoBpm: number) => void;
   setIsSheetReady: (isReady: boolean) => void;
@@ -21,7 +22,7 @@ type UseMusicXmlScoreOptions = {
 
 export const useMusicXmlScore = ({
   keyCount,
-  isGpFile,
+  scoreFormat,
   rawFileContent,
   setDetectedTempoBpm,
   setIsSheetReady,
@@ -37,7 +38,7 @@ export const useMusicXmlScore = ({
   );
 
   useEffect(() => {
-    if (isGpFile) {
+    if (scoreFormat !== "musicxml") {
       setFileContent(null);
       return;
     }
@@ -65,7 +66,7 @@ export const useMusicXmlScore = ({
       });
     }
   }, [
-    isGpFile,
+    scoreFormat,
     keyCount,
     rawFileContent,
     setIsSheetReady,
@@ -75,7 +76,7 @@ export const useMusicXmlScore = ({
   ]);
 
   useEffect(() => {
-    if (isGpFile || !displayFileContent) return;
+    if (scoreFormat !== "musicxml" || !displayFileContent) return;
 
     try {
       const playback = parsePlaybackEvents(displayFileContent);
@@ -94,7 +95,7 @@ export const useMusicXmlScore = ({
     }
   }, [
     displayFileContent,
-    isGpFile,
+    scoreFormat,
     setDetectedTempoBpm,
     setIsSheetReady,
     setPlaybackEvents,

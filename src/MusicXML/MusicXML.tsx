@@ -42,6 +42,9 @@ import { usePlaybackToolbarSync } from "./usePlaybackToolbarSync";
 import { useMusicXmlKeyboardShortcuts } from "./useMusicXmlKeyboardShortcuts";
 import { useBpmOverlay } from "./useBpmOverlay";
 import { useEndStatsOverlay } from "./useEndStatsOverlay";
+import { useMidiScore } from "./useMidiScore";
+import { getMusicXmlFileErrorMessage } from "./musicXmlFile";
+import { getMidiFileErrorMessage } from "./midiParser";
 import {
   EndStatsOverlay,
   MusicXmlWorkspace,
@@ -119,10 +122,18 @@ const MusicXML: React.FC = () => {
       message: "Failed to load default song. Try loading a file manually.",
     });
   }, []);
-  const { fileName, isGpFile, loadScoreFile, rawFileContent } = useScoreFileLoader({
+  const {
+    fileName,
+    isGpFile,
+    isMidiFile,
+    loadScoreFile,
+    rawFileContent,
+    scoreFormat,
+  } = useScoreFileLoader({
     onDefaultLoadError: handleDefaultScoreLoadError,
   });
   const [detectedTempoBpm, setDetectedTempoBpm] = useState(DEFAULT_TEMPO_BPM);
+  const [isLooping, setIsLooping] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
@@ -192,8 +203,8 @@ const MusicXML: React.FC = () => {
 
   const { displayFileContent, fileContent } = useMusicXmlScore({
     keyCount,
-    isGpFile,
     rawFileContent,
+    scoreFormat,
     setDetectedTempoBpm,
     setIsSheetReady,
     setPlaybackEvents,
@@ -215,9 +226,30 @@ const MusicXML: React.FC = () => {
   }, []);
   const { osmdInstanceRef, osmdRef } = useOsmdScore({
     displayFileContent,
-    isGpFile,
     onRenderError: handleOsmdRenderError,
     onRendered: handleOsmdRendered,
+    scoreFormat,
+  });
+
+  const {
+    handleMidiPartChange,
+    midiOriginalMidiNumbers,
+    midiParts,
+    midiScore,
+    resetMidiScore,
+    selectedMidiPart,
+    selectedMidiPartId,
+  } = useMidiScore({
+    fileName,
+    isMidiFile,
+    keyCount,
+    rawFileContent,
+    setDetectedTempoBpm,
+    setIsSheetReady,
+    setPlaybackEvents,
+    setRouteStatus,
+    setTranspose,
+    transpose,
   });
   
   const tempoScale = getTempoScale({ detectedTempoBpm, userTempoBpm });
@@ -277,7 +309,10 @@ const MusicXML: React.FC = () => {
     studyModeNextIndexRef,
     studyModeOnHit: handleStudyModeHit,
   });
-  const canUseProcessedScore = (Boolean(fileContent) || (isGpFile && Boolean(rawFileContent))) && isSheetReady && !hasSheetRenderError;
+  const canUseProcessedScore = (
+    Boolean(fileContent) ||
+    ((isGpFile || isMidiFile) && Boolean(rawFileContent))
+  ) && isSheetReady && (scoreFormat !== "musicxml" || !hasSheetRenderError);
   const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
 
   const { downloadMelodicaNotes, downloadTransposedXml } = useScoreDownloads({
@@ -289,10 +324,10 @@ const MusicXML: React.FC = () => {
     alphaTabRef,
     cursorEventIndexRef,
     gpCursorFrameRef,
-    isGpFile,
     isPlayingRef,
     osmdInstanceRef,
     playbackEvents,
+    scoreFormat,
     sheetScrollRef,
   });
 
@@ -320,6 +355,7 @@ const MusicXML: React.FC = () => {
       playbackTimerRef,
       sheetScrollRef,
       studyModeFreezeRef,
+      studyModeNextIndexRef,
       tempoScaleRef,
     },
     state: {
@@ -329,6 +365,7 @@ const MusicXML: React.FC = () => {
       fileName,
       isGpFile,
       isGpPlaybackReady,
+      isLooping,
       isPlaying,
       isSheetReady,
       playbackEvents,
@@ -339,6 +376,7 @@ const MusicXML: React.FC = () => {
     },
   });
   const handleRestartPlayback = useCallback(() => stopPlayback(true), [stopPlayback]);
+  const handleToggleLoop = useCallback(() => setIsLooping((value) => !value), []);
   const stopPlaybackRef = useRef(stopPlayback);
 
   useEffect(() => {
@@ -361,9 +399,11 @@ const MusicXML: React.FC = () => {
     canPlayback,
     currentGameTimeMs,
     gameStats,
+    isLooping,
     isPlaying,
     onRestartPlayback: handleRestartPlayback,
     onSetTempo: handleSetTempo,
+    onToggleLoop: handleToggleLoop,
     onTogglePlayback: togglePlayback,
     progress,
     tempo,
@@ -392,11 +432,11 @@ const MusicXML: React.FC = () => {
   });
 
   const { autoTransposeWithFilters, optimalVariantsCount } = useTransposeOptimizer({
-    gpOriginalMidiNumbers,
     keyCount,
-    isGpFile,
+    originalMidiNumbers: isMidiFile ? midiOriginalMidiNumbers : gpOriginalMidiNumbers,
     playbackEvents,
     rawFileContent,
+    scoreFormat,
     setTranspose,
     transpose,
   });
@@ -406,9 +446,20 @@ const MusicXML: React.FC = () => {
     setTranspose(Number.isFinite(semitones) ? semitones : 0);
   };
 
+  const handleImportError = useCallback((error: unknown) => {
+    setRouteStatus({
+      tone: "error",
+      message: getMidiFileErrorMessage(error) ??
+        getMusicXmlFileErrorMessage(error) ??
+        "Failed to load score file.",
+    });
+  }, []);
+
   const { handleFileChange, importScoreFile } = useScoreFileImport({
     loadScoreFile,
+    onImportError: handleImportError,
     resetGpScore,
+    resetMidiScore,
     setPlaybackEvents,
     setIsSheetReady,
     setUserTempoBpm,
@@ -470,12 +521,20 @@ const MusicXML: React.FC = () => {
         }}
         alphaTabRef={alphaTabRef}
         gpScorePaneHeightPx={gpScorePaneHeightPx}
-        isGpFile={isGpFile}
+        midiSummary={midiScore && selectedMidiPart ? {
+          durationSeconds: selectedMidiPart.durationSeconds,
+          fileName: midiScore.fileName,
+          initialTempoBpm: midiScore.initialTempoBpm,
+          noteCount: selectedMidiPart.noteCount,
+          partLabel: `${selectedMidiPart.name} — Ch. ${selectedMidiPart.channel + 1}`,
+          tempoChangeCount: Math.max(0, midiScore.tempoChanges.length - 1),
+        } : null}
         isTopDrawerHovered={panels.isTopDrawerHovered}
         isTopDrawerPinned={panels.isTopDrawerPinned}
         onTopDrawerHoverChange={panels.setIsTopDrawerHovered}
         onToggleTopPinned={() => panels.setIsTopDrawerPinned(!panels.isTopDrawerPinned)}
         osmdRef={osmdRef}
+        scoreFormat={scoreFormat}
         sheetScrollRef={sheetScrollRef}
       />
 
@@ -520,15 +579,19 @@ const MusicXML: React.FC = () => {
           canUseProcessedScore,
           fileName,
           gpTracks,
-          isGpFile,
           isPinned: panels.isDrawerPinned,
           keyCount,
           melodicaRanges: melodicaRangeOptions,
+          midiParts,
           onDownloadMelodicaNotes: downloadMelodicaNotes,
           onDownloadTransposedXml: downloadTransposedXml,
           onFileChange: handleFileChange,
           onGpTrackChange: (trackIndex) => handleGpTrackChange(trackIndex, handleRestartPlayback),
           onLibraryScoreLoad: handleLibraryScoreLoad,
+          onMidiPartChange: (partId) => {
+            stopPlayback(true);
+            handleMidiPartChange(partId);
+          },
           onMelodicaRangeChange: setSelectedKeyCount,
           onSelectedPresetChange: setSelectedPreset,
           onSoundFontChange: (soundFont) => {
@@ -538,7 +601,9 @@ const MusicXML: React.FC = () => {
           onTogglePin: () => panels.setIsDrawerPinned(!panels.isDrawerPinned),
           routeStatus,
           routeStatusClassNames,
+          scoreFormat,
           selectedGpTrackIndex,
+          selectedMidiPartId,
           selectedPreset,
           selectedSoundFont: selectedSf,
           soundFonts: SOUNDFONTS,

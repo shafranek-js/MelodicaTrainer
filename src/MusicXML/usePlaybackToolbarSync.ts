@@ -7,9 +7,11 @@ type UsePlaybackToolbarSyncOptions = {
   canPlayback: boolean;
   currentGameTimeMs: number;
   gameStats: GameStats;
+  isLooping: boolean;
   isPlaying: boolean;
   onRestartPlayback: () => void;
   onSetTempo: (tempo: number) => void;
+  onToggleLoop: () => void;
   onTogglePlayback: () => void;
   progress: number;
   tempo: number;
@@ -20,9 +22,11 @@ export const usePlaybackToolbarSync = ({
   canPlayback,
   currentGameTimeMs,
   gameStats,
+  isLooping,
   isPlaying,
   onRestartPlayback,
   onSetTempo,
+  onToggleLoop,
   onTogglePlayback,
   progress,
   tempo,
@@ -34,9 +38,11 @@ export const usePlaybackToolbarSync = ({
       accuracy,
       canPlayback,
       gameStats,
+      isLooping,
       isPaused: !isPlaying && currentGameTimeMs > 0,
       isPlaying,
       onRestartPlayback,
+      onToggleLoop,
       onTogglePlayback,
       progress,
       setTempo: onSetTempo,
@@ -47,9 +53,11 @@ export const usePlaybackToolbarSync = ({
     canPlayback,
     currentGameTimeMs,
     gameStats,
+    isLooping,
     isPlaying,
     onRestartPlayback,
     onSetTempo,
+    onToggleLoop,
     onTogglePlayback,
     progress,
     setPlaybackToolbarState,

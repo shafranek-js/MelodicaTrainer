@@ -1,5 +1,8 @@
 import type { PlaybackEvent } from "./types";
 
+export const MIN_MIDI_PLAYBACK_DURATION_MS = 10;
+export const MIN_NOTATION_PLAYBACK_DURATION_MS = 80;
+
 export const getEffectiveEventTempoBpm = (
   eventTempoBpm: number,
   tempoScale: number,
@@ -8,7 +11,17 @@ export const getEffectiveEventTempoBpm = (
 export const getPlaybackEventDurationMs = (
   durationBeats: number,
   effectiveTempoBpm: number,
-) => Math.max(80, (60000 / effectiveTempoBpm) * durationBeats);
+  durationSeconds?: number,
+  tempoScale = 1,
+) => durationSeconds === undefined
+  ? Math.max(
+      MIN_NOTATION_PLAYBACK_DURATION_MS,
+      (60000 / effectiveTempoBpm) * durationBeats,
+    )
+  : Math.max(
+      MIN_MIDI_PLAYBACK_DURATION_MS,
+      (durationSeconds * 1000) / Math.max(0.01, tempoScale),
+    );
 
 export const getPlaybackEventTiming = (
   event: PlaybackEvent,
@@ -16,7 +29,12 @@ export const getPlaybackEventTiming = (
 ) => {
   const effectiveTempoBpm = getEffectiveEventTempoBpm(event.tempoBpm, tempoScale);
   return {
-    durationMs: getPlaybackEventDurationMs(event.durationBeats, effectiveTempoBpm),
+    durationMs: getPlaybackEventDurationMs(
+      event.durationBeats,
+      effectiveTempoBpm,
+      event.durationSeconds,
+      tempoScale,
+    ),
     effectiveTempoBpm,
   };
 };

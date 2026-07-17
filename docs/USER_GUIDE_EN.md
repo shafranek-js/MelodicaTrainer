@@ -7,7 +7,7 @@ The app has four main sections:
 | Section | What it is for |
 | --- | --- |
 | `Melodica` | Check the pitch you play and see it on a virtual melodica keyboard. |
-| `Tabs` | Load MusicXML/MXL/Guitar Pro files, start playback, and practice with Note Highway. |
+| `Tabs` | Load MusicXML/MXL/Guitar Pro/MIDI files, start playback, and practice with Note Highway. |
 | `Practice` | Train scales, individual notes, chord tones, and 12-bar blues. |
 | `Circle` | Explore the circle of fifths, modes, scales, and triads. |
 
@@ -49,7 +49,7 @@ If the tuning line on the key is offset, the note is out of tune. A value near `
 
 ### Loading A File
 
-Click `Load XML/GP` and choose a file. Supported formats:
+Click `Load XML/GP/MIDI` and choose a file. Supported formats:
 
 - `.xml`
 - `.musicxml`
@@ -59,10 +59,12 @@ Click `Load XML/GP` and choose a file. Supported formats:
 - `.gp4`
 - `.gp5`
 - `.gpx`
+- `.mid`
+- `.midi`
 
-MusicXML/MXL files are rendered with OpenSheetMusicDisplay. Guitar Pro files are rendered with alphaTab. In both cases, Note Highway is built from the parsed playback events.
+MusicXML/MXL files are rendered with OpenSheetMusicDisplay. Guitar Pro files are rendered with alphaTab. MIDI files show a compact file/part summary instead of notation. In every case, Note Highway is built from the parsed playback events.
 
-Important: MusicXML playback/rendering focuses on the first relevant part/staff. Guitar Pro uses the selected `GP Track`.
+Important: MusicXML playback/rendering focuses on the first relevant part/staff. Guitar Pro uses the selected `GP Track`. MIDI uses the selected melodic `MIDI Part`; channel 10 drums are excluded.
 
 ### Left Panel
 
@@ -74,7 +76,8 @@ The left panel contains file and sound settings.
 | `SoundFont` | Selects the sound bank for playback. |
 | `Instrument` | Selects an instrument inside the SoundFont, when available. |
 | `GP Track` | Selects the Guitar Pro track. Only visible for GP files. |
-| `Load XML/GP` | Loads a new file. |
+| `MIDI Part` | Selects a melodic MIDI channel. Only visible for MIDI files. |
+| `Load XML/GP/MIDI` | Loads a new file. |
 | `XML` | Downloads the transposed MusicXML. Available for MusicXML files. |
 | `Text` | Downloads a text list of melodica notes. Available for MusicXML files. |
 
@@ -219,11 +222,11 @@ Check that the microphone is enabled, the signal is loud enough, and the selecte
 
 ### File Does Not Load
 
-Check the file extension. `Tabs` supports MusicXML/MXL and Guitar Pro formats. If the file is damaged or does not contain a score, the app will show an error message.
+Check the file extension. `Tabs` supports MusicXML/MXL, Guitar Pro, and `.mid/.midi` SMF 0/1 files. If the file is damaged or does not contain playable notes, the app will show an error message.
 
 ### File Is Too Large
 
-The app limits MusicXML/MXL file size. Use a smaller export or simplify the file in your notation editor.
+The app limits score and MIDI uploads to 10 MB. Use a smaller export or simplify the file in your editor.
 
 ### Playback Is Silent
 

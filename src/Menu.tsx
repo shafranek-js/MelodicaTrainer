@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gauge, Github, Minus, Pause, Play, Plus, RotateCcw, Pin, PinOff } from "lucide-react";
+import { Gauge, Github, Minus, Pause, Play, Plus, Repeat2, RotateCcw, Pin, PinOff } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
 import { usePlaybackToolbarState } from "./PlaybackToolbarContext";
 
@@ -14,8 +14,10 @@ const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
   const isTabsPage = location.pathname === "/musicxml";
   const tabsState = usePlaybackToolbarState();
   const {
+    isLooping,
     isPlaying,
     isPaused,
+    onToggleLoop,
     onTogglePlayback,
     onRestartPlayback,
     tempo,
@@ -85,6 +87,21 @@ const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
               >
                 {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                 {isPlaying ? "Pause" : (isPaused ? "Resume" : "Play")}
+              </button>
+              <button
+                type="button"
+                onClick={onToggleLoop}
+                disabled={!canPlayback || !onToggleLoop}
+                aria-pressed={Boolean(isLooping)}
+                className={`flex h-8 items-center gap-2 rounded border px-3 text-xs font-bold transition disabled:border-gray-700 disabled:bg-gray-800 disabled:text-gray-500 ${
+                  isLooping
+                    ? "border-emerald-500 bg-emerald-950 text-emerald-300 hover:bg-emerald-900"
+                    : "border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
+                }`}
+                title={isLooping ? "Disable loop" : "Loop melody"}
+              >
+                <Repeat2 size={14} />
+                Loop
               </button>
               <button
                 onClick={onRestartPlayback}

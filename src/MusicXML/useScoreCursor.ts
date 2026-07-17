@@ -5,12 +5,13 @@ import type { AlphaTabViewerRef } from "./AlphaTabViewer";
 import { getInterpolatedGpCursorTick } from "./gpCursor";
 import { styleSheetCursor } from "./sheetCursor";
 import type { PlaybackEvent } from "./types";
+import type { ScoreFormat } from "./scoreFormat";
 
 type UseScoreCursorOptions = {
   alphaTabRef: MutableRefObject<AlphaTabViewerRef | null>;
   cursorEventIndexRef: MutableRefObject<number | null>;
   gpCursorFrameRef: MutableRefObject<number | null>;
-  isGpFile: boolean;
+  scoreFormat: ScoreFormat | null;
   isPlayingRef: MutableRefObject<boolean>;
   osmdInstanceRef: MutableRefObject<OpenSheetMusicDisplay | null>;
   playbackEvents: PlaybackEvent[];
@@ -21,7 +22,7 @@ export const useScoreCursor = ({
   alphaTabRef,
   cursorEventIndexRef,
   gpCursorFrameRef,
-  isGpFile,
+  scoreFormat,
   isPlayingRef,
   osmdInstanceRef,
   playbackEvents,
@@ -38,9 +39,11 @@ export const useScoreCursor = ({
     const sheet = sheetScrollRef.current;
     if (!sheet) return;
 
-    const cursorElement = isGpFile
+    const cursorElement = scoreFormat === "guitar-pro"
       ? alphaTabRef.current?.getCursorElement()
-      : osmdInstanceRef.current?.cursor?.cursorElement;
+      : scoreFormat === "musicxml"
+        ? osmdInstanceRef.current?.cursor?.cursorElement
+        : null;
 
     if (!cursorElement) return;
 
@@ -51,7 +54,7 @@ export const useScoreCursor = ({
       const offset = cursorRect.left - sheetRect.left - targetLeft;
       sheet.scrollTo({ left: Math.max(0, sheet.scrollLeft + offset), behavior: "smooth" });
     });
-  }, [alphaTabRef, isGpFile, osmdInstanceRef, sheetScrollRef]);
+  }, [alphaTabRef, osmdInstanceRef, scoreFormat, sheetScrollRef]);
 
   const moveCursorInstantlyToEvent = useCallback((eventIndex: number) => {
     const cursor = osmdInstanceRef.current?.cursor;
@@ -73,7 +76,7 @@ export const useScoreCursor = ({
   }, [cursorEventIndexRef, osmdInstanceRef, scrollSheetToCursor]);
 
   const animateGpCursorThroughEvent = useCallback((eventIndex: number, durationMs: number) => {
-    if (!isGpFile) return;
+    if (scoreFormat !== "guitar-pro") return;
 
     stopGpCursorAnimation();
 
@@ -115,9 +118,10 @@ export const useScoreCursor = ({
 
     api.setTickPosition(startTick);
     gpCursorFrameRef.current = window.requestAnimationFrame(step);
-  }, [alphaTabRef, gpCursorFrameRef, isGpFile, isPlayingRef, playbackEvents, stopGpCursorAnimation]);
+  }, [alphaTabRef, gpCursorFrameRef, isPlayingRef, playbackEvents, scoreFormat, stopGpCursorAnimation]);
 
   const moveCursorThroughEvent = useCallback((eventIndex: number, durationMs: number) => {
+    if (scoreFormat === "midi") return;
     const event = playbackEvents[eventIndex];
     if (!event) return;
 
@@ -140,6 +144,7 @@ export const useScoreCursor = ({
     moveCursorInstantlyToEvent,
     osmdInstanceRef,
     playbackEvents,
+    scoreFormat,
     scrollSheetToCursor,
   ]);
 

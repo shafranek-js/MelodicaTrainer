@@ -53,6 +53,33 @@ describe("playback timeline helpers", () => {
     ).toEqual([8, 17]);
   });
 
+  it("uses exact MIDI seconds without changing beat-based events", () => {
+    const midiEvent = {
+      ...makeEvent(9, 240),
+      durationSeconds: 0.25,
+      notes: [{ ...makeEvent(9, 240).notes[0], durationSeconds: 0.5 }],
+    };
+
+    expect(createPlaybackTimeline([midiEvent], 1)).toEqual([
+      { startMs: 0, durationMs: 250, endMs: 250 },
+    ]);
+    expect(createPlaybackTimeline([midiEvent], 2)).toEqual([
+      { startMs: 0, durationMs: 125, endMs: 125 },
+    ]);
+  });
+
+  it("keeps an overlapping MIDI note visible until its own duration ends", () => {
+    const midiEvent = {
+      ...makeEvent(0.1, 120),
+      durationSeconds: 0.1,
+      notes: [{ ...makeEvent(0.1, 120).notes[0], durationSeconds: 5 }],
+    };
+    const timeline = createPlaybackTimeline([midiEvent], 1);
+
+    expect(getVisibleGameEvents([midiEvent], timeline, 3000, 250)).toHaveLength(1);
+    expect(getVisibleGameEvents([midiEvent], timeline, 7000, 250)).toHaveLength(0);
+  });
+
   it("selects only the closest playable event inside the hit window", () => {
     const events = [makeEvent(1, 120), makeEvent(1, 120), makeEvent(1, 120)];
     const timeline = createPlaybackTimeline(events, 1);

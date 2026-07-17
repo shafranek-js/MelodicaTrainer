@@ -49,24 +49,66 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
     stopAudioNodes();
   }, [latestOptionsRef]);
 
-  const stopPlayback = useCallback(
-    (reset = false, shouldResetScoring = true) => {
+  const resetPlaybackPosition = useCallback(
+    (shouldResetScoring = true) => {
       const {
         callbacks: {
           resetScoring,
           setCurrentEventIndex,
           setCurrentGameTimeMs,
-          setIsPlaying,
         },
         refs: {
           alphaTabRef,
           cursorEventIndexRef,
-          isPlayingRef,
           osmdInstanceRef,
-          playbackRunRef,
           sheetScrollRef,
+          studyModeFreezeRef,
+          studyModeNextIndexRef,
         },
-        state: { currentEventIndex, currentGameTimeMs, isGpFile },
+        state: { currentEventIndex, currentGameTimeMs },
+      } = latestOptionsRef.current;
+
+      if (currentEventIndex !== 0) {
+        setCurrentEventIndex(0);
+      }
+
+      if (currentGameTimeMs !== 0) {
+        setCurrentGameTimeMs(0);
+      }
+
+      if (shouldResetScoring) {
+        resetScoring();
+      }
+
+      if (studyModeFreezeRef) {
+        studyModeFreezeRef.current = false;
+      }
+      if (studyModeNextIndexRef) {
+        studyModeNextIndexRef.current = 0;
+      }
+
+      cursorEventIndexRef.current = null;
+      osmdInstanceRef.current?.cursor?.reset();
+      osmdInstanceRef.current?.cursor?.hide();
+      alphaTabRef.current?.setTickPosition(0);
+
+      if (sheetScrollRef.current) {
+        sheetScrollRef.current.scrollLeft = 0;
+      }
+    },
+    [latestOptionsRef],
+  );
+
+  const stopPlayback = useCallback(
+    (reset = false, shouldResetScoring = true) => {
+      const {
+        callbacks: { setIsPlaying },
+        refs: {
+          alphaTabRef,
+          isPlayingRef,
+          playbackRunRef,
+        },
+        state: { isGpFile },
       } = latestOptionsRef.current;
 
       const wasPlaying = isPlayingRef.current;
@@ -85,46 +127,61 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
 
       if (!reset) return;
 
-      if (currentEventIndex !== 0) {
-        setCurrentEventIndex(0);
-      }
-
-      if (currentGameTimeMs !== 0) {
-        setCurrentGameTimeMs(0);
-      }
-
-      if (shouldResetScoring) {
-        resetScoring();
-      }
-
-      cursorEventIndexRef.current = null;
-      osmdInstanceRef.current?.cursor?.reset();
-      osmdInstanceRef.current?.cursor?.hide();
-      alphaTabRef.current?.setTickPosition(0);
-
-      if (sheetScrollRef.current) {
-        sheetScrollRef.current.scrollLeft = 0;
-      }
+      resetPlaybackPosition(shouldResetScoring);
     },
-    [clearPlaybackResources, latestOptionsRef],
+    [clearPlaybackResources, latestOptionsRef, resetPlaybackPosition],
   );
 
   const playNotes = useCallback(
-    (notes: PlaybackEvent["notes"], tempoBpm: number) => {
+    (
+      notes: PlaybackEvent["notes"],
+      tempoBpm: number,
+      tempoScale: number,
+    ) => {
       const {
         refs: { audioContextRef },
       } = latestOptionsRef.current;
       const audioContext = ensureAudioContext(audioContextRef.current);
       audioContextRef.current = audioContext;
-      playPlaybackNotes(notes, tempoBpm);
+      playPlaybackNotes(notes, tempoBpm, tempoScale);
     },
     [latestOptionsRef],
   );
 
   const { startGameClock } = useGameClock({ latestOptionsRef });
+  const restartPlaybackLoop = useCallback(
+    (runId: number) => {
+      const {
+        refs: {
+          gameClockOffsetMsRef,
+          gameClockStartMsRef,
+          isPlayingRef,
+          playbackRunRef,
+        },
+        state: { isLooping, playbackEvents },
+      } = latestOptionsRef.current;
+
+      if (
+        !isLooping ||
+        playbackEvents.length === 0 ||
+        !isPlayingRef.current ||
+        playbackRunRef.current !== runId
+      ) {
+        return false;
+      }
+
+      stopAudioNodes();
+      resetPlaybackPosition();
+      gameClockOffsetMsRef.current = 0;
+      gameClockStartMsRef.current = performance.now();
+      return true;
+    },
+    [latestOptionsRef, resetPlaybackPosition],
+  );
   const { schedulePlaybackRef } = usePlaybackScheduler({
     latestOptionsRef,
     playNotes,
+    restartPlaybackLoop,
     stopPlayback,
   });
 

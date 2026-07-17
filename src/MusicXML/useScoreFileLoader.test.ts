@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { shouldReplacePersistedDefaultScore } from "./useScoreFileLoader";
+import { getScoreFormat } from "./scoreFormat";
 
 describe("score file loader defaults", () => {
   it("replaces persisted legacy default scores", () => {
@@ -14,5 +15,19 @@ describe("score file loader defaults", () => {
 
   it("loads the default when no score is persisted", () => {
     expect(shouldReplacePersistedDefaultScore(null, null)).toBe(false);
+  });
+});
+
+describe("score format detection", () => {
+  it("recognizes supported score formats", () => {
+    expect(getScoreFormat("score.musicxml")).toBe("musicxml");
+    expect(getScoreFormat("score.GP5")).toBe("guitar-pro");
+    expect(getScoreFormat("score.mid")).toBe("midi");
+    expect(getScoreFormat("score.MIDI")).toBe("midi");
+  });
+
+  it("rejects unsupported extensions", () => {
+    expect(getScoreFormat("score.kar")).toBeNull();
+    expect(getScoreFormat("score.pdf")).toBeNull();
   });
 });

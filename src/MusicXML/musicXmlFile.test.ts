@@ -5,6 +5,7 @@ import {
   MAX_MUSIC_XML_FILE_BYTES,
   MAX_MXL_SCORE_BYTES,
   MusicXmlFileError,
+  readBinaryScoreFile,
   readMusicXmlFile,
 } from "./musicXmlFile";
 
@@ -90,6 +91,22 @@ describe("readMusicXmlFile", () => {
     );
 
     await expectMusicXmlFileError(readMusicXmlFile(file), "file-too-large");
+  });
+
+  it("reads binary MIDI data and applies the shared upload limit", async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], "score.mid");
+    await expect(readBinaryScoreFile(file)).resolves.toEqual(
+      new Uint8Array([1, 2, 3]),
+    );
+
+    const oversizedFile = new File(
+      [new ArrayBuffer(MAX_MUSIC_XML_FILE_BYTES + 1)],
+      "large.mid",
+    );
+    await expectMusicXmlFileError(
+      readBinaryScoreFile(oversizedFile),
+      "file-too-large",
+    );
   });
 
   it("rejects oversized uncompressed scores inside MXL files", async () => {

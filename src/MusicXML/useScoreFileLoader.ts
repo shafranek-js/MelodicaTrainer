@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { usePersistentState } from "../hooks/usePersistentState";
-import { readMusicXmlFile } from "./musicXmlFile";
+import { readBinaryScoreFile, readMusicXmlFile } from "./musicXmlFile";
+import { getScoreFormat } from "./scoreFormat";
+import type { ScoreFormat } from "./scoreFormat";
+import { parseMidiFile } from "./midiParser";
 
 export type ScoreFileContent = string | Uint8Array;
 
 export type LoadedScoreFile = {
   content: ScoreFileContent;
   fileName: string;
-  isGpFile: boolean;
+  format: ScoreFormat;
 };
 
 export const isGuitarProFileName = (fileName: string | null) =>
-  fileName ? /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName) : false;
+  getScoreFormat(fileName) === "guitar-pro";
 
 const sanitizeScoreFileContent = (value: unknown): ScoreFileContent | null | undefined => {
   if (value === null || typeof value === "string" || value instanceof Uint8Array) return value;
@@ -59,7 +62,9 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
     null,
     { legacyKeys: LEGACY_STORAGE_KEYS.fileName, sanitize: sanitizeFileName }
   );
-  const isGpFile = useMemo(() => isGuitarProFileName(fileName), [fileName]);
+  const scoreFormat = useMemo(() => getScoreFormat(fileName), [fileName]);
+  const isGpFile = scoreFormat === "guitar-pro";
+  const isMidiFile = scoreFormat === "midi";
 
   useEffect(() => {
     if (rawFileContent && !shouldReplacePersistedDefaultScore(rawFileContent, fileName)) return;
@@ -77,20 +82,32 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
   }, [fileName, onDefaultLoadError, rawFileContent, setFileName, setRawFileContent]);
 
   const loadScoreFile = useCallback(async (file: File): Promise<LoadedScoreFile> => {
-    const content = await readMusicXmlFile(file);
+    const format = getScoreFormat(file.name);
+    if (!format) {
+      throw new Error("Unsupported score file format.");
+    }
+
+    const content = format === "midi"
+      ? await readBinaryScoreFile(file)
+      : await readMusicXmlFile(file);
+    if (format === "midi" && content instanceof Uint8Array) {
+      parseMidiFile(content, file.name);
+    }
     setFileName(file.name);
     setRawFileContent(content);
     return {
       content,
       fileName: file.name,
-      isGpFile: isGuitarProFileName(file.name),
+      format,
     };
   }, [setFileName, setRawFileContent]);
 
   return {
     fileName,
     isGpFile,
+    isMidiFile,
     loadScoreFile,
     rawFileContent,
+    scoreFormat,
   };
 };

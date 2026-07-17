@@ -6,6 +6,16 @@ import { NoteHighway } from "./NoteHighway";
 import { ScoreSettingsPanel } from "./ScoreSettingsPanel";
 import { TransposeControls } from "./TransposeControls";
 import type { GameStats } from "./types";
+import type { ScoreFormat } from "./scoreFormat";
+
+export type MidiSummaryData = {
+  durationSeconds: number;
+  fileName: string;
+  initialTempoBpm: number;
+  noteCount: number;
+  partLabel: string;
+  tempoChangeCount: number;
+};
 
 type ScoreWindowPanelProps = {
   alphaTabProps: Omit<ComponentProps<typeof AlphaTabViewer>, "fileData"> & {
@@ -13,12 +23,13 @@ type ScoreWindowPanelProps = {
   };
   alphaTabRef: RefObject<AlphaTabViewerRef | null>;
   gpScorePaneHeightPx: number;
-  isGpFile: boolean;
+  midiSummary: MidiSummaryData | null;
   isTopDrawerHovered: boolean;
   isTopDrawerPinned: boolean;
   onTopDrawerHoverChange: (isHovered: boolean) => void;
   onToggleTopPinned: () => void;
   osmdRef: RefObject<HTMLDivElement | null>;
+  scoreFormat: ScoreFormat | null;
   sheetScrollRef: RefObject<HTMLDivElement | null>;
 };
 
@@ -45,16 +56,31 @@ type EndStatsOverlayProps = {
   onDismiss: () => void;
 };
 
+const formatDuration = (durationSeconds: number) => {
+  const totalSeconds = Math.max(0, Math.round(durationSeconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+const MidiSummaryMetric = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-lg border border-gray-800 bg-gray-900/80 px-3 py-2">
+    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">{label}</p>
+    <p className="mt-1 text-sm font-bold text-gray-100">{value}</p>
+  </div>
+);
+
 export const ScoreWindowPanel = ({
   alphaTabProps,
   alphaTabRef,
   gpScorePaneHeightPx,
-  isGpFile,
+  midiSummary,
   isTopDrawerHovered,
   isTopDrawerPinned,
   onTopDrawerHoverChange,
   onToggleTopPinned,
   osmdRef,
+  scoreFormat,
   sheetScrollRef,
 }: ScoreWindowPanelProps) => (
   <>
@@ -79,13 +105,40 @@ export const ScoreWindowPanel = ({
         </button>
         <div
           ref={sheetScrollRef}
-          className={`${isGpFile ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black scrollbar-hide`}
-          style={isGpFile ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
+          className={`${scoreFormat === "guitar-pro" ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black scrollbar-hide`}
+          style={scoreFormat === "guitar-pro" ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
         >
-          {!isGpFile ? (
+          {scoreFormat === "musicxml" ? (
             <div ref={osmdRef} className="h-full flex items-center min-w-max" />
-          ) : (
+          ) : scoreFormat === "guitar-pro" ? (
             <AlphaTabViewer ref={alphaTabRef} {...alphaTabProps} />
+          ) : scoreFormat === "midi" ? (
+            <div className="h-full w-full bg-gray-950 px-6 py-5 text-white">
+              {midiSummary ? (
+                <div className="mx-auto flex h-full max-w-5xl flex-col justify-center gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black uppercase tracking-wider text-emerald-300">
+                      {midiSummary.fileName}
+                    </p>
+                    <p className="truncate text-xs font-semibold text-gray-400">
+                      {midiSummary.partLabel}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <MidiSummaryMetric label="Notes" value={String(midiSummary.noteCount)} />
+                    <MidiSummaryMetric label="Duration" value={formatDuration(midiSummary.durationSeconds)} />
+                    <MidiSummaryMetric label="Initial tempo" value={`${Math.round(midiSummary.initialTempoBpm)} BPM`} />
+                    <MidiSummaryMetric label="Tempo changes" value={String(midiSummary.tempoChangeCount)} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm font-bold text-gray-500">
+                  Preparing MIDI file…
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="h-full w-full bg-gray-950" />
           )}
         </div>
       </div>

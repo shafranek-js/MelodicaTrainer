@@ -7,8 +7,10 @@ type GameStats = {
 };
 
 export type PlaybackToolbarState = {
+  isLooping?: boolean;
   isPlaying?: boolean;
   isPaused?: boolean;
+  onToggleLoop?: () => void;
   onTogglePlayback?: () => void;
   onRestartPlayback?: () => void;
   tempo?: number;

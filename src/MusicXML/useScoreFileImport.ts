@@ -6,7 +6,9 @@ import type { PlaybackEvent } from "./types";
 
 type UseScoreFileImportOptions = {
   loadScoreFile: (file: File) => Promise<LoadedScoreFile>;
+  onImportError: (error: unknown) => void;
   resetGpScore: (isGpFile: boolean) => void;
+  resetMidiScore: () => void;
   setDetectedTempoBpm: (tempoBpm: number) => void;
   setIsSheetReady: (isReady: boolean) => void;
   setPlaybackEvents: (events: PlaybackEvent[]) => void;
@@ -15,12 +17,16 @@ type UseScoreFileImportOptions = {
   stopPlayback: (reset?: boolean) => void;
 };
 
-type ResetImportedScoreOptions = Omit<UseScoreFileImportOptions, "loadScoreFile">;
+type ResetImportedScoreOptions = Omit<
+  UseScoreFileImportOptions,
+  "loadScoreFile" | "onImportError"
+>;
 
 export const resetImportedScoreState = (
   loadedFile: LoadedScoreFile,
   {
     resetGpScore,
+    resetMidiScore,
     setDetectedTempoBpm,
     setIsSheetReady,
     setPlaybackEvents,
@@ -30,7 +36,8 @@ export const resetImportedScoreState = (
   }: ResetImportedScoreOptions,
 ) => {
   stopPlayback(true);
-  resetGpScore(loadedFile.isGpFile);
+  resetGpScore(loadedFile.format === "guitar-pro");
+  resetMidiScore();
   setPlaybackEvents([]);
   setIsSheetReady(false);
 
@@ -42,7 +49,9 @@ export const resetImportedScoreState = (
 
 export const useScoreFileImport = ({
   loadScoreFile,
+  onImportError,
   resetGpScore,
+  resetMidiScore,
   setDetectedTempoBpm,
   setIsSheetReady,
   setPlaybackEvents,
@@ -55,6 +64,7 @@ export const useScoreFileImport = ({
       const loadedFile = await loadScoreFile(file);
       resetImportedScoreState(loadedFile, {
         resetGpScore,
+        resetMidiScore,
         setDetectedTempoBpm,
         setIsSheetReady,
         setPlaybackEvents,
@@ -67,6 +77,7 @@ export const useScoreFileImport = ({
     [
       loadScoreFile,
       resetGpScore,
+      resetMidiScore,
       setDetectedTempoBpm,
       setIsSheetReady,
       setPlaybackEvents,
@@ -85,11 +96,12 @@ export const useScoreFileImport = ({
         await importScoreFile(file);
       } catch (err) {
         console.error(err);
+        onImportError(err);
       } finally {
         event.target.value = "";
       }
     },
-    [importScoreFile],
+    [importScoreFile, onImportError],
   );
 
   return { handleFileChange, importScoreFile };

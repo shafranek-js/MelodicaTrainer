@@ -120,4 +120,28 @@ describe("audio playback helpers", () => {
     expect(synth.stopAll).toHaveBeenCalledTimes(1);
     expect(synth.noteOff).not.toHaveBeenCalled();
   });
+
+  it("uses exact MIDI note length and global tempo scaling", async () => {
+    const delays: number[] = [];
+    const synth = makeSynth();
+    const service = new AudioPlaybackService({
+      baseUrl: "/",
+      createSynthesizer: () => synth as never,
+      fetchFn: vi.fn(makeFetchResponse) as unknown as typeof fetch,
+      logger: { log: vi.fn(), warn: vi.fn() },
+      setTimeoutFn: (_callback, delayMs) => {
+        delays.push(delayMs);
+        return 1 as never;
+      },
+    });
+    await service.initSynthesizer(makeAudioContext(), "test.sf2");
+
+    service.playPlaybackNotes(
+      [makeNote({ durationSeconds: 0.5 })],
+      120,
+      2,
+    );
+
+    expect(delays).toEqual([250]);
+  });
 });

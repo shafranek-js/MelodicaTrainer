@@ -5,6 +5,7 @@ import { resetImportedScoreState } from "./useScoreFileImport";
 describe("resetImportedScoreState", () => {
   it("uses the same reset path for every successfully loaded score", () => {
     const resetGpScore = vi.fn();
+    const resetMidiScore = vi.fn();
     const setDetectedTempoBpm = vi.fn();
     const setIsSheetReady = vi.fn();
     const setPlaybackEvents = vi.fn();
@@ -13,9 +14,10 @@ describe("resetImportedScoreState", () => {
     const stopPlayback = vi.fn();
 
     resetImportedScoreState(
-      { content: "<score-partwise />", fileName: "score.mxl", isGpFile: false },
+      { content: "<score-partwise />", fileName: "score.mxl", format: "musicxml" },
       {
         resetGpScore,
+        resetMidiScore,
         setDetectedTempoBpm,
         setIsSheetReady,
         setPlaybackEvents,
@@ -27,6 +29,7 @@ describe("resetImportedScoreState", () => {
 
     expect(stopPlayback).toHaveBeenCalledWith(true);
     expect(resetGpScore).toHaveBeenCalledWith(false);
+    expect(resetMidiScore).toHaveBeenCalledOnce();
     expect(setPlaybackEvents).toHaveBeenCalledWith([]);
     expect(setIsSheetReady).toHaveBeenCalledWith(false);
     expect(setUserTempoBpm).toHaveBeenCalledWith(null);

@@ -211,7 +211,11 @@ export class AudioPlaybackService {
     return Math.max(0, latencySeconds * 1000);
   }
 
-  playPlaybackNotes(notes: PlaybackNote[], tempoBpm: number) {
+  playPlaybackNotes(
+    notes: PlaybackNote[],
+    tempoBpm: number,
+    tempoScale = 1,
+  ) {
     if (!this.synth) {
       this.logger.warn("Synthesizer not initialized yet.");
       return;
@@ -223,8 +227,10 @@ export class AudioPlaybackService {
       const midiNote = Note.midi(note.name);
       if (midiNote === null) return;
 
-      const durationMs = Math.max(80, (60000 / tempoBpm) * note.durationBeats);
-      const articulationRatio = note.tieStart
+      const durationMs = note.durationSeconds === undefined
+        ? Math.max(80, (60000 / tempoBpm) * note.durationBeats)
+        : Math.max(10, (note.durationSeconds * 1000) / Math.max(0.01, tempoScale));
+      const articulationRatio = note.durationSeconds !== undefined || note.tieStart
         ? 1
         : note.articulation === "staccato"
           ? 0.42
@@ -270,5 +276,8 @@ export const releaseSynthesizer = () => audioPlaybackService.releaseSynthesizer(
 export const getAudioOutputLatencyMs = (audioContext: AudioContext | null) =>
   audioPlaybackService.getAudioOutputLatencyMs(audioContext);
 
-export const playPlaybackNotes = (notes: PlaybackNote[], tempoBpm: number) =>
-  audioPlaybackService.playPlaybackNotes(notes, tempoBpm);
+export const playPlaybackNotes = (
+  notes: PlaybackNote[],
+  tempoBpm: number,
+  tempoScale = 1,
+) => audioPlaybackService.playPlaybackNotes(notes, tempoBpm, tempoScale);

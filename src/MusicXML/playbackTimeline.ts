@@ -3,6 +3,7 @@ import { NOTE_HIT_WINDOW_MS } from "./constants";
 import { getMelodicaKeyForNote } from "../utils/utils";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent, PlaybackTiming, VisibleGameEvent } from "./types";
+import { getPlaybackEventTiming } from "./playbackTiming";
 
 export const getPlayableMidiNumbers = (events: PlaybackEvent[]) => {
   const midiNumbers = events
@@ -20,11 +21,7 @@ export const createPlaybackTimeline = (
   let cursor = 0;
 
   return events.map((event): PlaybackTiming => {
-    const effectiveTempo = Math.max(20, event.tempoBpm * tempoScale);
-    const duration = Math.max(
-      80,
-      (60000 / effectiveTempo) * event.durationBeats
-    );
+    const duration = getPlaybackEventTiming(event, tempoScale).durationMs;
 
     const timing = {
       startMs: cursor,
@@ -70,10 +67,20 @@ export const getVisibleGameEvents = (
       index,
       timing: timeline[index],
     }))
-    .filter(({ timing }) => {
+    .filter(({ event, timing }) => {
       if (!timing) return false;
+      const soundingEndMs = event.notes.reduce((latestEndMs, note) => {
+        const durationMs = note.durationSeconds === undefined
+          ? timing.durationMs * (
+              event.durationBeats > 0
+                ? note.durationBeats / event.durationBeats
+                : 1
+            )
+          : note.durationSeconds * 1000;
+        return Math.max(latestEndMs, timing.startMs + durationMs);
+      }, timing.endMs);
       return (
-        timing.endMs >= visualPlayheadMs - dynamicTrailMs &&
+        soundingEndMs >= visualPlayheadMs - dynamicTrailMs &&
         timing.startMs <= visualPlayheadMs + dynamicLookaheadMs
       );
     });

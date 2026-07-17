@@ -8,23 +8,24 @@ import { musicXmlDebugLogger } from "./debugLogger";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { ScoreFileContent } from "./useScoreFileLoader";
 import type { PlaybackEvent } from "./types";
+import type { ScoreFormat } from "./scoreFormat";
 
 type UseTransposeOptimizerOptions = {
-  gpOriginalMidiNumbers: number[];
+  originalMidiNumbers: number[];
   keyCount: MelodicaKeyCount;
-  isGpFile: boolean;
   playbackEvents: PlaybackEvent[];
   rawFileContent: ScoreFileContent | null;
+  scoreFormat: ScoreFormat | null;
   setTranspose: (transpose: number) => void;
   transpose: number;
 };
 
 export const useTransposeOptimizer = ({
-  gpOriginalMidiNumbers,
+  originalMidiNumbers,
   keyCount,
-  isGpFile,
   playbackEvents,
   rawFileContent,
+  scoreFormat,
   setTranspose,
   transpose,
 }: UseTransposeOptimizerOptions) => {
@@ -32,8 +33,8 @@ export const useTransposeOptimizer = ({
     if (!rawFileContent) return 0;
 
     let midiNumbers: number[] = [];
-    if (isGpFile) {
-      midiNumbers = gpOriginalMidiNumbers;
+    if (scoreFormat === "guitar-pro" || scoreFormat === "midi") {
+      midiNumbers = originalMidiNumbers;
     } else {
       if (playbackEvents.length === 0) return 0;
       midiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents)).map(
@@ -45,20 +46,19 @@ export const useTransposeOptimizer = ({
 
     return findBestMelodicaTransposeIntervals(midiNumbers, { keyCount }).length;
   }, [
-    gpOriginalMidiNumbers,
-    isGpFile,
     keyCount,
+    originalMidiNumbers,
     playbackEvents,
     rawFileContent,
+    scoreFormat,
     transpose,
   ]);
 
   const autoTransposeWithFilters = useCallback(() => {
     if (!rawFileContent) return;
 
-    if (isGpFile) {
-      musicXmlDebugLogger.log("AutoTranspose: Analyzing GP track for melodica range.");
-      const originalMidiNumbers = gpOriginalMidiNumbers;
+    if (scoreFormat === "guitar-pro" || scoreFormat === "midi") {
+      musicXmlDebugLogger.log(`AutoTranspose: Analyzing ${scoreFormat} notes for melodica range.`);
       if (originalMidiNumbers.length === 0) return;
 
       const bestAbsoluteIntervals = findBestMelodicaTransposeIntervals(
@@ -78,10 +78,8 @@ export const useTransposeOptimizer = ({
       return;
     }
 
-    const bestIntervals = findAutoMelodicaTransposeIntervals(
-      rawFileContent as string,
-      { keyCount }
-    );
+    if (typeof rawFileContent !== "string") return;
+    const bestIntervals = findAutoMelodicaTransposeIntervals(rawFileContent, { keyCount });
     if (bestIntervals.length === 0) return;
 
     const currentIndex = bestIntervals.indexOf(transpose);
@@ -91,10 +89,10 @@ export const useTransposeOptimizer = ({
         : bestIntervals[0];
     setTranspose(nextTranspose);
   }, [
-    gpOriginalMidiNumbers,
-    isGpFile,
     keyCount,
+    originalMidiNumbers,
     rawFileContent,
+    scoreFormat,
     setTranspose,
     transpose,
   ]);
