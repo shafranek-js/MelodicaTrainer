@@ -5,6 +5,7 @@ export const melodicaRangeOptions = [
   { label: "27 keys", value: 27, startNote: "F3", endNote: "G5" },
   { label: "32 keys", value: 32, startNote: "F3", endNote: "C6" },
   { label: "37 keys", value: 37, startNote: "F3", endNote: "F6" },
+  { label: "44 keys (Hammond 44)", value: 44, startNote: "C3", endNote: "G6" },
 ] as const;
 
 export type MelodicaKeyCount = (typeof melodicaRangeOptions)[number]["value"];

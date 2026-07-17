@@ -33,10 +33,19 @@ describe("generateMelodicaLayout", () => {
     const compact25 = generateMelodicaLayout(25).keys;
     const compact27 = generateMelodicaLayout(27).keys;
     const extended37 = generateMelodicaLayout(37).keys;
+    const hammond44 = generateMelodicaLayout(44);
 
     expect(compact25[compact25.length - 1].name).toBe("F5");
     expect(compact27[compact27.length - 1].name).toBe("G5");
     expect(extended37[extended37.length - 1].name).toBe("F6");
+    expect(hammond44).toMatchObject({
+      keyCount: 44,
+      startNote: "C3",
+      endNote: "G6",
+    });
+    expect(hammond44.keys).toHaveLength(44);
+    expect(hammond44.keys[0]).toMatchObject({ index: 1, name: "C3", midi: 48 });
+    expect(hammond44.keys[43]).toMatchObject({ index: 44, name: "G6", midi: 91 });
   });
 
   it("marks black keys by sharp pitch class", () => {
@@ -55,6 +64,7 @@ describe("generateMelodicaLayout", () => {
 
 describe("melodica key helpers", () => {
   it("normalizes unsupported key counts to the 32-key standard", () => {
+    expect(normalizeMelodicaKeyCount("44")).toBe(44);
     expect(normalizeMelodicaKeyCount("37")).toBe(37);
     expect(normalizeMelodicaKeyCount(25)).toBe(25);
     expect(normalizeMelodicaKeyCount("12")).toBe(32);
@@ -68,6 +78,9 @@ describe("melodica key helpers", () => {
 
     expect(getMelodicaKeyLabelForNote(32, "A4")).toBe("A4");
     expect(getMelodicaKeyLabelForNote(32, "A4", "keyNumber")).toBe("17");
+    expect(getMelodicaKeyForNote(44, "C3")).toMatchObject({ index: 1 });
+    expect(getMelodicaKeyForNote(44, "G6")).toMatchObject({ index: 44 });
+    expect(getMelodicaKeyForNote(44, "G#6")).toBeNull();
   });
 
   it("collects MIDI values for pitch filtering", () => {

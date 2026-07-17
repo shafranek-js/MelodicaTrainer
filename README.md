@@ -6,7 +6,7 @@ MelodicaTrainer is an interactive React application for melodica practice. It co
 
 ### Real-Time Pitch Detection
 
-- Select common melodica ranges: 25, 27, 32, or 37 keys.
+- Select common melodica ranges: 25, 27, 32, 37, or 44 keys, including the Hammond 44 range (C3-G6).
 - See the detected note on a virtual keyboard.
 - Check pitch accuracy in cents.
 

@@ -35,7 +35,7 @@ Main controls:
 
 | Control | What it does |
 | --- | --- |
-| `Melodica range` | Selects the keyboard size: 25, 27, 32, or 37 keys. |
+| `Melodica range` | Selects the keyboard size: 25, 27, 32, 37, or 44 keys. The 44-key option matches the Hammond 44 range (C3-G6). |
 | `Start listening` / `Stop listening` | Turns microphone listening on or off. |
 | `Detected note` | Shows the detected note. |
 | `cents` | Shows how far the note is above or below exact pitch. |
