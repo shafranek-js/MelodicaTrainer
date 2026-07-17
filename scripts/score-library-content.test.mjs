@@ -27,4 +27,67 @@ describe("committed MusicXML library content", () => {
       expect(events.some((event) => event.notes.some((note) => note.shouldPlay)), entry.id).toBe(true);
     }
   }, 45_000);
+
+  it("preserves the reviewed Skákal pes melody", async () => {
+    const entry = musicXmlEntries.find(({ id }) => id === "cc0-skakal-pes");
+    expect(entry).toBeDefined();
+
+    const xml = await readMusicXml(entry);
+    const { events } = parsePlaybackEvents(xml, { addLeadIn: false });
+    const notes = events.flatMap((event) => event.notes.filter((note) => note.shouldPlay));
+
+    expect(notes.map(({ name }) => name)).toEqual([
+      "C5", "C5", "A4",
+      "C5", "C5", "A4",
+      "C5", "C5", "D5", "C5",
+      "C5", "Bb4",
+      "Bb4", "Bb4", "G4",
+      "Bb4", "Bb4", "G4",
+      "Bb4", "Bb4", "C5", "Bb4",
+      "Bb4", "A4",
+    ]);
+    expect(notes.map(({ durationBeats }) => durationBeats)).toEqual([
+      1, 1, 2,
+      1, 1, 2,
+      1, 1, 1, 1,
+      2, 2,
+      1, 1, 2,
+      1, 1, 2,
+      1, 1, 1, 1,
+      2, 2,
+    ]);
+  });
+
+  it("preserves the reviewed Kočka leze dírou melody", async () => {
+    const entry = musicXmlEntries.find(({ id }) => id === "cc0-kocka-leze-dirou");
+    expect(entry).toBeDefined();
+
+    const xml = await readMusicXml(entry);
+    const { events } = parsePlaybackEvents(xml, { addLeadIn: false });
+    const notes = events.flatMap((event) => event.notes.filter((note) => note.shouldPlay));
+    const verseNames = [
+      "C4", "D4", "E4", "F4", "G4", "G4",
+      "A4", "A4", "G4",
+      "A4", "A4", "G4",
+      "F4", "F4", "F4", "F4", "E4", "E4",
+      "D4", "D4", "G4",
+      "F4", "F4", "F4", "F4", "E4", "E4",
+      "D4", "D4", "C4",
+    ];
+    const verseDurations = [
+      0.5, 0.5, 0.5, 0.5, 1, 1,
+      1, 1, 2,
+      1, 1, 2,
+      0.5, 0.5, 0.5, 0.5, 1, 1,
+      1, 1, 2,
+      0.5, 0.5, 0.5, 0.5, 1, 1,
+      1, 1, 2,
+    ];
+
+    expect(notes.map(({ name }) => name)).toEqual([...verseNames, ...verseNames]);
+    expect(notes.map(({ durationBeats }) => durationBeats)).toEqual([
+      ...verseDurations,
+      ...verseDurations,
+    ]);
+  });
 });
