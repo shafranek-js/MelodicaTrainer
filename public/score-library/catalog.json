@@ -1562,6 +1562,399 @@
       "sha256": "9811ae3b1e8ca5922d6bcf08a67bfdea20daf9ae0e1430f2383cea1ac66d76d5"
     },
     {
+      "id": "pdmx-hickory-dickory-dock",
+      "title": "Hickory Dickory Dock",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-hickory-dickory-dock.mxl",
+      "fileName": "pdmx-hickory-dickory-dock.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4608220"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2048,
+      "sha256": "2880c8e937f87ea7de4c3937cf1d1c6d2bb761f0b39f473ddbbf166e6756f529"
+    },
+    {
+      "id": "pdmx-three-blind-mice",
+      "title": "Three Blind Mice",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-three-blind-mice.mxl",
+      "fileName": "pdmx-three-blind-mice.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5069211"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2763,
+      "sha256": "7280ad29708d8e0cccb2c2f7e4757e7f8b37179ee84f14d4c0fe80faf965ab06"
+    },
+    {
+      "id": "pdmx-itsy-bitsy-spider",
+      "title": "Itsy Bitsy Spider",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-itsy-bitsy-spider.mxl",
+      "fileName": "pdmx-itsy-bitsy-spider.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4551278"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2623,
+      "sha256": "6f2f270f0055f4a2cc7f06a4f251d633b2fd7cacb33b929919a2dc698929d7c0"
+    },
+    {
+      "id": "pdmx-rock-a-bye-baby",
+      "title": "Rock-a-bye Baby",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-rock-a-bye-baby.mxl",
+      "fileName": "pdmx-rock-a-bye-baby.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "lullaby",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4932620"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2595,
+      "sha256": "6f6f8228eb30f8f783c981ea3c8af01d5046b91df40074f8ff5e75cc416136e0"
+    },
+    {
+      "id": "pdmx-muffin-man",
+      "title": "The Muffin Man",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-muffin-man.mxl",
+      "fileName": "pdmx-muffin-man.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4585243"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2494,
+      "sha256": "6236bad1e7ac1ff8ca1dbdb0d151a64664e14ba101744e4ce8adf5ee78368dfb"
+    },
+    {
+      "id": "pdmx-sur-le-pont-avignon",
+      "title": "Sur le pont d'Avignon",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-sur-le-pont-avignon.mxl",
+      "fileName": "pdmx-sur-le-pont-avignon.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4556762"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2043,
+      "sha256": "7050ceab1a54921166580b2a1acd1d9a66ee497b6c625b34412af95cf2b60a1b"
+    },
+    {
+      "id": "pdmx-michael-row-boat",
+      "title": "Michael, Row the Boat Ashore",
+      "composer": "Traditional Spiritual",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-michael-row-boat.mxl",
+      "fileName": "pdmx-michael-row-boat.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "spiritual",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4947961"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2390,
+      "sha256": "9256089eb1772510a2327f877897787694d1a28186e07b086807d6c638d1a531"
+    },
+    {
+      "id": "pdmx-swing-low-chariot",
+      "title": "Swing Low, Sweet Chariot",
+      "composer": "Traditional Spiritual",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-swing-low-chariot.mxl",
+      "fileName": "pdmx-swing-low-chariot.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "spiritual",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4849885"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3315,
+      "sha256": "566c7490c064ba0ef03076b2c4ff3bf85dbf172d6772e006cb5e8aa7ecaddf7e"
+    },
+    {
+      "id": "pdmx-down-by-riverside",
+      "title": "Down by the Riverside",
+      "composer": "Traditional Spiritual",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-down-by-riverside.mxl",
+      "fileName": "pdmx-down-by-riverside.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "spiritual",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4977711"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3809,
+      "sha256": "c3e6c80227699776f822117dd08ce7721688c3f728cc6508be6baadb1b212887"
+    },
+    {
+      "id": "pdmx-sakura",
+      "title": "Sakura Sakura",
+      "composer": "Japanese Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-sakura.mxl",
+      "fileName": "pdmx-sakura.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5061278"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2934,
+      "sha256": "4ddfee8003195674c8cefdda562289af8e0c98fa8d391cc8c4f9a1f219e0cbc4"
+    },
+    {
+      "id": "pdmx-o-christmas-tree",
+      "title": "O Christmas Tree",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-o-christmas-tree.mxl",
+      "fileName": "pdmx-o-christmas-tree.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5045153"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2860,
+      "sha256": "54570048b3bddad094a1974d9875f5d3e684423e84b198604956969967e6f68e"
+    },
+    {
+      "id": "pdmx-good-king-wenceslas",
+      "title": "Good King Wenceslas",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-good-king-wenceslas.mxl",
+      "fileName": "pdmx-good-king-wenceslas.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "46163"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1854,
+      "sha256": "e20bad164bada71fc35b5031bc58bd0f127e6a59732671fc3fac680ce3ba66d3"
+    },
+    {
+      "id": "pdmx-god-rest-merry",
+      "title": "God Rest Ye Merry, Gentlemen",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-god-rest-merry.mxl",
+      "fileName": "pdmx-god-rest-merry.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4588343"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3323,
+      "sha256": "afb979b978fd51e2189bd81963e18432851e5f4c893469c0da5d07a88bf68f2c"
+    },
+    {
+      "id": "pdmx-go-tell-mountain",
+      "title": "Go Tell It on the Mountain",
+      "composer": "Traditional Spiritual",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-go-tell-mountain.mxl",
+      "fileName": "pdmx-go-tell-mountain.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "spiritual",
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4964154"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4009,
+      "sha256": "ddc0605d5f81cc07bb58c26a6fa51c9619bf64c76f216e4399de6323130c1e57"
+    },
+    {
+      "id": "pdmx-take-me-out-ball-game",
+      "title": "Take Me Out to the Ball Game",
+      "composer": "Albert von Tilzer",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-take-me-out-ball-game.mxl",
+      "fileName": "pdmx-take-me-out-ball-game.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "popular",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4167381"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 15511,
+      "sha256": "da39040d950db31badd70a5f87bd05ee199463ffe83ead6e77f98aab264b3379"
+    },
+    {
       "id": "gp-scarborough-fair",
       "title": "Scarborough Fair",
       "composer": "Traditional",

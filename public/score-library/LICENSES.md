@@ -17,7 +17,7 @@ OpenScore Lieder is released under CC0. Selected `.mscx` sources were converted 
 - Source: https://github.com/OpenScore/Lieder
 - License: https://creativecommons.org/publicdomain/zero/1.0/
 
-## PDMX — 30 MusicXML files
+## PDMX — 45 MusicXML files
 
 The approved records come from the PDMX no-license-conflict, all-valid, deduplicated subsets. Paywalled and official-score records are excluded. Each selected record was also reviewed for a public-domain underlying composition and a non-conflicting arrangement. The entry preserves the upstream CC0 or Public Domain Mark status.
 

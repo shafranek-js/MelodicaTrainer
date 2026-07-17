@@ -4,9 +4,9 @@ This directory is the application's self-contained score library. The browser lo
 
 ## Contents
 
-- 60 MusicXML files: 12 MuseTrainer, 18 OpenScore Lieder, and 30 PDMX.
+- 75 MusicXML files: 12 MuseTrainer, 18 OpenScore Lieder, and 45 PDMX.
 - 12 Guitar Pro 7 files: six melodies converted from reviewed PDMX MusicXML and six original CC0 exercises.
-- 49 of the 60 MusicXML entries are tagged `beginner` or `familiar`.
+- 64 of the 75 MusicXML entries are tagged `beginner` or `familiar`.
 
 The authoritative metadata is `catalog.json`. Every entry records its source, rights basis, review date, byte size, and SHA-256 checksum. See `LICENSES.md` for the source-level rights notes.
 
@@ -30,7 +30,7 @@ OpenScore Lieder conversion is an offline maintainer task. It requires a checkou
 node scripts/import-score-library.mjs --source openscore-lieder --input <lieder-checkout> --selection scripts/library-selections/openscore-lieder.json --musescore <MuseScore3-executable>
 ```
 
-PDMX import uses a locally downloaded `mxl.tar.gz` and the approved 30-record selection. The separate metadata check proves that each selected row is deduplicated, valid, in the no-license-conflict subset, not paywalled, not official, and marked CC0 or Public Domain.
+PDMX import uses a locally downloaded `mxl.tar.gz` and the approved 45-record selection. The separate metadata check proves that each selected row is deduplicated, valid, in the no-license-conflict subset, not paywalled, not official, and marked CC0 or Public Domain.
 
 ```bash
 npm run library:verify-pdmx -- --csv <PDMX.csv> --selection scripts/library-selections/pdmx.json

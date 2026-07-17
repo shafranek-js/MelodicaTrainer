@@ -6,7 +6,7 @@ const browser = await chromium.launch({ headless: true });
 const openLibrary = async (page) => {
   await page.getByRole("button", { name: "Browse library" }).click();
   await page.getByRole("heading", { name: "Score Library" }).waitFor();
-  await page.getByText("72 of 72 scores").waitFor();
+  await page.getByText("87 of 87 scores").waitFor();
 };
 
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -16,14 +16,14 @@ await desktop.goto(`${baseUrl}#/musicxml`, { waitUntil: "domcontentloaded" });
 await desktop.getByRole("button", { name: "Browse library" }).waitFor({ timeout: 30000 });
 await openLibrary(desktop);
 console.log("Desktop catalog opened.");
-if ((await desktop.locator("li[data-score-id]").count()) !== 72) throw new Error("Desktop catalog did not render 72 cards");
+if ((await desktop.locator("li[data-score-id]").count()) !== 87) throw new Error("Desktop catalog did not render 87 cards");
 await desktop.getByLabel("Filter by format").selectOption("musicxml");
-await desktop.getByText("60 of 72 scores").waitFor();
+await desktop.getByText("75 of 87 scores").waitFor();
 await desktop.getByLabel("Filter by format").selectOption("guitar-pro");
-await desktop.getByText("12 of 72 scores").waitFor();
+await desktop.getByText("12 of 87 scores").waitFor();
 await desktop.getByLabel("Filter by format").selectOption("all");
 await desktop.getByPlaceholder("Search title, composer, arranger, or tag...").fill("Fanny Hensel");
-await desktop.getByText("1 of 72 scores").waitFor();
+await desktop.getByText("1 of 87 scores").waitFor();
 await desktop.getByPlaceholder("Search title, composer, arranger, or tag...").fill("");
 await desktop.getByRole("button", { name: "Close score library" }).click();
 
@@ -38,6 +38,21 @@ const loadIds = [
   "pdmx-scarborough-fair",
   "pdmx-mary-lamb",
   "pdmx-hot-cross-buns",
+  "pdmx-hickory-dickory-dock",
+  "pdmx-three-blind-mice",
+  "pdmx-itsy-bitsy-spider",
+  "pdmx-rock-a-bye-baby",
+  "pdmx-muffin-man",
+  "pdmx-sur-le-pont-avignon",
+  "pdmx-michael-row-boat",
+  "pdmx-swing-low-chariot",
+  "pdmx-down-by-riverside",
+  "pdmx-sakura",
+  "pdmx-o-christmas-tree",
+  "pdmx-good-king-wenceslas",
+  "pdmx-god-rest-merry",
+  "pdmx-go-tell-mountain",
+  "pdmx-take-me-out-ball-game",
   "gp-scarborough-fair",
   "gp-mary-lamb",
   "gp-row-your-boat",
@@ -83,7 +98,7 @@ await retryPage.getByRole("button", { name: "Browse library" }).waitFor({ timeou
 await retryPage.getByRole("button", { name: "Browse library" }).click();
 await retryPage.getByRole("button", { name: "Retry catalog" }).waitFor();
 await retryPage.getByRole("button", { name: "Retry catalog" }).click();
-await retryPage.getByText("72 of 72 scores").waitFor();
+await retryPage.getByText("87 of 87 scores").waitFor();
 
 await retryPage.route("**/score-library/assets/pdmx/pdmx-amazing-grace.mxl", async (route) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -101,9 +116,9 @@ await mobile.goto(`${baseUrl}#/musicxml`, { waitUntil: "domcontentloaded" });
 await mobile.getByRole("button", { name: "Browse library" }).waitFor({ timeout: 30000 });
 await openLibrary(mobile);
 console.log("Mobile catalog opened.");
-if ((await mobile.locator("li[data-score-id]").count()) !== 72) throw new Error("Mobile catalog did not render 72 cards");
+if ((await mobile.locator("li[data-score-id]").count()) !== 87) throw new Error("Mobile catalog did not render 87 cards");
 await mobile.getByLabel("Filter by difficulty").selectOption("beginner");
-await mobile.getByText(/of 72 scores/).waitFor();
+await mobile.getByText(/of 87 scores/).waitFor();
 
 const catalogResponse = await mobile.request.get(`${baseUrl}score-library/catalog.json`);
 if (catalogResponse.status() !== 200) throw new Error(`Catalog HTTP ${catalogResponse.status()}`);
@@ -111,6 +126,7 @@ for (const path of [
   "score-library/assets/musetrainer/Happy_Birthday_To_You_Piano.mxl",
   "score-library/assets/openscore-lieder/openscore-wiegenlied.mxl",
   "score-library/assets/pdmx/pdmx-mary-lamb.mxl",
+  "score-library/assets/pdmx/pdmx-hickory-dickory-dock.mxl",
   "score-library/assets/guitar-pro/gp-exercise-c-major-scale.gp",
 ]) {
   const response = await mobile.request.get(`${baseUrl}${path}`);
@@ -118,4 +134,4 @@ for (const path of [
 }
 
 await browser.close();
-console.log(`Browser QA OK: desktop/mobile catalog, filters, 10 MusicXML, all 12 GP, and HTTP assets at ${baseUrl}`);
+console.log(`Browser QA OK: desktop/mobile catalog, filters, 25 MusicXML, all 12 GP, and HTTP assets at ${baseUrl}`);

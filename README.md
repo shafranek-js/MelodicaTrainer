@@ -13,7 +13,7 @@ MelodicaTrainer is an interactive React application for melodica practice. It co
 ### Note Highway
 
 - Load MusicXML, MXL, and Guitar Pro files.
-- Browse a local, searchable library of 60 MusicXML scores and 12 Guitar Pro files, with difficulty, format, tag, source, and license filters.
+- Browse a local, searchable library of 75 MusicXML scores and 12 Guitar Pro files, with difficulty, format, tag, source, and license filters.
 - Practice against synced playback and target lanes.
 - Auto-transpose material into the selected melodica range.
 - Track hits, misses, streak, and accuracy.

@@ -111,17 +111,17 @@ export const validateScoreLibrary = async () => {
 
   const musicXml = catalog.entries.filter((entry) => entry.format === "musicxml");
   const gp = catalog.entries.filter((entry) => entry.format === "guitar-pro");
-  if (musicXml.length !== 60) fail(`expected 60 MusicXML entries, found ${musicXml.length}`);
+  if (musicXml.length !== 75) fail(`expected 75 MusicXML entries, found ${musicXml.length}`);
   if (gp.length !== 12) fail(`expected 12 Guitar Pro entries, found ${gp.length}`);
-  for (const [source, expected] of [["MuseTrainer", 12], ["OpenScore Lieder", 18], ["PDMX", 30]]) {
+  for (const [source, expected] of [["MuseTrainer", 12], ["OpenScore Lieder", 18], ["PDMX", 45]]) {
     const actual = musicXml.filter((entry) => entry.source.name === source).length;
     if (actual !== expected) fail(`expected ${expected} ${source} MusicXML entries, found ${actual}`);
   }
   const approachable = musicXml.filter((entry) => entry.difficulty === "beginner" || entry.tags.includes("familiar"));
-  if (approachable.length < 42) fail(`expected at least 42 beginner/familiar MusicXML entries, found ${approachable.length}`);
+  if (approachable.length < 64) fail(`expected at least 64 beginner/familiar MusicXML entries, found ${approachable.length}`);
 
   console.log(`Score library OK: ${catalog.entries.length} entries (${musicXml.length} MusicXML, ${gp.length} GP).`);
-  console.log(`Beginner or familiar MusicXML: ${approachable.length}/60.`);
+  console.log(`Beginner or familiar MusicXML: ${approachable.length}/75.`);
   console.table(results);
   console.log(`Catalog: ${path.relative(process.cwd(), CATALOG_PATH)}`);
 };
