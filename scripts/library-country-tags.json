@@ -1,0 +1,157 @@
+{
+  "country:austria": [
+    "twinkle-variations",
+    "openscore-an-die-musik",
+    "openscore-ave-maria",
+    "openscore-die-forelle",
+    "openscore-schwanengesang-standchen",
+    "openscore-standchen-d889",
+    "openscore-gretchen-am-spinnrade",
+    "pdmx-silent-night",
+    "pdmx-eine-kleine-nachtmusik",
+    "cc0-kuckuck-wald"
+  ],
+  "country:canada": [
+    "pdmx-alouette"
+  ],
+  "country:china": [
+    "pdmx-mo-li-hua"
+  ],
+  "country:czechia": [
+    "pdmx-new-world-largo",
+    "cc0-skakal-pes",
+    "cc0-kocka-leze-dirou",
+    "cc0-pec-nam-spadla",
+    "cc0-czech-to-je-zlate-posviceni",
+    "cc0-czech-ovcaci-ctveraci",
+    "cc0-czech-sel-tudy-mel-dudy",
+    "cc0-czech-kdyz-jsem-husy-pasala",
+    "cc0-czech-jedna-dve-tri-ctyri-pet",
+    "cc0-czech-travicka-zelena",
+    "cc0-czech-kudy-kudy-cesticka",
+    "cc0-czech-cib-cib-cibulenka",
+    "cc0-czech-ja-jsem-z-kutne-hory",
+    "cc0-czech-pasla-ovecky",
+    "cc0-czech-vyletela-holubicka",
+    "cc0-czech-vodenka-studena",
+    "cc0-czech-holka-modrooka",
+    "cc0-czech-malicka-su",
+    "cc0-czech-prsi-prsi",
+    "cc0-czech-cerne-oci",
+    "cc0-czech-chovejte-mne-ma-maticko",
+    "cc0-czech-hraly-dudy",
+    "cc0-czech-jede-jede-postovsky-panacek"
+  ],
+  "country:france": [
+    "twinkle-variations",
+    "gymnopedie-1",
+    "pdmx-frere-jacques",
+    "pdmx-au-clair-lune",
+    "pdmx-sur-le-pont-avignon",
+    "cc0-bear-over-mountain"
+  ],
+  "country:germany": [
+    "ode-to-joy-easy",
+    "minuet-in-g-bwv-anh-114",
+    "fur-elise-beginner",
+    "canon-in-d",
+    "openscore-brahms-standchen",
+    "openscore-wiegenlied",
+    "openscore-mondnacht",
+    "openscore-widmung",
+    "openscore-ich-grolle-nicht",
+    "openscore-liebst-du-um-schonheit",
+    "openscore-der-nussbaum",
+    "openscore-morgenstandchen",
+    "openscore-du-bist-wie-eine-blume",
+    "pdmx-lightly-row",
+    "pdmx-farmer-in-dell",
+    "pdmx-o-christmas-tree",
+    "pdmx-alle-meine-entchen",
+    "cc0-fuchs-gans",
+    "cc0-kuckuck-wald"
+  ],
+  "country:italy": [
+    "bella-ciao",
+    "pdmx-vivaldi-spring"
+  ],
+  "country:japan": [
+    "pdmx-sakura"
+  ],
+  "country:mexico": [
+    "pdmx-la-cucaracha"
+  ],
+  "country:norway": [
+    "pdmx-morning-mood"
+  ],
+  "country:russia": [
+    "sugar-plum-fairy",
+    "swan-lake",
+    "pdmx-kalinka",
+    "pdmx-korobeiniki"
+  ],
+  "country:slovakia": [
+    "cc0-pec-nam-spadla"
+  ],
+  "country:south-korea": [
+    "pdmx-arirang"
+  ],
+  "country:ukraine": [
+    "pdmx-shchedryk"
+  ],
+  "country:united-kingdom": [
+    "greensleeves",
+    "pdmx-auld-lang-syne",
+    "pdmx-scarborough-fair",
+    "pdmx-london-bridge",
+    "pdmx-pop-goes-weasel",
+    "pdmx-home-sweet-home",
+    "pdmx-blue-bells-scotland",
+    "pdmx-deck-halls",
+    "pdmx-o-come-faithful",
+    "pdmx-hot-cross-buns",
+    "pdmx-hickory-dickory-dock",
+    "pdmx-three-blind-mice",
+    "pdmx-muffin-man",
+    "pdmx-good-king-wenceslas",
+    "pdmx-god-rest-merry",
+    "pdmx-bingo",
+    "cc0-this-old-man",
+    "cc0-mulberry-bush",
+    "cc0-ring-around-rosie",
+    "cc0-oranges-and-lemons",
+    "cc0-londons-burning"
+  ],
+  "country:united-states": [
+    "happy-birthday",
+    "the-entertainer",
+    "openscore-o-mistress-mine",
+    "openscore-fairy-lullaby",
+    "openscore-years-at-the-spring",
+    "pdmx-amazing-grace",
+    "pdmx-yankee-doodle",
+    "pdmx-arkansas-traveler",
+    "pdmx-coming-round-the-mountain",
+    "pdmx-when-the-saints",
+    "pdmx-clementine",
+    "pdmx-mary-lamb",
+    "pdmx-skip-to-my-lou",
+    "pdmx-row-your-boat",
+    "pdmx-camptown-races",
+    "pdmx-old-macdonald",
+    "pdmx-merrily-roll",
+    "pdmx-jingle-bells",
+    "pdmx-turkey-straw",
+    "pdmx-oh-susanna",
+    "pdmx-polly-wolly-doodle",
+    "pdmx-itsy-bitsy-spider",
+    "pdmx-rock-a-bye-baby",
+    "pdmx-michael-row-boat",
+    "pdmx-swing-low-chariot",
+    "pdmx-down-by-riverside",
+    "pdmx-go-tell-mountain",
+    "pdmx-take-me-out-ball-game",
+    "cc0-hush-little-baby",
+    "cc0-bear-over-mountain"
+  ]
+}

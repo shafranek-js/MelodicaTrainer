@@ -6,7 +6,7 @@ const browser = await chromium.launch({ headless: true });
 const openLibrary = async (page) => {
   await page.getByRole("button", { name: "Browse library" }).click();
   await page.getByRole("heading", { name: "Score Library" }).waitFor();
-  await page.getByText("112 of 112 scores").waitFor();
+  await page.getByText("131 of 131 scores").waitFor();
 };
 
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -16,15 +16,18 @@ await desktop.goto(`${baseUrl}#/musicxml`, { waitUntil: "domcontentloaded" });
 await desktop.getByRole("button", { name: "Browse library" }).waitFor({ timeout: 30000 });
 await openLibrary(desktop);
 console.log("Desktop catalog opened.");
-if ((await desktop.locator("li[data-score-id]").count()) !== 112) throw new Error("Desktop catalog did not render 112 cards");
+if ((await desktop.locator("li[data-score-id]").count()) !== 131) throw new Error("Desktop catalog did not render 131 cards");
 await desktop.getByLabel("Filter by format").selectOption("musicxml");
-await desktop.getByText("100 of 112 scores").waitFor();
+await desktop.getByText("119 of 131 scores").waitFor();
 await desktop.getByLabel("Filter by format").selectOption("guitar-pro");
-await desktop.getByText("12 of 112 scores").waitFor();
+await desktop.getByText("12 of 131 scores").waitFor();
 await desktop.getByLabel("Filter by format").selectOption("all");
 await desktop.getByPlaceholder("Search title, composer, arranger, or tag...").fill("Fanny Hensel");
-await desktop.getByText("1 of 112 scores").waitFor();
+await desktop.getByText("1 of 131 scores").waitFor();
 await desktop.getByPlaceholder("Search title, composer, arranger, or tag...").fill("");
+await desktop.getByLabel("Filter by tag").selectOption("country:czechia");
+await desktop.getByText("23 of 131 scores").waitFor();
+await desktop.getByLabel("Filter by tag").selectOption("all");
 await desktop.getByRole("button", { name: "Close score library" }).click();
 
 const loadIds = [
@@ -78,6 +81,25 @@ const loadIds = [
   "cc0-skakal-pes",
   "cc0-kocka-leze-dirou",
   "cc0-pec-nam-spadla",
+  "cc0-czech-to-je-zlate-posviceni",
+  "cc0-czech-ovcaci-ctveraci",
+  "cc0-czech-sel-tudy-mel-dudy",
+  "cc0-czech-kdyz-jsem-husy-pasala",
+  "cc0-czech-jedna-dve-tri-ctyri-pet",
+  "cc0-czech-travicka-zelena",
+  "cc0-czech-kudy-kudy-cesticka",
+  "cc0-czech-cib-cib-cibulenka",
+  "cc0-czech-ja-jsem-z-kutne-hory",
+  "cc0-czech-pasla-ovecky",
+  "cc0-czech-vyletela-holubicka",
+  "cc0-czech-vodenka-studena",
+  "cc0-czech-holka-modrooka",
+  "cc0-czech-malicka-su",
+  "cc0-czech-prsi-prsi",
+  "cc0-czech-cerne-oci",
+  "cc0-czech-chovejte-mne-ma-maticko",
+  "cc0-czech-hraly-dudy",
+  "cc0-czech-jede-jede-postovsky-panacek",
   "gp-scarborough-fair",
   "gp-mary-lamb",
   "gp-row-your-boat",
@@ -123,7 +145,7 @@ await retryPage.getByRole("button", { name: "Browse library" }).waitFor({ timeou
 await retryPage.getByRole("button", { name: "Browse library" }).click();
 await retryPage.getByRole("button", { name: "Retry catalog" }).waitFor();
 await retryPage.getByRole("button", { name: "Retry catalog" }).click();
-await retryPage.getByText("112 of 112 scores").waitFor();
+await retryPage.getByText("131 of 131 scores").waitFor();
 
 await retryPage.route("**/score-library/assets/pdmx/pdmx-amazing-grace.mxl", async (route) => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -141,9 +163,9 @@ await mobile.goto(`${baseUrl}#/musicxml`, { waitUntil: "domcontentloaded" });
 await mobile.getByRole("button", { name: "Browse library" }).waitFor({ timeout: 30000 });
 await openLibrary(mobile);
 console.log("Mobile catalog opened.");
-if ((await mobile.locator("li[data-score-id]").count()) !== 112) throw new Error("Mobile catalog did not render 112 cards");
+if ((await mobile.locator("li[data-score-id]").count()) !== 131) throw new Error("Mobile catalog did not render 131 cards");
 await mobile.getByLabel("Filter by difficulty").selectOption("beginner");
-await mobile.getByText(/of 112 scores/).waitFor();
+await mobile.getByText(/of 131 scores/).waitFor();
 
 const catalogResponse = await mobile.request.get(`${baseUrl}score-library/catalog.json`);
 if (catalogResponse.status() !== 200) throw new Error(`Catalog HTTP ${catalogResponse.status()}`);
@@ -160,4 +182,4 @@ for (const path of [
 }
 
 await browser.close();
-console.log(`Browser QA OK: desktop/mobile catalog, filters, 50 MusicXML, all 12 GP, and HTTP assets at ${baseUrl}`);
+console.log(`Browser QA OK: desktop/mobile catalog, filters, 69 MusicXML, all 12 GP, and HTTP assets at ${baseUrl}`);

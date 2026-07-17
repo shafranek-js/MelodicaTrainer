@@ -6,6 +6,13 @@ const reviewedAt = "2026-07-17";
 const readSelection = async (name) =>
   JSON.parse(await readFile(path.resolve(`scripts/library-selections/${name}.json`), "utf8"));
 
+const countryGroups = JSON.parse(await readFile(path.resolve("scripts/library-country-tags.json"), "utf8"));
+const countryTagsById = new Map();
+for (const [tag, ids] of Object.entries(countryGroups)) {
+  for (const id of ids) countryTagsById.set(id, [...(countryTagsById.get(id) ?? []), tag]);
+}
+const withCountryTags = (id, tags) => [...new Set([...tags, ...(countryTagsById.get(id) ?? [])])];
+
 const withAssetData = async (entry) => {
   const asset = path.resolve("public/score-library", ...entry.assetPath.split("/"));
   const bytes = await readFile(asset);
@@ -15,7 +22,10 @@ const withAssetData = async (entry) => {
 const museTrainer = await readSelection("musetrainer");
 const openScore = await readSelection("openscore-lieder");
 const pdmx = await readSelection("pdmx");
-const cc0Melodies = await readSelection("cc0-melodies");
+const cc0Melodies = [
+  ...await readSelection("cc0-melodies"),
+  ...await readSelection("zpevnik-czech"),
+];
 
 const entries = [];
 for (const entry of museTrainer) {
@@ -27,7 +37,7 @@ for (const entry of museTrainer) {
     assetPath: `assets/musetrainer/${entry.fileName}`,
     fileName: entry.fileName,
     difficulty: entry.difficulty,
-    tags: entry.tags,
+    tags: withCountryTags(entry.id, entry.tags),
     source: {
       name: "MuseTrainer",
       url: `https://musetrainer.github.io/library/scores/${encodeURIComponent(entry.fileName)}`,
@@ -50,7 +60,7 @@ for (const entry of openScore) {
     assetPath: `assets/openscore-lieder/${entry.id}.mxl`,
     fileName: `${entry.id}.mxl`,
     difficulty: entry.difficulty,
-    tags: entry.tags,
+    tags: withCountryTags(entry.id, entry.tags),
     source: {
       name: "OpenScore Lieder",
       url: `https://github.com/OpenScore/Lieder/blob/main/${entry.path.split("/").map(encodeURIComponent).join("/")}`,
@@ -75,7 +85,7 @@ for (const entry of pdmx) {
     assetPath: `assets/pdmx/${entry.id}.mxl`,
     fileName: `${entry.id}.mxl`,
     difficulty: entry.difficulty,
-    tags: entry.tags,
+    tags: withCountryTags(entry.id, entry.tags),
     source: {
       name: "PDMX",
       url: "https://zenodo.org/records/15571083",
@@ -102,7 +112,7 @@ for (const entry of cc0Melodies) {
     assetPath: `assets/cc0/${entry.id}.mxl`,
     fileName: `${entry.id}.mxl`,
     difficulty: entry.difficulty,
-    tags: entry.tags,
+    tags: withCountryTags(entry.id, entry.tags),
     source: {
       name: "Melodica Trainer CC0",
       url: entry.sourceUrl,
@@ -136,7 +146,7 @@ for (const [id, title, sourceId] of gpMelodies) {
     assetPath: `assets/guitar-pro/${id}.gp`,
     fileName: `${id}.gp`,
     difficulty: "beginner",
-    tags: ["melody", "familiar", "guitar-pro"],
+    tags: withCountryTags(sourceId, ["melody", "familiar", "guitar-pro"]),
     source: { name: "PDMX", url: "https://zenodo.org/records/15571083", recordId: sourceEntry.recordId },
     license: {
       kind: sourceEntry.licenseKind,

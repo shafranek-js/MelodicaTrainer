@@ -111,17 +111,24 @@ export const validateScoreLibrary = async () => {
 
   const musicXml = catalog.entries.filter((entry) => entry.format === "musicxml");
   const gp = catalog.entries.filter((entry) => entry.format === "guitar-pro");
-  if (musicXml.length !== 100) fail(`expected 100 MusicXML entries, found ${musicXml.length}`);
+  if (musicXml.length !== 119) fail(`expected 119 MusicXML entries, found ${musicXml.length}`);
   if (gp.length !== 12) fail(`expected 12 Guitar Pro entries, found ${gp.length}`);
-  for (const [source, expected] of [["MuseTrainer", 12], ["OpenScore Lieder", 18], ["PDMX", 58], ["Melodica Trainer CC0", 12]]) {
+  for (const [source, expected] of [["MuseTrainer", 12], ["OpenScore Lieder", 18], ["PDMX", 58], ["Melodica Trainer CC0", 31]]) {
     const actual = musicXml.filter((entry) => entry.source.name === source).length;
     if (actual !== expected) fail(`expected ${expected} ${source} MusicXML entries, found ${actual}`);
   }
   const approachable = musicXml.filter((entry) => entry.difficulty === "beginner" || entry.tags.includes("familiar"));
-  if (approachable.length < 89) fail(`expected at least 89 beginner/familiar MusicXML entries, found ${approachable.length}`);
+  if (approachable.length < 108) fail(`expected at least 108 beginner/familiar MusicXML entries, found ${approachable.length}`);
+  const missingCountryTags = musicXml.filter((entry) => !entry.tags.some((tag) => tag.startsWith("country:")));
+  if (missingCountryTags.length) fail(`MusicXML entries without country tags: ${missingCountryTags.map(({ id }) => id).join(", ")}`);
+  const countryTags = new Set(musicXml.flatMap((entry) => entry.tags.filter((tag) => tag.startsWith("country:"))));
+  if (countryTags.size < 16) fail(`expected at least 16 country tags, found ${countryTags.size}`);
+  const gpMelodiesWithoutCountry = gp.filter((entry) => entry.tags.includes("melody") && !entry.tags.some((tag) => tag.startsWith("country:")));
+  if (gpMelodiesWithoutCountry.length) fail(`GP melodies without country tags: ${gpMelodiesWithoutCountry.map(({ id }) => id).join(", ")}`);
 
   console.log(`Score library OK: ${catalog.entries.length} entries (${musicXml.length} MusicXML, ${gp.length} GP).`);
-  console.log(`Beginner or familiar MusicXML: ${approachable.length}/100.`);
+  console.log(`Beginner or familiar MusicXML: ${approachable.length}/119.`);
+  console.log(`Country tags: ${[...countryTags].sort().join(", ")}.`);
   console.table(results);
   console.log(`Catalog: ${path.relative(process.cwd(), CATALOG_PATH)}`);
 };

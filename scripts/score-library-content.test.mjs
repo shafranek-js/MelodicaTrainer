@@ -19,14 +19,44 @@ const readMusicXml = async (entry) => {
 };
 
 describe("committed MusicXML library content", () => {
-  it("contains exactly 100 scores with first-staff playback events", async () => {
-    expect(musicXmlEntries).toHaveLength(100);
+  it("contains exactly 119 scores with first-staff playback events", async () => {
+    expect(musicXmlEntries).toHaveLength(119);
     for (const entry of musicXmlEntries) {
       const xml = await readMusicXml(entry);
       const { events } = parsePlaybackEvents(xml, { addLeadIn: false });
       expect(events.some((event) => event.notes.some((note) => note.shouldPlay)), entry.id).toBe(true);
     }
   }, 45_000);
+
+  it("preserves the reviewed Pec nám spadla melody", async () => {
+    const entry = musicXmlEntries.find(({ id }) => id === "cc0-pec-nam-spadla");
+    expect(entry).toBeDefined();
+
+    const xml = await readMusicXml(entry);
+    const { events } = parsePlaybackEvents(xml, { addLeadIn: false });
+    const notes = events.flatMap((event) => event.notes.filter((note) => note.shouldPlay));
+
+    expect(notes.map(({ name }) => name)).toEqual([
+      "G4", "E4", "E4", "E4",
+      "G4", "E4", "E4", "E4",
+      "G4", "G4", "A4", "G4",
+      "G4", "F4", "F4",
+      "F4", "D4", "D4", "D4",
+      "F4", "D4", "D4", "D4",
+      "F4", "F4", "G4", "F4",
+      "F4", "E4", "E4",
+    ]);
+    expect(notes.map(({ durationBeats }) => durationBeats)).toEqual([
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 1,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 1,
+    ]);
+  });
 
   it("preserves the reviewed Skákal pes melody", async () => {
     const entry = musicXmlEntries.find(({ id }) => id === "cc0-skakal-pes");

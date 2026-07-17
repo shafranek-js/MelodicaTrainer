@@ -4,7 +4,10 @@ import JSZip from "jszip";
 
 const DIVISIONS = 4;
 const ZIP_DATE = new Date("1980-01-01T00:00:00.000Z");
-const selectionPath = path.resolve("scripts/library-selections/cc0-melodies.json");
+const selectionPaths = [
+  "scripts/library-selections/cc0-melodies.json",
+  "scripts/library-selections/zpevnik-czech.json",
+].map((selectionPath) => path.resolve(selectionPath));
 const destination = path.resolve("public/score-library/assets/cc0");
 
 const escapeXml = (value) => String(value)
@@ -72,13 +75,16 @@ const containerXml = `<?xml version="1.0" encoding="UTF-8"?>
 </container>
 `;
 
-const selection = JSON.parse(await readFile(selectionPath, "utf8"));
+const selection = (await Promise.all(
+  selectionPaths.map(async (selectionPath) => JSON.parse(await readFile(selectionPath, "utf8"))),
+)).flat();
 await mkdir(destination, { recursive: true });
 
 for (const entry of selection) {
   const zip = new JSZip();
-  zip.file("META-INF/container.xml", containerXml, { date: ZIP_DATE });
-  zip.file("score.musicxml", scoreXml(entry), { date: ZIP_DATE });
+  zip.file("META-INF/", null, { createFolders: false, date: ZIP_DATE, dir: true });
+  zip.file("META-INF/container.xml", containerXml, { createFolders: false, date: ZIP_DATE });
+  zip.file("score.musicxml", scoreXml(entry), { createFolders: false, date: ZIP_DATE });
   const bytes = await zip.generateAsync({
     type: "nodebuffer",
     compression: "DEFLATE",

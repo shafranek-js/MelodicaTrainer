@@ -11,7 +11,9 @@
       "difficulty": "beginner",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:austria",
+        "country:france"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -37,7 +39,8 @@
       "tags": [
         "beginner",
         "classical",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -62,7 +65,8 @@
       "difficulty": "beginner",
       "tags": [
         "beginner",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -87,7 +91,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:italy"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -113,7 +118,8 @@
       "tags": [
         "folk",
         "beginner",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -139,7 +145,8 @@
       "tags": [
         "classical",
         "beginner",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -165,7 +172,8 @@
       "tags": [
         "classical",
         "beginner",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -191,7 +199,8 @@
       "tags": [
         "classical",
         "slow",
-        "familiar"
+        "familiar",
+        "country:france"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -216,7 +225,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -241,7 +251,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:russia"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -266,7 +277,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:russia"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -291,7 +303,8 @@
       "difficulty": "advanced",
       "tags": [
         "ragtime",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "MuseTrainer",
@@ -316,7 +329,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:austria"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -343,7 +357,8 @@
       "tags": [
         "classical",
         "familiar",
-        "song"
+        "song",
+        "country:austria"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -370,7 +385,8 @@
       "tags": [
         "classical",
         "familiar",
-        "song"
+        "song",
+        "country:austria"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -396,7 +412,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -423,7 +440,8 @@
       "tags": [
         "classical",
         "familiar",
-        "song"
+        "song",
+        "country:austria"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -449,7 +467,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:austria"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -476,7 +495,8 @@
       "tags": [
         "classical",
         "familiar",
-        "lullaby"
+        "lullaby",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -502,7 +522,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -528,7 +549,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -554,7 +576,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -580,7 +603,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -607,7 +631,8 @@
       "tags": [
         "classical",
         "familiar",
-        "song"
+        "song",
+        "country:austria"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -633,7 +658,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -659,7 +685,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:united-states"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -685,7 +712,8 @@
       "difficulty": "beginner",
       "tags": [
         "classical",
-        "lullaby"
+        "lullaby",
+        "country:united-states"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -711,7 +739,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:united-states"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -737,7 +766,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -763,7 +793,8 @@
       "difficulty": "beginner",
       "tags": [
         "classical",
-        "song"
+        "song",
+        "country:germany"
       ],
       "source": {
         "name": "OpenScore Lieder",
@@ -790,7 +821,8 @@
       "difficulty": "beginner",
       "tags": [
         "hymn",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -816,7 +848,8 @@
       "difficulty": "beginner",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:austria"
       ],
       "source": {
         "name": "PDMX",
@@ -842,7 +875,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -868,7 +902,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -894,7 +929,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -920,7 +956,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -946,7 +983,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -972,7 +1010,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -998,7 +1037,8 @@
       "difficulty": "beginner",
       "tags": [
         "spiritual",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1024,7 +1064,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1050,7 +1091,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1076,7 +1118,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1102,7 +1145,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "PDMX",
@@ -1128,7 +1172,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1154,7 +1199,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1180,7 +1226,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:france"
       ],
       "source": {
         "name": "PDMX",
@@ -1206,7 +1253,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1232,7 +1280,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1258,7 +1307,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "PDMX",
@@ -1284,7 +1334,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1310,7 +1361,8 @@
       "difficulty": "intermediate",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1336,7 +1388,8 @@
       "difficulty": "intermediate",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1362,7 +1415,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1388,7 +1442,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1415,7 +1470,8 @@
       "difficulty": "advanced",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1441,7 +1497,8 @@
       "difficulty": "beginner",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1467,7 +1524,8 @@
       "difficulty": "beginner",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1493,7 +1551,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1519,7 +1578,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:france"
       ],
       "source": {
         "name": "PDMX",
@@ -1545,7 +1605,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1571,7 +1632,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1597,7 +1659,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1623,7 +1686,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1650,7 +1714,8 @@
       "tags": [
         "children",
         "lullaby",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1676,7 +1741,8 @@
       "difficulty": "beginner",
       "tags": [
         "children",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1703,7 +1769,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:france"
       ],
       "source": {
         "name": "PDMX",
@@ -1729,7 +1796,8 @@
       "difficulty": "beginner",
       "tags": [
         "spiritual",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1755,7 +1823,8 @@
       "difficulty": "beginner",
       "tags": [
         "spiritual",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1781,7 +1850,8 @@
       "difficulty": "beginner",
       "tags": [
         "spiritual",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1807,7 +1877,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:japan"
       ],
       "source": {
         "name": "PDMX",
@@ -1833,7 +1904,8 @@
       "difficulty": "beginner",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "PDMX",
@@ -1859,7 +1931,8 @@
       "difficulty": "beginner",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1885,7 +1958,8 @@
       "difficulty": "beginner",
       "tags": [
         "carol",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1912,7 +1986,8 @@
       "tags": [
         "spiritual",
         "carol",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1938,7 +2013,8 @@
       "difficulty": "intermediate",
       "tags": [
         "popular",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -1965,7 +2041,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -1992,7 +2069,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:canada"
       ],
       "source": {
         "name": "PDMX",
@@ -2021,7 +2099,8 @@
         "children",
         "folk",
         "german",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "PDMX",
@@ -2047,7 +2126,8 @@
       "difficulty": "intermediate",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:russia"
       ],
       "source": {
         "name": "PDMX",
@@ -2074,7 +2154,8 @@
       "difficulty": "intermediate",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:russia"
       ],
       "source": {
         "name": "PDMX",
@@ -2101,7 +2182,8 @@
       "tags": [
         "folk",
         "carol",
-        "familiar"
+        "familiar",
+        "country:ukraine"
       ],
       "source": {
         "name": "PDMX",
@@ -2127,7 +2209,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:south-korea"
       ],
       "source": {
         "name": "PDMX",
@@ -2153,7 +2236,8 @@
       "difficulty": "beginner",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:china"
       ],
       "source": {
         "name": "PDMX",
@@ -2179,7 +2263,8 @@
       "difficulty": "intermediate",
       "tags": [
         "folk",
-        "familiar"
+        "familiar",
+        "country:mexico"
       ],
       "source": {
         "name": "PDMX",
@@ -2206,7 +2291,8 @@
       "difficulty": "beginner",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:austria"
       ],
       "source": {
         "name": "PDMX",
@@ -2232,7 +2318,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:italy"
       ],
       "source": {
         "name": "PDMX",
@@ -2258,7 +2345,8 @@
       "difficulty": "beginner",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:czechia"
       ],
       "source": {
         "name": "PDMX",
@@ -2284,7 +2372,8 @@
       "difficulty": "intermediate",
       "tags": [
         "classical",
-        "familiar"
+        "familiar",
+        "country:norway"
       ],
       "source": {
         "name": "PDMX",
@@ -2312,7 +2401,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2325,7 +2415,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1271,
-      "sha256": "a6dca96a7b4458ea3957be60cc1629412ce4e733f32deb29d831dc1ad0d49a9b"
+      "sha256": "f48bc12f36e2155c8a0287ef323946775b20d5cfb8d1919452442e03387280a1"
     },
     {
       "id": "cc0-mulberry-bush",
@@ -2339,7 +2429,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2352,7 +2443,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1333,
-      "sha256": "91ce8d07e08dbcdd09b4f0a9393a860cfcdd9d00f3d782958131500b207d5202"
+      "sha256": "1168894873b38574f180e04e26823565037d22d5b343c4afe0b7806eeff45b9e"
     },
     {
       "id": "cc0-ring-around-rosie",
@@ -2366,7 +2457,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2379,7 +2471,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1243,
-      "sha256": "da4a4117e910068856f0dc6f8677cea7e87ae4d44f78ae5715af160707eb3178"
+      "sha256": "66a31ce451d683cf41654b9fa91f7c84f32bc1f3bc1f95f6eecc3c3b329bcd6b"
     },
     {
       "id": "cc0-hush-little-baby",
@@ -2393,7 +2485,8 @@
       "tags": [
         "children",
         "lullaby",
-        "familiar"
+        "familiar",
+        "country:united-states"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2406,7 +2499,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1228,
-      "sha256": "23e70aeb996358affdd1f4264176c4192f74bd271c4d2e6fe10d0dd28ee095b0"
+      "sha256": "de7b8e3c912b8e451673a7df9f5a5b9fc023f3dde1fe70d049bfea9251f84ca7"
     },
     {
       "id": "cc0-oranges-and-lemons",
@@ -2420,7 +2513,8 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2433,7 +2527,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1249,
-      "sha256": "90ecf3e029ff17685bcd2240ca04c6500af32dd7691476451e317c7d96e5c316"
+      "sha256": "dfd48af182436e7f41dfc6c8dfbb1205a9b7dcb2edb572b6ffc9b0af1232aea9"
     },
     {
       "id": "cc0-bear-over-mountain",
@@ -2447,7 +2541,9 @@
       "tags": [
         "children",
         "folk",
-        "familiar"
+        "familiar",
+        "country:france",
+        "country:united-states"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2460,7 +2556,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1300,
-      "sha256": "32ae6338fdc18821dc9409c1341bcebfc578c2af0cfb4ddb13c47b1acafa8ac2"
+      "sha256": "9117ad4072a7e27859cb11b4fc69c2c7f09425d7c71753b7088068bdbed9676e"
     },
     {
       "id": "cc0-londons-burning",
@@ -2474,7 +2570,8 @@
       "tags": [
         "children",
         "round",
-        "familiar"
+        "familiar",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2487,7 +2584,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1223,
-      "sha256": "b438a391c4762ea9566bb253cac79c4d1920f708c5198cb6cb0cead0e47f5a9f"
+      "sha256": "6a4c3c0a7d40d4ab1981f79291e8dfb2b88d6d066b4b3fe96ed4e8858b72f436"
     },
     {
       "id": "cc0-fuchs-gans",
@@ -2502,7 +2599,8 @@
         "children",
         "folk",
         "german",
-        "familiar"
+        "familiar",
+        "country:germany"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2515,7 +2613,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1344,
-      "sha256": "4faede52121f33b71ec1ade224d5676d4cc0e97971aec45dc9b787beda557964"
+      "sha256": "fb1a2659a837bc5345f1ae117a699de3b61ebbdb006fbb580e55516df9492b8f"
     },
     {
       "id": "cc0-kuckuck-wald",
@@ -2530,7 +2628,9 @@
         "children",
         "folk",
         "german",
-        "familiar"
+        "familiar",
+        "country:austria",
+        "country:germany"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2543,7 +2643,7 @@
       },
       "rightsReviewedAt": "2026-07-17",
       "bytes": 1312,
-      "sha256": "9658155d46f5c671511a5e390efae31384daa47fb04a55887fc0560794dd7000"
+      "sha256": "745d68cd0fb8ca2a0a880a192a409820dd802c566c42c317806da28ca9adea67"
     },
     {
       "id": "cc0-skakal-pes",
@@ -2558,7 +2658,8 @@
         "children",
         "folk",
         "czech",
-        "familiar"
+        "familiar",
+        "country:czechia"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2586,7 +2687,8 @@
         "children",
         "folk",
         "czech",
-        "familiar"
+        "familiar",
+        "country:czechia"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2615,7 +2717,9 @@
         "folk",
         "czech",
         "slovak",
-        "familiar"
+        "familiar",
+        "country:czechia",
+        "country:slovakia"
       ],
       "source": {
         "name": "Melodica Trainer CC0",
@@ -2627,8 +2731,559 @@
         "basis": "original-transcription-of-public-domain-melody"
       },
       "rightsReviewedAt": "2026-07-17",
-      "bytes": 1261,
-      "sha256": "1ebf400f2020e397653be1f2e053f8725d22629c6280d23d61892aa7279e830a"
+      "bytes": 1248,
+      "sha256": "a1b92e549cf02388f6ebc464e4ca340e09ccfdbec212368e61cfbbbce61b29b6"
+    },
+    {
+      "id": "cc0-czech-to-je-zlate-posviceni",
+      "title": "To je zlaté posvícení",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-to-je-zlate-posviceni.mxl",
+      "fileName": "cc0-czech-to-je-zlate-posviceni.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/uz_je_to_udelano.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1246,
+      "sha256": "d0919547c1745e0451a76d88c2b9aa6511858b445195054c61c71a57a9947758"
+    },
+    {
+      "id": "cc0-czech-ovcaci-ctveraci",
+      "title": "Ovčáci, čtveráci",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-ovcaci-ctveraci.mxl",
+      "fileName": "cc0-czech-ovcaci-ctveraci.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/ovcaci_ctveraci.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1239,
+      "sha256": "afb1f055e04c75925f09b2849ec24e36dd5edd3de73e1bf4e41161ec4790b32a"
+    },
+    {
+      "id": "cc0-czech-sel-tudy-mel-dudy",
+      "title": "Šel tudy, měl dudy",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-sel-tudy-mel-dudy.mxl",
+      "fileName": "cc0-czech-sel-tudy-mel-dudy.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/sel_tudy_mel_dudy.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1249,
+      "sha256": "fce1376ff8368f047f94b11f338a75c9c0ae292b11fa05f6adfa0e6784eb0f4e"
+    },
+    {
+      "id": "cc0-czech-kdyz-jsem-husy-pasala",
+      "title": "Když jsem husy pásala",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-kdyz-jsem-husy-pasala.mxl",
+      "fileName": "cc0-czech-kdyz-jsem-husy-pasala.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/kdyz_jsem_husy_pasala.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1263,
+      "sha256": "046646b62016fd5569cd5b52c503ce58e43c3411fc3ce89c12d4c101b9fecc16"
+    },
+    {
+      "id": "cc0-czech-jedna-dve-tri-ctyri-pet",
+      "title": "Jedna, dvě, tři, čtyři, pět",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-jedna-dve-tri-ctyri-pet.mxl",
+      "fileName": "cc0-czech-jedna-dve-tri-ctyri-pet.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/cos_to_janku_cos_to_sned.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1290,
+      "sha256": "94c32598b2a715593aa740deb97da5046fc76971ba5f0722da17e6319905c21f"
+    },
+    {
+      "id": "cc0-czech-travicka-zelena",
+      "title": "Travička zelená",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-travicka-zelena.mxl",
+      "fileName": "cc0-czech-travicka-zelena.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/travicka_zelena.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1327,
+      "sha256": "13978365bedd3091024451ad029fe53dab94f8bb36765b954b7977b6518ade5e"
+    },
+    {
+      "id": "cc0-czech-kudy-kudy-cesticka",
+      "title": "Kudy, kudy cestička",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-kudy-kudy-cesticka.mxl",
+      "fileName": "cc0-czech-kudy-kudy-cesticka.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/kudy_kudy_cesticka.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1345,
+      "sha256": "0f06645620b64586efb289a77963ff0abfd5242c6b980597ee72537139cee364"
+    },
+    {
+      "id": "cc0-czech-cib-cib-cibulenka",
+      "title": "Cib, cib, cibulenka",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-cib-cib-cibulenka.mxl",
+      "fileName": "cc0-czech-cib-cib-cibulenka.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/cib_cib_cibulenka.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1257,
+      "sha256": "879073cdfd0e34f4697e710e564619f9ace3ce294f2514ceeae17a27adbe3422"
+    },
+    {
+      "id": "cc0-czech-ja-jsem-z-kutne-hory",
+      "title": "Já jsem z Kutné Hory",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-ja-jsem-z-kutne-hory.mxl",
+      "fileName": "cc0-czech-ja-jsem-z-kutne-hory.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/L09_ja_jsem_z_kutne_hory.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1363,
+      "sha256": "bc59b7a56f1adc3d1b54b702c83794a284e9198814bcbe590741517cd4e577c9"
+    },
+    {
+      "id": "cc0-czech-pasla-ovecky",
+      "title": "Pásla ovečky",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-pasla-ovecky.mxl",
+      "fileName": "cc0-czech-pasla-ovecky.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/L12_pasla_ovecky.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1371,
+      "sha256": "2454fdf96426ae03ca2a0abcb71ce801500e458a9d9fd631e6b8d1cc14300a6e"
+    },
+    {
+      "id": "cc0-czech-vyletela-holubicka",
+      "title": "Vyletěla holubička",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-vyletela-holubicka.mxl",
+      "fileName": "cc0-czech-vyletela-holubicka.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/vyletela_holubicka.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1335,
+      "sha256": "7fc73dcb75005f819a1f8a5a73041c7f460445ce90bffd3abafe626c3adf48d1"
+    },
+    {
+      "id": "cc0-czech-vodenka-studena",
+      "title": "Voděnka studená",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-vodenka-studena.mxl",
+      "fileName": "cc0-czech-vodenka-studena.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/vodenka_studena.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1277,
+      "sha256": "cd2b4a5e014742eae60caeff23295de98ae7d0829b3568b6325502525e2de24f"
+    },
+    {
+      "id": "cc0-czech-holka-modrooka",
+      "title": "Holka modrooká",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-holka-modrooka.mxl",
+      "fileName": "cc0-czech-holka-modrooka.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/L02_holka_modrooka.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1277,
+      "sha256": "3f68f83807abad380e65267005d4b2d58b8d03ade65e629ced8fe27a288a9a9a"
+    },
+    {
+      "id": "cc0-czech-malicka-su",
+      "title": "Maličká su",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-malicka-su.mxl",
+      "fileName": "cc0-czech-malicka-su.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/malicka_su.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1267,
+      "sha256": "29ce29e95768ddc6acce4b162800eaa7e3f4d9af4c1672ac78c13a09d300b5f8"
+    },
+    {
+      "id": "cc0-czech-prsi-prsi",
+      "title": "Prší, prší",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-prsi-prsi.mxl",
+      "fileName": "cc0-czech-prsi-prsi.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/prsi_prsi.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1266,
+      "sha256": "87ff067a0942d8ebda7ab07c9d9ad5beb7448edb3fa0d438513e06aaa7f7cb4b"
+    },
+    {
+      "id": "cc0-czech-cerne-oci",
+      "title": "Černé oči",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-cerne-oci.mxl",
+      "fileName": "cc0-czech-cerne-oci.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/cerne_oci.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1298,
+      "sha256": "598c5e57f40878f50e702b2646cb939b83be8fd3d21699af3d0f8c27df954736"
+    },
+    {
+      "id": "cc0-czech-chovejte-mne-ma-maticko",
+      "title": "Chovejte mne, má matičko",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-chovejte-mne-ma-maticko.mxl",
+      "fileName": "cc0-czech-chovejte-mne-ma-maticko.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/chovejte_mne_ma_maticko.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1348,
+      "sha256": "787bb2f743b08bd712036b77a4f21f9efec81f2ec0a194357557de8802ce2706"
+    },
+    {
+      "id": "cc0-czech-hraly-dudy",
+      "title": "Hrály dudy",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-hraly-dudy.mxl",
+      "fileName": "cc0-czech-hraly-dudy.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/hraly_dudy.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1329,
+      "sha256": "44b79cbea199aac28f979eccc6da1fb6d252c8f4ca8348e59ddb4751df203d4e"
+    },
+    {
+      "id": "cc0-czech-jede-jede-postovsky-panacek",
+      "title": "Jede, jede poštovský panáček",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-jede-jede-postovsky-panacek.mxl",
+      "fileName": "cc0-czech-jede-jede-postovsky-panacek.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/L17_jede_jede_postovsky_panacek.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1315,
+      "sha256": "34dfb488b5e94a1a08f06ace47e0099f9e3681fb7fe1953473001a4d35e5b418"
     },
     {
       "id": "gp-scarborough-fair",
@@ -2642,7 +3297,8 @@
       "tags": [
         "melody",
         "familiar",
-        "guitar-pro"
+        "guitar-pro",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -2670,7 +3326,8 @@
       "tags": [
         "melody",
         "familiar",
-        "guitar-pro"
+        "guitar-pro",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -2698,7 +3355,8 @@
       "tags": [
         "melody",
         "familiar",
-        "guitar-pro"
+        "guitar-pro",
+        "country:united-states"
       ],
       "source": {
         "name": "PDMX",
@@ -2726,7 +3384,8 @@
       "tags": [
         "melody",
         "familiar",
-        "guitar-pro"
+        "guitar-pro",
+        "country:france"
       ],
       "source": {
         "name": "PDMX",
@@ -2754,7 +3413,8 @@
       "tags": [
         "melody",
         "familiar",
-        "guitar-pro"
+        "guitar-pro",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",
@@ -2782,7 +3442,8 @@
       "tags": [
         "melody",
         "familiar",
-        "guitar-pro"
+        "guitar-pro",
+        "country:united-kingdom"
       ],
       "source": {
         "name": "PDMX",

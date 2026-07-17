@@ -26,9 +26,11 @@ The approved records come from the PDMX no-license-conflict, all-valid, deduplic
 - CC0: https://creativecommons.org/publicdomain/zero/1.0/
 - Public Domain Mark: https://creativecommons.org/publicdomain/mark/1.0/
 
-## Melodica Trainer CC0 transcriptions — 12 MusicXML files
+## Melodica Trainer CC0 transcriptions — 31 MusicXML files
 
-These are independent, one-part/one-staff transcriptions of traditional public-domain children's and folk melodies. The reviewed notation reference for each melody is preserved in its catalog entry, and the generated MusicXML transcription is dedicated to CC0 1.0. The deterministic source data lives in `scripts/library-selections/cc0-melodies.json`.
+These are independent, one-part/one-staff transcriptions of traditional public-domain children's and folk melodies. The reviewed notation reference for each melody is preserved in its catalog entry, and the generated MusicXML transcription is dedicated to CC0 1.0. The deterministic source data lives in `scripts/library-selections/cc0-melodies.json` and `scripts/library-selections/zpevnik-czech.json`.
+
+The 19 additional Czech melodies use public song cards and downloadable custom song XML from `zpevnik.beil.cz` as notation references. The upstream archives are not standard MusicXML, are not shipped in this repository, and are not assigned an upstream open-content license here. Only independently generated MusicXML transcriptions of traditional public-domain melodies are distributed under this project's CC0 dedication.
 
 - CC0 dedication: https://creativecommons.org/publicdomain/zero/1.0/
 
