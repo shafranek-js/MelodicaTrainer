@@ -33,10 +33,10 @@ describe("committed MusicXML library content", () => {
     expect(entry).toBeDefined();
 
     const xml = await readMusicXml(entry);
-    const { events } = parsePlaybackEvents(xml, { addLeadIn: false });
+    const { detectedTempo, events } = parsePlaybackEvents(xml, { addLeadIn: false });
     const notes = events.flatMap((event) => event.notes.filter((note) => note.shouldPlay));
 
-    expect(notes.map(({ name }) => name)).toEqual([
+    const verseNames = [
       "G4", "E4", "E4", "E4",
       "G4", "E4", "E4", "E4",
       "G4", "G4", "A4", "G4",
@@ -45,17 +45,24 @@ describe("committed MusicXML library content", () => {
       "F4", "D4", "D4", "D4",
       "F4", "F4", "G4", "F4",
       "F4", "E4", "E4",
-    ]);
+    ];
+    const verseDurations = [
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 1,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 0.5, 0.5,
+      0.5, 0.5, 1,
+    ];
+
+    expect(notes.map(({ name }) => name)).toEqual([...verseNames, ...verseNames]);
     expect(notes.map(({ durationBeats }) => durationBeats)).toEqual([
-      0.5, 0.5, 0.5, 0.5,
-      0.5, 0.5, 0.5, 0.5,
-      0.5, 0.5, 0.5, 0.5,
-      0.5, 0.5, 1,
-      0.5, 0.5, 0.5, 0.5,
-      0.5, 0.5, 0.5, 0.5,
-      0.5, 0.5, 0.5, 0.5,
-      0.5, 0.5, 1,
+      ...verseDurations,
+      ...verseDurations,
     ]);
+    expect(detectedTempo).toBe(60);
   });
 
   it("preserves the reviewed Skákal pes melody", async () => {

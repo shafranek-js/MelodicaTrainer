@@ -52,7 +52,7 @@ describe("downloadScoreLibraryFile", () => {
     const file = await downloadScoreLibraryFile(entry, { fetchImpl });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "/score-library/assets/test/Test_Score.mxl",
+      `/score-library/assets/test/Test_Score.mxl?v=${"a".repeat(64)}`,
       { signal: undefined },
     );
     expect(file.name).toBe(entry.fileName);

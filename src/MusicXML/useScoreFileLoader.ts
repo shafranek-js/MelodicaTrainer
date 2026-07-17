@@ -13,6 +13,8 @@ export type LoadedScoreFile = {
   format: ScoreFormat;
 };
 
+export type BeforeScoreFileCommit = (loadedFile: LoadedScoreFile) => void;
+
 export const isGuitarProFileName = (fileName: string | null) =>
   getScoreFormat(fileName) === "guitar-pro";
 
@@ -81,7 +83,10 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
       .catch(onDefaultLoadError);
   }, [fileName, onDefaultLoadError, rawFileContent, setFileName, setRawFileContent]);
 
-  const loadScoreFile = useCallback(async (file: File): Promise<LoadedScoreFile> => {
+  const loadScoreFile = useCallback(async (
+    file: File,
+    beforeCommit?: BeforeScoreFileCommit,
+  ): Promise<LoadedScoreFile> => {
     const format = getScoreFormat(file.name);
     if (!format) {
       throw new Error("Unsupported score file format.");
@@ -93,13 +98,15 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
     if (format === "midi" && content instanceof Uint8Array) {
       parseMidiFile(content, file.name);
     }
-    setFileName(file.name);
-    setRawFileContent(content);
-    return {
+    const loadedFile = {
       content,
       fileName: file.name,
       format,
     };
+    beforeCommit?.(loadedFile);
+    setFileName(loadedFile.fileName);
+    setRawFileContent(loadedFile.content);
+    return loadedFile;
   }, [setFileName, setRawFileContent]);
 
   return {

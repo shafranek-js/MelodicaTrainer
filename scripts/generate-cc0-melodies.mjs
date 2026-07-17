@@ -80,7 +80,16 @@ const selection = (await Promise.all(
 )).flat();
 await mkdir(destination, { recursive: true });
 
+let generatedCount = 0;
+let preservedCount = 0;
 for (const entry of selection) {
+  const outputPath = path.join(destination, `${entry.id}.mxl`);
+  if (entry.prebuiltAsset) {
+    await readFile(outputPath);
+    preservedCount += 1;
+    continue;
+  }
+
   const zip = new JSZip();
   zip.file("META-INF/", null, { createFolders: false, date: ZIP_DATE, dir: true });
   zip.file("META-INF/container.xml", containerXml, { createFolders: false, date: ZIP_DATE });
@@ -91,7 +100,10 @@ for (const entry of selection) {
     compressionOptions: { level: 9 },
     platform: "DOS",
   });
-  await writeFile(path.join(destination, `${entry.id}.mxl`), bytes);
+  await writeFile(outputPath, bytes);
+  generatedCount += 1;
 }
 
-console.log(`Generated ${selection.length} CC0 MusicXML files.`);
+console.log(
+  `Generated ${generatedCount} CC0 MusicXML files; preserved ${preservedCount} prebuilt asset.`,
+);

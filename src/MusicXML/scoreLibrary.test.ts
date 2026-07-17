@@ -49,6 +49,10 @@ describe("score library catalog", () => {
     expect(first).toBe(second);
     await expect(first).resolves.toMatchObject({ catalogVersion: 1 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/score-library/catalog.json",
+      { cache: "no-store" },
+    );
   });
 
   it("allows retry after a failed request", async () => {
@@ -61,6 +65,8 @@ describe("score library catalog", () => {
   });
 
   it("builds a local score-library asset URL", () => {
-    expect(getScoreLibraryAssetUrl(testLibraryEntry)).toBe("/score-library/assets/test/Test_Score.mxl");
+    expect(getScoreLibraryAssetUrl(testLibraryEntry)).toBe(
+      `/score-library/assets/test/Test_Score.mxl?v=${"a".repeat(64)}`,
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, Library, LoaderCircle, Search, X } from "lucide-react";
+import { ExternalLink, Library, LoaderCircle, RotateCcw, Search, X } from "lucide-react";
 import {
   loadScoreLibraryCatalog,
   ScoreLibraryCatalogError,
@@ -81,10 +81,6 @@ export const ScoreLibraryDialog = ({
   useEffect(() => {
     if (!isOpen) {
       setErrorMessage(null);
-      setQuery("");
-      setDifficulty("all");
-      setFormat("all");
-      setTag("all");
       return;
     }
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -125,6 +121,14 @@ export const ScoreLibraryDialog = ({
 
   const selectClassName =
     "rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-xs text-gray-200 outline-none focus:border-emerald-500";
+  const hasActiveFilters =
+    query !== "" || difficulty !== "all" || format !== "all" || tag !== "all";
+  const resetFilters = () => {
+    setQuery("");
+    setDifficulty("all");
+    setFormat("all");
+    setTag("all");
+  };
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && closeDialog()} role="presentation">
@@ -156,6 +160,14 @@ export const ScoreLibraryDialog = ({
             <select aria-label="Filter by tag" className={selectClassName} onChange={(event) => setTag(event.target.value)} value={tag}>
               <option value="all">All tags</option>{availableTags.map((value) => <option key={value} value={value}>{value}</option>)}
             </select>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-xs font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={!hasActiveFilters}
+              onClick={resetFilters}
+              type="button"
+            >
+              <RotateCcw size={14} /> Reset filters
+            </button>
             {catalog && <span className="ml-auto text-xs text-gray-400">{filteredScores.length} of {catalog.entries.length} scores</span>}
           </div>
         </div>

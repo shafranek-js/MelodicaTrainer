@@ -1,11 +1,17 @@
 import { useCallback } from "react";
 import type { ChangeEvent } from "react";
 import { getResetTempoState } from "./tempoModel";
-import type { LoadedScoreFile } from "./useScoreFileLoader";
+import type {
+  BeforeScoreFileCommit,
+  LoadedScoreFile,
+} from "./useScoreFileLoader";
 import type { PlaybackEvent } from "./types";
 
 type UseScoreFileImportOptions = {
-  loadScoreFile: (file: File) => Promise<LoadedScoreFile>;
+  loadScoreFile: (
+    file: File,
+    beforeCommit?: BeforeScoreFileCommit,
+  ) => Promise<LoadedScoreFile>;
   onImportError: (error: unknown) => void;
   resetGpScore: (isGpFile: boolean) => void;
   resetMidiScore: () => void;
@@ -61,18 +67,18 @@ export const useScoreFileImport = ({
 }: UseScoreFileImportOptions) => {
   const importScoreFile = useCallback(
     async (file: File) => {
-      const loadedFile = await loadScoreFile(file);
-      resetImportedScoreState(loadedFile, {
-        resetGpScore,
-        resetMidiScore,
-        setDetectedTempoBpm,
-        setIsSheetReady,
-        setPlaybackEvents,
-        setTranspose,
-        setUserTempoBpm,
-        stopPlayback,
+      return loadScoreFile(file, (loadedFile) => {
+        resetImportedScoreState(loadedFile, {
+          resetGpScore,
+          resetMidiScore,
+          setDetectedTempoBpm,
+          setIsSheetReady,
+          setPlaybackEvents,
+          setTranspose,
+          setUserTempoBpm,
+          stopPlayback,
+        });
       });
-      return loadedFile;
     },
     [
       loadScoreFile,

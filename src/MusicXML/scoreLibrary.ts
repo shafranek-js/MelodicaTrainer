@@ -140,7 +140,7 @@ export const loadScoreLibraryCatalog = (
 ): Promise<ScoreLibraryCatalog> => {
   if (catalogPromise) return catalogPromise;
 
-  const request = fetchImpl(getScoreLibraryCatalogUrl())
+  const request = fetchImpl(getScoreLibraryCatalogUrl(), { cache: "no-store" })
     .then(async (response) => {
       if (!response.ok) throw new ScoreLibraryCatalogError();
       return parseScoreLibraryCatalog(await response.json());
@@ -160,5 +160,5 @@ export const resetScoreLibraryCatalogCacheForTests = () => {
 
 export const getScoreLibraryAssetUrl = (entry: ScoreLibraryEntry) => {
   if (!isSafeAssetPath(entry.assetPath)) throw new ScoreLibraryCatalogError();
-  return `${import.meta.env.BASE_URL}score-library/${entry.assetPath}`;
+  return `${import.meta.env.BASE_URL}score-library/${entry.assetPath}?v=${entry.sha256}`;
 };
