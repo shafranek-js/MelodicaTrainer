@@ -4,9 +4,9 @@ This directory is the application's self-contained score library. The browser lo
 
 ## Contents
 
-- 119 MusicXML files: 12 MuseTrainer, 18 OpenScore Lieder, 58 PDMX, and 31 reproducibly generated Melodica Trainer CC0 transcriptions.
+- 126 MusicXML files: 12 MuseTrainer, 18 OpenScore Lieder, 58 PDMX, and 38 Melodica Trainer CC0 transcriptions.
 - 12 Guitar Pro 7 files: six melodies converted from reviewed PDMX MusicXML and six original CC0 exercises.
-- 108 of the 119 MusicXML entries are tagged `beginner` or `familiar`.
+- 115 of the 126 MusicXML entries are tagged `beginner` or `familiar`.
 - Every MusicXML melody has at least one namespaced `country:*` origin tag; the six GP melody conversions inherit the same tags.
 
 The authoritative metadata is `catalog.json`. Every entry records its source, rights basis, review date, byte size, and SHA-256 checksum. See `LICENSES.md` for the source-level rights notes.
@@ -39,7 +39,7 @@ npm run library:verify-pdmx -- --csv <PDMX.csv> --selection scripts/library-sele
 node scripts/import-score-library.mjs --source pdmx --input <mxl.tar.gz> --selection scripts/library-selections/pdmx.json
 ```
 
-The 31 Melodica Trainer transcriptions are generated from the reviewed metadata and note data in `scripts/library-selections/cc0-melodies.json` and `scripts/library-selections/zpevnik-czech.json`. The generator writes deterministic one-part, one-staff MXL files and assigns the resulting transcriptions to CC0. Nineteen Czech melodies can be refreshed from the maintainer HTML link list with `npm run library:import-czech -- --html <links.html>`; the source archives are used only as notation references and are not committed or fetched at runtime.
+Thirty-one Melodica Trainer transcriptions are generated from the reviewed metadata and note data in `scripts/library-selections/cc0-melodies.json` and `scripts/library-selections/zpevnik-czech.json`. The other seven are reviewed one-part, one-staff browser-converter exports of public-domain Czech melodies. All 38 transcriptions are assigned to CC0. Nineteen Czech melodies can be refreshed from the maintainer HTML link list with `npm run library:import-czech -- --html <links.html>`; the source archives are used only as notation references and are not fetched at runtime.
 
 ```bash
 npm run library:generate-cc0

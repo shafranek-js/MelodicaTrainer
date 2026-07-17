@@ -19,8 +19,8 @@ const readMusicXml = async (entry) => {
 };
 
 describe("committed MusicXML library content", () => {
-  it("contains exactly 119 scores with first-staff playback events", async () => {
-    expect(musicXmlEntries).toHaveLength(119);
+  it("contains exactly 126 scores with first-staff playback events", async () => {
+    expect(musicXmlEntries).toHaveLength(126);
     for (const entry of musicXmlEntries) {
       const xml = await readMusicXml(entry);
       const { events } = parsePlaybackEvents(xml, { addLeadIn: false });

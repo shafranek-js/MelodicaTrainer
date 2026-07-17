@@ -2967,6 +2967,209 @@
       "sha256": "879073cdfd0e34f4697e710e564619f9ace3ce294f2514ceeae17a27adbe3422"
     },
     {
+      "id": "cc0-czech-ja-jsem-muzikant",
+      "title": "Já jsem muzikant",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-ja-jsem-muzikant.mxl",
+      "fileName": "cc0-czech-ja-jsem-muzikant.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/ja_jsem_muzikant.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 2470,
+      "sha256": "5135f81023b99e2109b0d03ba5f9eaa5d8cb6ac1dbd45552584b99ff7e10c413"
+    },
+    {
+      "id": "cc0-czech-cervena-modra-fiala",
+      "title": "Červená, modrá fiala",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-cervena-modra-fiala.mxl",
+      "fileName": "cc0-czech-cervena-modra-fiala.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/cervena_modra_fiala.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 5561,
+      "sha256": "f07304e02338bdd5874945543fcb6f3ccc4d202f095c2921e32dfbd134aff99a"
+    },
+    {
+      "id": "cc0-czech-nestarej-se-zeno-ma",
+      "title": "Nestarej se, ženo má",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-nestarej-se-zeno-ma.mxl",
+      "fileName": "cc0-czech-nestarej-se-zeno-ma.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/nestarej_se_zeno_ma.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 4784,
+      "sha256": "c880800d319e8c77614cb6ee4a9ed711987376d15c4783ae22876373ebef293a"
+    },
+    {
+      "id": "cc0-czech-sla-nanynka-do-zeli",
+      "title": "Šla Nanynka do zelí",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-sla-nanynka-do-zeli.mxl",
+      "fileName": "cc0-czech-sla-nanynka-do-zeli.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/sla_nanynka_do_zeli.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 8320,
+      "sha256": "eb6b688b1bc1ca10dd142b51128c6c853db18bac0b7515ef3f12a07418176635"
+    },
+    {
+      "id": "cc0-czech-stala-basa",
+      "title": "Stála basa",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-stala-basa.mxl",
+      "fileName": "cc0-czech-stala-basa.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/stala_basa.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 4868,
+      "sha256": "a91211887347153b0ed318a1dd05a1ac7a7ef67609ec057953656980f57b903a"
+    },
+    {
+      "id": "cc0-czech-tluce-bubenicek",
+      "title": "Tluče bubeníček",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-tluce-bubenicek.mxl",
+      "fileName": "cc0-czech-tluce-bubenicek.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/tluce_bubenicek.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 2364,
+      "sha256": "8f82894727ee62a545760e7beeab960730fedbe304a8776291e9effed6ebf284"
+    },
+    {
+      "id": "cc0-czech-utikej-kaco",
+      "title": "Utíkej Káčo",
+      "composer": "Traditional Czech",
+      "arranger": "Melodica Trainer",
+      "format": "musicxml",
+      "assetPath": "assets/cc0/cc0-czech-utikej-kaco.mxl",
+      "fileName": "cc0-czech-utikej-kaco.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "folk",
+        "czech",
+        "country:czechia",
+        "familiar"
+      ],
+      "source": {
+        "name": "Melodica Trainer CC0",
+        "url": "https://zpevnik.beil.cz/utikej_kaco.html"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-transcription-of-public-domain-melody"
+      },
+      "rightsReviewedAt": "2026-07-18",
+      "bytes": 2124,
+      "sha256": "937ea81b58a53bbeb42b5859fc04ed5c9fda7a04222ea366273b906cff760485"
+    },
+    {
       "id": "cc0-czech-ja-jsem-z-kutne-hory",
       "title": "Já jsem z Kutné Hory",
       "composer": "Traditional Czech",
