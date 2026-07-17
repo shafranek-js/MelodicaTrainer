@@ -1,103 +1,164 @@
-export const MUSETRAINER_LIBRARY_PAGE_URL =
-  "https://musetrainer.github.io/library/";
-
-export const MUSETRAINER_SCORE_BASE_URL =
-  "https://musetrainer.github.io/library/scores/";
+export type ScoreLibraryFormat = "musicxml" | "guitar-pro";
+export type ScoreLibraryDifficulty = "beginner" | "intermediate" | "advanced";
+export type ScoreLibraryLicenseKind = "CC0-1.0" | "PUBLIC_DOMAIN";
 
 export type ScoreLibraryEntry = {
+  arranger?: string;
+  assetPath: string;
+  bytes: number;
   composer: string;
+  difficulty: ScoreLibraryDifficulty;
   fileName: string;
+  format: ScoreLibraryFormat;
   id: string;
+  license: {
+    basis: string;
+    kind: ScoreLibraryLicenseKind;
+    url: string;
+  };
+  rightsReviewedAt: string;
+  sha256: string;
+  source: {
+    name: string;
+    recordId?: string;
+    url: string;
+  };
   tags: readonly string[];
   title: string;
 };
 
-export const getScoreLibraryDownloadUrl = (entry: ScoreLibraryEntry) =>
-  new URL(entry.fileName, MUSETRAINER_SCORE_BASE_URL).toString();
+export type ScoreLibraryCatalog = {
+  catalogVersion: number;
+  entries: readonly ScoreLibraryEntry[];
+};
 
-export const SCORE_LIBRARY = [
-  {
-    id: "twinkle-variations",
-    title: "Twinkle Twinkle Little Star",
-    composer: "Traditional / W. A. Mozart",
-    fileName: "12_Variations_of_Twinkle_Twinkle_Little_Star.mxl",
-    tags: ["classical", "familiar"],
-  },
-  {
-    id: "ode-to-joy-easy",
-    title: "Ode to Joy — Easy Variation",
-    composer: "Ludwig van Beethoven",
-    fileName: "Ode_to_Joy_Easy_variation.mxl",
-    tags: ["beginner", "classical"],
-  },
-  {
-    id: "happy-birthday",
-    title: "Happy Birthday to You",
-    composer: "Traditional",
-    fileName: "Happy_Birthday_To_You_Piano.mxl",
-    tags: ["beginner", "familiar"],
-  },
-  {
-    id: "bella-ciao",
-    title: "Bella Ciao",
-    composer: "Traditional",
-    fileName: "Bella_Ciao_-_La_Casa_de_Papel.mxl",
-    tags: ["folk", "familiar"],
-  },
-  {
-    id: "greensleeves",
-    title: "Greensleeves",
-    composer: "Traditional",
-    fileName: "Greensleeves_for_Piano_easy_and_beautiful.mxl",
-    tags: ["folk", "beginner"],
-  },
-  {
-    id: "minuet-in-g-bwv-anh-114",
-    title: "Minuet in G Major, BWV Anh. 114",
-    composer: "Christian Petzold",
-    fileName: "Bach_Minuet_in_G_Major_BWV_Anh._114.mxl",
-    tags: ["classical", "beginner"],
-  },
-  {
-    id: "fur-elise-beginner",
-    title: "Für Elise — Beginner Arrangement",
-    composer: "Ludwig van Beethoven",
-    fileName: "Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl",
-    tags: ["classical", "beginner"],
-  },
-  {
-    id: "gymnopedie-1",
-    title: "Gymnopédie No. 1",
-    composer: "Erik Satie",
-    fileName: "Erik_Satie_-_Gymnopedie_No.1.mxl",
-    tags: ["classical", "slow"],
-  },
-  {
-    id: "canon-in-d",
-    title: "Canon in D",
-    composer: "Johann Pachelbel",
-    fileName: "Canon_in_D.mxl",
-    tags: ["classical"],
-  },
-  {
-    id: "sugar-plum-fairy",
-    title: "Dance of the Sugar Plum Fairy",
-    composer: "Pyotr Ilyich Tchaikovsky",
-    fileName: "Dance_of_the_sugar_plum_fairy.mxl",
-    tags: ["classical"],
-  },
-  {
-    id: "swan-lake",
-    title: "Swan Lake",
-    composer: "Pyotr Ilyich Tchaikovsky",
-    fileName: "Swan_Lake.mxl",
-    tags: ["classical"],
-  },
-  {
-    id: "the-entertainer",
-    title: "The Entertainer",
-    composer: "Scott Joplin",
-    fileName: "The_Entertainer_-_Scott_Joplin.mxl",
-    tags: ["ragtime"],
-  },
-] as const satisfies readonly ScoreLibraryEntry[];
+export class ScoreLibraryCatalogError extends Error {
+  constructor(message = "The score library catalog could not be loaded.") {
+    super(message);
+    Object.setPrototypeOf(this, ScoreLibraryCatalogError.prototype);
+    this.name = "ScoreLibraryCatalogError";
+  }
+}
+
+const formats = new Set<ScoreLibraryFormat>(["musicxml", "guitar-pro"]);
+const difficulties = new Set<ScoreLibraryDifficulty>([
+  "beginner",
+  "intermediate",
+  "advanced",
+]);
+const licenseKinds = new Set<ScoreLibraryLicenseKind>([
+  "CC0-1.0",
+  "PUBLIC_DOMAIN",
+]);
+const MAX_LIBRARY_SCORE_BYTES = 10 * 1024 * 1024;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isSafeAssetPath = (value: string) =>
+  value.startsWith("assets/") &&
+  !value.startsWith("/") &&
+  !value.includes("\\") &&
+  !value.split("/").includes("..") &&
+  !/^[a-z][a-z\d+.-]*:/i.test(value);
+
+const entryFileMatchesFormat = (
+  format: ScoreLibraryFormat,
+  assetPath: string,
+  fileName: string,
+) => {
+  const extensionPattern =
+    format === "musicxml"
+      ? /\.(musicxml|mxl|xml)$/i
+      : /\.(gp|gp3|gp4|gp5|gpx)$/i;
+  return (
+    extensionPattern.test(fileName) &&
+    extensionPattern.test(assetPath) &&
+    assetPath.split("/").slice(-1)[0] === fileName
+  );
+};
+
+const isEntry = (value: unknown): value is ScoreLibraryEntry => {
+  if (!isRecord(value) || !isRecord(value.source) || !isRecord(value.license)) {
+    return false;
+  }
+  return (
+    typeof value.id === "string" &&
+    typeof value.title === "string" &&
+    typeof value.composer === "string" &&
+    (value.arranger === undefined || typeof value.arranger === "string") &&
+    typeof value.format === "string" &&
+    formats.has(value.format as ScoreLibraryFormat) &&
+    typeof value.assetPath === "string" &&
+    isSafeAssetPath(value.assetPath) &&
+    typeof value.fileName === "string" &&
+    entryFileMatchesFormat(
+      value.format as ScoreLibraryFormat,
+      value.assetPath,
+      value.fileName,
+    ) &&
+    Number.isInteger(value.bytes) &&
+    (value.bytes as number) > 0 &&
+    (value.bytes as number) <= MAX_LIBRARY_SCORE_BYTES &&
+    typeof value.sha256 === "string" &&
+    /^[a-f\d]{64}$/.test(value.sha256) &&
+    typeof value.difficulty === "string" &&
+    difficulties.has(value.difficulty as ScoreLibraryDifficulty) &&
+    Array.isArray(value.tags) &&
+    value.tags.every((tag) => typeof tag === "string") &&
+    typeof value.source.name === "string" &&
+    typeof value.source.url === "string" &&
+    (value.source.recordId === undefined || typeof value.source.recordId === "string") &&
+    typeof value.license.kind === "string" &&
+    licenseKinds.has(value.license.kind as ScoreLibraryLicenseKind) &&
+    typeof value.license.url === "string" &&
+    typeof value.license.basis === "string" &&
+    typeof value.rightsReviewedAt === "string"
+  );
+};
+
+export const parseScoreLibraryCatalog = (value: unknown): ScoreLibraryCatalog => {
+  if (
+    !isRecord(value) ||
+    !Number.isInteger(value.catalogVersion) ||
+    !Array.isArray(value.entries) ||
+    !value.entries.every(isEntry) ||
+    new Set(value.entries.map((entry) => entry.id)).size !== value.entries.length
+  ) {
+    throw new ScoreLibraryCatalogError("The score library catalog is invalid.");
+  }
+  return value as ScoreLibraryCatalog;
+};
+
+let catalogPromise: Promise<ScoreLibraryCatalog> | null = null;
+
+export const getScoreLibraryCatalogUrl = () =>
+  `${import.meta.env.BASE_URL}score-library/catalog.json`;
+
+export const loadScoreLibraryCatalog = (
+  fetchImpl: typeof fetch = fetch,
+): Promise<ScoreLibraryCatalog> => {
+  if (catalogPromise) return catalogPromise;
+
+  const request = fetchImpl(getScoreLibraryCatalogUrl())
+    .then(async (response) => {
+      if (!response.ok) throw new ScoreLibraryCatalogError();
+      return parseScoreLibraryCatalog(await response.json());
+    })
+    .catch((error: unknown) => {
+      catalogPromise = null;
+      if (error instanceof ScoreLibraryCatalogError) throw error;
+      throw new ScoreLibraryCatalogError();
+    });
+  catalogPromise = request;
+  return request;
+};
+
+export const resetScoreLibraryCatalogCacheForTests = () => {
+  catalogPromise = null;
+};
+
+export const getScoreLibraryAssetUrl = (entry: ScoreLibraryEntry) => {
+  if (!isSafeAssetPath(entry.assetPath)) throw new ScoreLibraryCatalogError();
+  return `${import.meta.env.BASE_URL}score-library/${entry.assetPath}`;
+};

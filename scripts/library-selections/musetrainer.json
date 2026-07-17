@@ -1,0 +1,14 @@
+[
+  {"id":"twinkle-variations","title":"Twinkle Twinkle Little Star","composer":"Traditional / W. A. Mozart","fileName":"12_Variations_of_Twinkle_Twinkle_Little_Star.mxl","difficulty":"beginner","tags":["classical","familiar"]},
+  {"id":"ode-to-joy-easy","title":"Ode to Joy — Easy Variation","composer":"Ludwig van Beethoven","fileName":"Ode_to_Joy_Easy_variation.mxl","difficulty":"beginner","tags":["beginner","classical","familiar"]},
+  {"id":"happy-birthday","title":"Happy Birthday to You","composer":"Traditional","fileName":"Happy_Birthday_To_You_Piano.mxl","difficulty":"beginner","tags":["beginner","familiar"]},
+  {"id":"bella-ciao","title":"Bella Ciao","composer":"Traditional","fileName":"Bella_Ciao_-_La_Casa_de_Papel.mxl","difficulty":"beginner","tags":["folk","familiar"]},
+  {"id":"greensleeves","title":"Greensleeves","composer":"Traditional","fileName":"Greensleeves_for_Piano_easy_and_beautiful.mxl","difficulty":"beginner","tags":["folk","beginner","familiar"]},
+  {"id":"minuet-in-g-bwv-anh-114","title":"Minuet in G Major, BWV Anh. 114","composer":"Christian Petzold","fileName":"Bach_Minuet_in_G_Major_BWV_Anh._114.mxl","difficulty":"beginner","tags":["classical","beginner","familiar"]},
+  {"id":"fur-elise-beginner","title":"Für Elise — Beginner Arrangement","composer":"Ludwig van Beethoven","fileName":"Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl","difficulty":"beginner","tags":["classical","beginner","familiar"]},
+  {"id":"gymnopedie-1","title":"Gymnopédie No. 1","composer":"Erik Satie","fileName":"Erik_Satie_-_Gymnopedie_No.1.mxl","difficulty":"intermediate","tags":["classical","slow","familiar"]},
+  {"id":"canon-in-d","title":"Canon in D","composer":"Johann Pachelbel","fileName":"Canon_in_D.mxl","difficulty":"intermediate","tags":["classical","familiar"]},
+  {"id":"sugar-plum-fairy","title":"Dance of the Sugar Plum Fairy","composer":"Pyotr Ilyich Tchaikovsky","fileName":"Dance_of_the_sugar_plum_fairy.mxl","difficulty":"intermediate","tags":["classical","familiar"]},
+  {"id":"swan-lake","title":"Swan Lake","composer":"Pyotr Ilyich Tchaikovsky","fileName":"Swan_Lake.mxl","difficulty":"intermediate","tags":["classical","familiar"]},
+  {"id":"the-entertainer","title":"The Entertainer","composer":"Scott Joplin","fileName":"The_Entertainer_-_Scott_Joplin.mxl","difficulty":"advanced","tags":["ragtime","familiar"]}
+]

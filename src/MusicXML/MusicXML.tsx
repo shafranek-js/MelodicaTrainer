@@ -429,7 +429,7 @@ const MusicXML: React.FC = () => {
         await importScoreFile(file);
         setRouteStatus({
           tone: "success",
-          message: `${entry.title} loaded from MuseTrainer Library.`,
+          message: `${entry.title} loaded from Score Library.`,
         });
       } catch (error) {
         if (

@@ -6,7 +6,12 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/prepare-sites-build.mjs",
+    "build": "npm run library:check && tsc -b && vite build && node scripts/prepare-sites-build.mjs",
+    "library:check": "node scripts/validate-score-library.mjs",
+    "library:generate-gp": "node scripts/generate-gp-library.mjs",
+    "library:catalog": "node scripts/generate-score-library-catalog.mjs",
+    "library:verify-pdmx": "node scripts/verify-pdmx-selection.mjs",
+    "library:qa": "node scripts/qa-score-library.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --environment jsdom",

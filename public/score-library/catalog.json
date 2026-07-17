@@ -1,0 +1,1889 @@
+{
+  "catalogVersion": 1,
+  "entries": [
+    {
+      "id": "twinkle-variations",
+      "title": "Twinkle Twinkle Little Star",
+      "composer": "Traditional / W. A. Mozart",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl",
+      "fileName": "12_Variations_of_Twinkle_Twinkle_Little_Star.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 49565,
+      "sha256": "e82399bf868a9d8f93e1d9b5999bb231591e03257a7e2971cc379d3690b74112"
+    },
+    {
+      "id": "ode-to-joy-easy",
+      "title": "Ode to Joy — Easy Variation",
+      "composer": "Ludwig van Beethoven",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Ode_to_Joy_Easy_variation.mxl",
+      "fileName": "Ode_to_Joy_Easy_variation.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "beginner",
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Ode_to_Joy_Easy_variation.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3209,
+      "sha256": "96e7b89cd7509749e554f8e7aaa4e566a33fdc9b7968115ed44b96da8c2f12b1"
+    },
+    {
+      "id": "happy-birthday",
+      "title": "Happy Birthday to You",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Happy_Birthday_To_You_Piano.mxl",
+      "fileName": "Happy_Birthday_To_You_Piano.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "beginner",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Happy_Birthday_To_You_Piano.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3631,
+      "sha256": "f98c9081accdb360a5bc74ca8468f7f103d2d2fbd5b03e0121f988dac13e8feb"
+    },
+    {
+      "id": "bella-ciao",
+      "title": "Bella Ciao",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Bella_Ciao_-_La_Casa_de_Papel.mxl",
+      "fileName": "Bella_Ciao_-_La_Casa_de_Papel.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Bella_Ciao_-_La_Casa_de_Papel.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 16460,
+      "sha256": "0468d797861259efb080fc08b0aee47b43a18f6a0bed3216dfd8bfb2b208dd05"
+    },
+    {
+      "id": "greensleeves",
+      "title": "Greensleeves",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Greensleeves_for_Piano_easy_and_beautiful.mxl",
+      "fileName": "Greensleeves_for_Piano_easy_and_beautiful.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "beginner",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Greensleeves_for_Piano_easy_and_beautiful.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4918,
+      "sha256": "0ad671a423701077141599cfc76dbbe3830150fabc5b32314b3428d1d159c940"
+    },
+    {
+      "id": "minuet-in-g-bwv-anh-114",
+      "title": "Minuet in G Major, BWV Anh. 114",
+      "composer": "Christian Petzold",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl",
+      "fileName": "Bach_Minuet_in_G_Major_BWV_Anh._114.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "beginner",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4745,
+      "sha256": "490aba9a679e06429e0b7e6e58e50701658389d64c3b5c91511af3ec68355b4d"
+    },
+    {
+      "id": "fur-elise-beginner",
+      "title": "Für Elise — Beginner Arrangement",
+      "composer": "Ludwig van Beethoven",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl",
+      "fileName": "Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "beginner",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4450,
+      "sha256": "c3ae3d2a4f5642c23aa8691e8f6b6aa336ea1dce5f62f90a40fb3310a7f3014f"
+    },
+    {
+      "id": "gymnopedie-1",
+      "title": "Gymnopédie No. 1",
+      "composer": "Erik Satie",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Erik_Satie_-_Gymnopedie_No.1.mxl",
+      "fileName": "Erik_Satie_-_Gymnopedie_No.1.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "slow",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Erik_Satie_-_Gymnopedie_No.1.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4866,
+      "sha256": "dc0191ae303450692632fa60aec1b10b2528a0bab54159e530911ed2e8eeaafe"
+    },
+    {
+      "id": "canon-in-d",
+      "title": "Canon in D",
+      "composer": "Johann Pachelbel",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Canon_in_D.mxl",
+      "fileName": "Canon_in_D.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Canon_in_D.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 16797,
+      "sha256": "23762273abf1d6bd7001c89dc620bee6accf0045573078e2865e086df2f1bb14"
+    },
+    {
+      "id": "sugar-plum-fairy",
+      "title": "Dance of the Sugar Plum Fairy",
+      "composer": "Pyotr Ilyich Tchaikovsky",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Dance_of_the_sugar_plum_fairy.mxl",
+      "fileName": "Dance_of_the_sugar_plum_fairy.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Dance_of_the_sugar_plum_fairy.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 17286,
+      "sha256": "e60c154a846be67a13fc9ed51108af8b17377eb6dcfbab40857e45419b761b90"
+    },
+    {
+      "id": "swan-lake",
+      "title": "Swan Lake",
+      "composer": "Pyotr Ilyich Tchaikovsky",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/Swan_Lake.mxl",
+      "fileName": "Swan_Lake.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/Swan_Lake.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 5706,
+      "sha256": "5118e682a0b09e2b6e5107b3138edae211f6f63752fdd5ce7bd1ade55c7258b1"
+    },
+    {
+      "id": "the-entertainer",
+      "title": "The Entertainer",
+      "composer": "Scott Joplin",
+      "format": "musicxml",
+      "assetPath": "assets/musetrainer/The_Entertainer_-_Scott_Joplin.mxl",
+      "fileName": "The_Entertainer_-_Scott_Joplin.mxl",
+      "difficulty": "advanced",
+      "tags": [
+        "ragtime",
+        "familiar"
+      ],
+      "source": {
+        "name": "MuseTrainer",
+        "url": "https://musetrainer.github.io/library/scores/The_Entertainer_-_Scott_Joplin.mxl"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "source-declared"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 19952,
+      "sha256": "c9b23cc70947fdc4a3c2cdbb223b1b44165fa88eb655dec7ad6e1a4b0e989e53"
+    },
+    {
+      "id": "openscore-an-die-musik",
+      "title": "An die Musik, D. 547",
+      "composer": "Franz Schubert",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-an-die-musik.mxl",
+      "fileName": "openscore-an-die-musik.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schubert%2C_Franz/_/An_die_Musik%2C_D.547/lc6180725.mscx",
+        "recordId": "lc6180725"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 10898,
+      "sha256": "6a026082f4ec11e3775bbe630acca2779882ace65ab7bda721856594df93b23a"
+    },
+    {
+      "id": "openscore-ave-maria",
+      "title": "Ave Maria, D. 839",
+      "composer": "Franz Schubert",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-ave-maria.mxl",
+      "fileName": "openscore-ave-maria.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schubert%2C_Franz/Op.52/6_Ellens_Gesang_III%2C_D.839_(Ave_Maria)/lc6389103.mscx",
+        "recordId": "lc6389103"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 18005,
+      "sha256": "7717fee9977ce8728995e0e48cc17d7bc14758df9c270a8ba1cd622ae7497251"
+    },
+    {
+      "id": "openscore-die-forelle",
+      "title": "Die Forelle, D. 550",
+      "composer": "Franz Schubert",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-die-forelle.mxl",
+      "fileName": "openscore-die-forelle.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schubert%2C_Franz/_/Die_Forelle%2C_Op.32%2C_D550d/lc6900961.mscx",
+        "recordId": "lc6900961"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 18911,
+      "sha256": "ce02ef3347bc7bd714f88a06db97535063a8d80522a5bf2a91dd0145c326baef"
+    },
+    {
+      "id": "openscore-brahms-standchen",
+      "title": "Ständchen, Op. 14 No. 7",
+      "composer": "Johannes Brahms",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-brahms-standchen.mxl",
+      "fileName": "openscore-brahms-standchen.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Brahms%2C_Johannes/8_Lieder_and_Romances%2C_Op.14/7_St%C3%A4ndchen/lc5729178.mscx",
+        "recordId": "lc5729178"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 14399,
+      "sha256": "01918ee4305b2ff389b3e4fcae8a94f7943e4c6b4bcee81fdda0e4e7d6470325"
+    },
+    {
+      "id": "openscore-schwanengesang-standchen",
+      "title": "Ständchen, D. 957 No. 4",
+      "composer": "Franz Schubert",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-schwanengesang-standchen.mxl",
+      "fileName": "openscore-schwanengesang-standchen.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schubert%2C_Franz/Schwanengesang%2C_D.957/4_St%C3%A4ndchen/lc5004835.mscx",
+        "recordId": "lc5004835"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 19595,
+      "sha256": "5cf8e5c2ea6e540836521c12b6d2f863efa630f0cb6810c2003978b1916c504c"
+    },
+    {
+      "id": "openscore-standchen-d889",
+      "title": "Ständchen, D. 889",
+      "composer": "Franz Schubert",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-standchen-d889.mxl",
+      "fileName": "openscore-standchen-d889.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schubert%2C_Franz/_/St%C3%A4ndchen%2C_D.889/lc5133353.mscx",
+        "recordId": "lc5133353"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 13854,
+      "sha256": "114de76998ac86ac35f8fea7c66173b7683c48a533db185d8ff781a206034638"
+    },
+    {
+      "id": "openscore-wiegenlied",
+      "title": "Wiegenlied, Op. 49 No. 4",
+      "composer": "Johannes Brahms",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-wiegenlied.mxl",
+      "fileName": "openscore-wiegenlied.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "familiar",
+        "lullaby"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Brahms%2C_Johannes/5_Lieder%2C_Op.49/4_Wiegenlied/lc5701612.mscx",
+        "recordId": "lc5701612"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 7099,
+      "sha256": "1456cb71cc7266ce11714df206db0b1cc9b0c78ea23c534ae5c18bde5a0772e0"
+    },
+    {
+      "id": "openscore-mondnacht",
+      "title": "Mondnacht, Op. 39 No. 5",
+      "composer": "Robert Schumann",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-mondnacht.mxl",
+      "fileName": "openscore-mondnacht.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schumann%2C_Robert/Liederkreis%2C_Op.39/5_Mondnacht/lc4987640.mscx",
+        "recordId": "lc4987640"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 21175,
+      "sha256": "07a7729f7a9442885c424e00e1b38d4a9ee7ecfefb36fbc3b26343732da14615"
+    },
+    {
+      "id": "openscore-widmung",
+      "title": "Widmung, Op. 25 No. 1",
+      "composer": "Robert Schumann",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-widmung.mxl",
+      "fileName": "openscore-widmung.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schumann%2C_Robert/Myrthen%2C_Op.25/1_Widmung/lc6885211.mscx",
+        "recordId": "lc6885211"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 23449,
+      "sha256": "27339b2ce2bae746ad53b4089bf14d2f8e59965e05883472e83004dd24260892"
+    },
+    {
+      "id": "openscore-ich-grolle-nicht",
+      "title": "Ich grolle nicht, Op. 48 No. 7",
+      "composer": "Robert Schumann",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-ich-grolle-nicht.mxl",
+      "fileName": "openscore-ich-grolle-nicht.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schumann%2C_Robert/Dichterliebe%2C_Op.48/7_Ich_grolle_nicht/lc4978382.mscx",
+        "recordId": "lc4978382"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 16619,
+      "sha256": "029ba008bd20a4346bb12521eaf4171eb4f5208d843a8f8577d1b69c9bf3d84b"
+    },
+    {
+      "id": "openscore-liebst-du-um-schonheit",
+      "title": "Liebst du um Schönheit, Op. 12 No. 4",
+      "composer": "Clara Schumann",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-liebst-du-um-schonheit.mxl",
+      "fileName": "openscore-liebst-du-um-schonheit.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schumann%2C_Clara/Lieder%2C_Op.12/4_Liebst_du_um_Sch%C3%B6nheit/lc5000397.mscx",
+        "recordId": "lc5000397"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 18007,
+      "sha256": "6dd10a0b98b79c736e5816a888c865376849c4408ce5a69321fa691b7a87d12b"
+    },
+    {
+      "id": "openscore-gretchen-am-spinnrade",
+      "title": "Gretchen am Spinnrade, D. 118",
+      "composer": "Franz Schubert",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-gretchen-am-spinnrade.mxl",
+      "fileName": "openscore-gretchen-am-spinnrade.mxl",
+      "difficulty": "advanced",
+      "tags": [
+        "classical",
+        "familiar",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schubert%2C_Franz/_/Gretchen_am_Spinnrade%2C_D.118/lc7111114.mscx",
+        "recordId": "lc7111114"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 35638,
+      "sha256": "ac7ae2b64fc92c5410fe1c3ca3dc9d96c7df2fa47d568d727335ac13f7c85503"
+    },
+    {
+      "id": "openscore-der-nussbaum",
+      "title": "Der Nussbaum, Op. 25 No. 3",
+      "composer": "Robert Schumann",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-der-nussbaum.mxl",
+      "fileName": "openscore-der-nussbaum.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Schumann%2C_Robert/Myrthen%2C_Op.25/3_Der_Nussbaum/lc6891758.mscx",
+        "recordId": "lc6891758"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 22148,
+      "sha256": "b3d182b5f684eca634382a5a89901104f6d09c73adeb97ed235a9da306c35ff4"
+    },
+    {
+      "id": "openscore-o-mistress-mine",
+      "title": "O Mistress Mine, Op. 37 No. 1",
+      "composer": "Amy Beach",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-o-mistress-mine.mxl",
+      "fileName": "openscore-o-mistress-mine.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Beach%2C_Amy/3_Shakespeare_Songs%2C_Op.37/1_O_Mistress_Mine/lc6564424.mscx",
+        "recordId": "lc6564424"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 25479,
+      "sha256": "1df6eb57ea7bacd16906bdf241a9cd849cf1e8d547c633523e43ef661e90f170"
+    },
+    {
+      "id": "openscore-fairy-lullaby",
+      "title": "Fairy Lullaby, Op. 37 No. 3",
+      "composer": "Amy Beach",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-fairy-lullaby.mxl",
+      "fileName": "openscore-fairy-lullaby.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "lullaby"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Beach%2C_Amy/3_Shakespeare_Songs%2C_Op.37/3_Fairy_Lullaby/lc6564816.mscx",
+        "recordId": "lc6564816"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 18550,
+      "sha256": "90acde4f877fa0be95898d046f592a0c09570ad717a21099587f350d2b364064"
+    },
+    {
+      "id": "openscore-years-at-the-spring",
+      "title": "The Year's at the Spring, Op. 44 No. 1",
+      "composer": "Amy Beach",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-years-at-the-spring.mxl",
+      "fileName": "openscore-years-at-the-spring.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Beach%2C_Amy/3_Browning_Songs%2C_Op.44/1_The_Year%E2%80%99s_at_the_Spring/lc6212179.mscx",
+        "recordId": "lc6212179"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 19675,
+      "sha256": "f07ffa332f96a20b5b0860f6e8883411469b5991c19cbdd1871135936135d47d"
+    },
+    {
+      "id": "openscore-morgenstandchen",
+      "title": "Morgenständchen, Op. 1 No. 5",
+      "composer": "Fanny Hensel",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-morgenstandchen.mxl",
+      "fileName": "openscore-morgenstandchen.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Hensel%2C_Fanny/6_Lieder%2C_Op.1/5_Morgenst%C3%A4ndchen/lc5004650.mscx",
+        "recordId": "lc5004650"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 26071,
+      "sha256": "ce37f9ca23bebf83f61fa8105e2b3e8a03645b723813195ff20bed67b00b24e3"
+    },
+    {
+      "id": "openscore-du-bist-wie-eine-blume",
+      "title": "Du bist wie eine Blume, Op. 7 No. 1",
+      "composer": "Emilie Mayer",
+      "format": "musicxml",
+      "assetPath": "assets/openscore-lieder/openscore-du-bist-wie-eine-blume.mxl",
+      "fileName": "openscore-du-bist-wie-eine-blume.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "classical",
+        "song"
+      ],
+      "source": {
+        "name": "OpenScore Lieder",
+        "url": "https://github.com/OpenScore/Lieder/blob/main/scores/Mayer%2C_Emilie/3_Lieder%2C_Op.7/1_Du_bist_wie_eine_Blume/lc5840527.mscx",
+        "recordId": "lc5840527"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "repository-license"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 14254,
+      "sha256": "0ff0399c236aee02f29f99cebce7cfc0fbe88afde03533fb7f8d4aacd1780884"
+    },
+    {
+      "id": "pdmx-amazing-grace",
+      "title": "Amazing Grace",
+      "composer": "James P. Carrell / David S. Clayton",
+      "arranger": "Edwin O. Excell",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-amazing-grace.mxl",
+      "fileName": "pdmx-amazing-grace.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "hymn",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "29534"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4132,
+      "sha256": "b17255bbe16855fce15ad1453cb922b9b95aa8b971dacb099f959b3f974472f5"
+    },
+    {
+      "id": "pdmx-silent-night",
+      "title": "Silent Night — Simple Cello Melody",
+      "composer": "Franz Xaver Gruber",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-silent-night.mxl",
+      "fileName": "pdmx-silent-night.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "1560846"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2197,
+      "sha256": "6ce4c22e05b4bff8474ee1f377f36488f096b447abbb66474b452f7685dc9c6d"
+    },
+    {
+      "id": "pdmx-auld-lang-syne",
+      "title": "Auld Lang Syne",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-auld-lang-syne.mxl",
+      "fileName": "pdmx-auld-lang-syne.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5821867"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3159,
+      "sha256": "5909b13cbc004aaa0292526d339d6db941f928e8ae8fc8ca0d6ead07cf964b04"
+    },
+    {
+      "id": "pdmx-scarborough-fair",
+      "title": "Scarborough Fair",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-scarborough-fair.mxl",
+      "fileName": "pdmx-scarborough-fair.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5046273"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2324,
+      "sha256": "4c9287d03c1ca50d57d6490aff7e22b5efe56513e5490ce1263b96b3d4bc0331"
+    },
+    {
+      "id": "pdmx-yankee-doodle",
+      "title": "Yankee Doodle",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-yankee-doodle.mxl",
+      "fileName": "pdmx-yankee-doodle.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "3953921"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2655,
+      "sha256": "2fb24d1a7899851d8124f82fdb7d1bf9443a37ac7a2c34da1fcc2da94292fa63"
+    },
+    {
+      "id": "pdmx-london-bridge",
+      "title": "London Bridge Is Falling Down",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-london-bridge.mxl",
+      "fileName": "pdmx-london-bridge.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4926053"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2714,
+      "sha256": "1fdd93c23105f0edc76ac7076adab0eb4b39af290d66f19f270ebc6159c16d19"
+    },
+    {
+      "id": "pdmx-arkansas-traveler",
+      "title": "The Arkansas Traveler",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-arkansas-traveler.mxl",
+      "fileName": "pdmx-arkansas-traveler.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4938398"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3004,
+      "sha256": "17c57bc0e7d2906334769cb559d4291525e9801017510bfff199f1ae5d05a214"
+    },
+    {
+      "id": "pdmx-coming-round-the-mountain",
+      "title": "She'll Be Coming 'Round the Mountain",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-coming-round-the-mountain.mxl",
+      "fileName": "pdmx-coming-round-the-mountain.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4865856"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3018,
+      "sha256": "07aabec7e03b3ddaa17c5d49eace7281ac8297fb7e163e12b0cd2d946e53286f"
+    },
+    {
+      "id": "pdmx-when-the-saints",
+      "title": "When the Saints Go Marching In",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-when-the-saints.mxl",
+      "fileName": "pdmx-when-the-saints.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "spiritual",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4573480"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2512,
+      "sha256": "ab4530941ea33b68516d289f353aed19a841502b31a834754f2978ffea793a97"
+    },
+    {
+      "id": "pdmx-clementine",
+      "title": "Oh My Darling, Clementine",
+      "composer": "Percy Montrose",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-clementine.mxl",
+      "fileName": "pdmx-clementine.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "3457201"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2749,
+      "sha256": "43b8487d9249328a2dc9e49e9f16659e4710a663e45fd5f4fe28e9af18a3ba62"
+    },
+    {
+      "id": "pdmx-mary-lamb",
+      "title": "Mary Had a Little Lamb",
+      "composer": "Lowell Mason",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-mary-lamb.mxl",
+      "fileName": "pdmx-mary-lamb.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4550399"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1850,
+      "sha256": "bf5024dc99f25642d8214e91aeb4f534ffc195149cd5f6b6b9a798a2483f34b7"
+    },
+    {
+      "id": "pdmx-skip-to-my-lou",
+      "title": "Skip to My Lou",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-skip-to-my-lou.mxl",
+      "fileName": "pdmx-skip-to-my-lou.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5094546"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4255,
+      "sha256": "633e7df5e558b10422be34c7f0e795f13d08b7086e937c0df469b3d75c27767c"
+    },
+    {
+      "id": "pdmx-lightly-row",
+      "title": "Lightly Row",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-lightly-row.mxl",
+      "fileName": "pdmx-lightly-row.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "2959006"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2898,
+      "sha256": "2de5cc735f9e5999d37f69a2fc7dfc4a005717585efa7f1d5aee8ba5c2e647b6"
+    },
+    {
+      "id": "pdmx-pop-goes-weasel",
+      "title": "Pop Goes the Weasel",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-pop-goes-weasel.mxl",
+      "fileName": "pdmx-pop-goes-weasel.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4905603"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2398,
+      "sha256": "3dce09d072ee80d998f2014c0c4499f5d8e0b15f7fb7fb92fb252b578b94a1b9"
+    },
+    {
+      "id": "pdmx-row-your-boat",
+      "title": "Row, Row, Row Your Boat",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-row-your-boat.mxl",
+      "fileName": "pdmx-row-your-boat.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "127109"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2378,
+      "sha256": "2dac127f769b983fbb22697cbdd6c705d5927804c7665cc04aa75a9c41632cbe"
+    },
+    {
+      "id": "pdmx-frere-jacques",
+      "title": "Frère Jacques",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-frere-jacques.mxl",
+      "fileName": "pdmx-frere-jacques.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5016824"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2026,
+      "sha256": "6778288613a05f7ba08e831e3b6cab22221568e0bf69c0df27014fda0921bef1"
+    },
+    {
+      "id": "pdmx-camptown-races",
+      "title": "Camptown Races",
+      "composer": "Stephen Foster",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-camptown-races.mxl",
+      "fileName": "pdmx-camptown-races.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4663492"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 1880,
+      "sha256": "3a0ca3c42b57de0774681283b2ef2168605dafa800f019000a47bb66ecc5f266"
+    },
+    {
+      "id": "pdmx-old-macdonald",
+      "title": "Old MacDonald Had a Farm",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-old-macdonald.mxl",
+      "fileName": "pdmx-old-macdonald.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6236004"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2618,
+      "sha256": "c0606c360e11bc62ec92950cfba725add74141601e6ab4517994d0dbd73febae"
+    },
+    {
+      "id": "pdmx-farmer-in-dell",
+      "title": "The Farmer in the Dell",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-farmer-in-dell.mxl",
+      "fileName": "pdmx-farmer-in-dell.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "6404872"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2300,
+      "sha256": "db6ec896df38f0e5d5b7a482af7e21a980b11dabb2bfc05c035fc3de06dc2389"
+    },
+    {
+      "id": "pdmx-merrily-roll",
+      "title": "Merrily We Roll Along",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-merrily-roll.mxl",
+      "fileName": "pdmx-merrily-roll.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4966175"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2188,
+      "sha256": "85e923ee9aa51ef10aeb1c41a631e01bfe401cc01f3c2964b9b9ff46d15e23ad"
+    },
+    {
+      "id": "pdmx-jingle-bells",
+      "title": "Jingle Bells — Alto Melody",
+      "composer": "James Lord Pierpont",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-jingle-bells.mxl",
+      "fileName": "pdmx-jingle-bells.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5856253"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2774,
+      "sha256": "f08455cc2c72aab08a575610d7a73a9b521179d06aa5e28785c17fee665ae818"
+    },
+    {
+      "id": "pdmx-turkey-straw",
+      "title": "Turkey in the Straw",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-turkey-straw.mxl",
+      "fileName": "pdmx-turkey-straw.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4905063"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2846,
+      "sha256": "3280ad28868c71e5db1f0b4fc1f662a6bc164fbe13022c61ba960e90e06b267d"
+    },
+    {
+      "id": "pdmx-home-sweet-home",
+      "title": "Home! Sweet Home!",
+      "composer": "Henry Bishop",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-home-sweet-home.mxl",
+      "fileName": "pdmx-home-sweet-home.mxl",
+      "difficulty": "intermediate",
+      "tags": [
+        "classical",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5786261"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 6874,
+      "sha256": "37e4fbd38f50c5d1e11ecf7fe60268db056afdf991635126562b8b84fcd3e76d"
+    },
+    {
+      "id": "pdmx-blue-bells-scotland",
+      "title": "The Blue Bells of Scotland",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-blue-bells-scotland.mxl",
+      "fileName": "pdmx-blue-bells-scotland.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5039618"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2293,
+      "sha256": "e4b23978b00edadef420adef4f975ab0b49cb46c26319888a05e87ff0d283ff3"
+    },
+    {
+      "id": "pdmx-oh-susanna",
+      "title": "Oh! Susanna",
+      "composer": "Stephen Foster",
+      "arranger": "J. Knuth",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-oh-susanna.mxl",
+      "fileName": "pdmx-oh-susanna.mxl",
+      "difficulty": "advanced",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "1751001"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 9473,
+      "sha256": "7fda7fbf32d43404b80cb69c7e6a8f613e9992245aeeece225c682c92bac7ca6"
+    },
+    {
+      "id": "pdmx-deck-halls",
+      "title": "Deck the Halls",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-deck-halls.mxl",
+      "fileName": "pdmx-deck-halls.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5851823"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2648,
+      "sha256": "cd03e8c31bfb402c7f1ac4e0d958c111cb9b10ba30135ff1a78f3a710a40335b"
+    },
+    {
+      "id": "pdmx-o-come-faithful",
+      "title": "O Come, All Ye Faithful",
+      "composer": "John Francis Wade",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-o-come-faithful.mxl",
+      "fileName": "pdmx-o-come-faithful.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "carol",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4826889"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2603,
+      "sha256": "054b11e1be5c6c5e5a31a5913293f128c5e16d21eecf08997c3f8d27f4c89ba2"
+    },
+    {
+      "id": "pdmx-polly-wolly-doodle",
+      "title": "Polly Wolly Doodle",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-polly-wolly-doodle.mxl",
+      "fileName": "pdmx-polly-wolly-doodle.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "folk",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4889112"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2456,
+      "sha256": "b47dfcfb9398ba255d052b54804040a7eae0ce533e103001a41aa8be0d86af84"
+    },
+    {
+      "id": "pdmx-au-clair-lune",
+      "title": "Au clair de la lune",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-au-clair-lune.mxl",
+      "fileName": "pdmx-au-clair-lune.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5477965"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3039,
+      "sha256": "4d99396b450e43d3ec2e192582495077274d138eecda45cd34b0c8c32f50d64f"
+    },
+    {
+      "id": "pdmx-hot-cross-buns",
+      "title": "Hot Cross Buns",
+      "composer": "Traditional",
+      "format": "musicxml",
+      "assetPath": "assets/pdmx/pdmx-hot-cross-buns.mxl",
+      "fileName": "pdmx-hot-cross-buns.mxl",
+      "difficulty": "beginner",
+      "tags": [
+        "children",
+        "familiar"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5922023"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "pdmx-filtered-and-manually-reviewed"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 2031,
+      "sha256": "9811ae3b1e8ca5922d6bcf08a67bfdea20daf9ae0e1430f2383cea1ac66d76d5"
+    },
+    {
+      "id": "gp-scarborough-fair",
+      "title": "Scarborough Fair",
+      "composer": "Traditional",
+      "arranger": "alphaTab conversion for Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-scarborough-fair.gp",
+      "fileName": "gp-scarborough-fair.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "melody",
+        "familiar",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5046273"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "derived-from-reviewed-public-domain-score"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4560,
+      "sha256": "b7f67054a0ba6ebd1c804920533f31e20a45c8177657280c399cd4668e8723a1"
+    },
+    {
+      "id": "gp-mary-lamb",
+      "title": "Mary Had a Little Lamb",
+      "composer": "Lowell Mason",
+      "arranger": "alphaTab conversion for Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-mary-lamb.gp",
+      "fileName": "gp-mary-lamb.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "melody",
+        "familiar",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "4550399"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "derived-from-reviewed-public-domain-score"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3396,
+      "sha256": "247cdbc301dac427f2c626edd0d9518b4ee4cc0d5d7b06aa44e0871b22fe7e74"
+    },
+    {
+      "id": "gp-row-your-boat",
+      "title": "Row, Row, Row Your Boat",
+      "composer": "Traditional",
+      "arranger": "alphaTab conversion for Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-row-your-boat.gp",
+      "fileName": "gp-row-your-boat.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "melody",
+        "familiar",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "127109"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "derived-from-reviewed-public-domain-score"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 4414,
+      "sha256": "e3a5131f2ea26f418049e9afb34a8d35fa57bb6624bcb2e4b4ffc86fa85754f6"
+    },
+    {
+      "id": "gp-frere-jacques",
+      "title": "Frère Jacques",
+      "composer": "Traditional",
+      "arranger": "alphaTab conversion for Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-frere-jacques.gp",
+      "fileName": "gp-frere-jacques.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "melody",
+        "familiar",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5016824"
+      },
+      "license": {
+        "kind": "PUBLIC_DOMAIN",
+        "url": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "basis": "derived-from-reviewed-public-domain-score"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3492,
+      "sha256": "c673ce0f6d72c2e089988f8cf406eb46920eacf411e47d11faf50706c4c7383b"
+    },
+    {
+      "id": "gp-hot-cross-buns",
+      "title": "Hot Cross Buns",
+      "composer": "Traditional",
+      "arranger": "alphaTab conversion for Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-hot-cross-buns.gp",
+      "fileName": "gp-hot-cross-buns.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "melody",
+        "familiar",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5922023"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "derived-from-reviewed-public-domain-score"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3266,
+      "sha256": "8a6435d6a410b012829d97dcd7f7d37a019785b4eb38eeb325ad454317e0fac4"
+    },
+    {
+      "id": "gp-auld-lang-syne",
+      "title": "Auld Lang Syne",
+      "composer": "Traditional",
+      "arranger": "alphaTab conversion for Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-auld-lang-syne.gp",
+      "fileName": "gp-auld-lang-syne.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "melody",
+        "familiar",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "PDMX",
+        "url": "https://zenodo.org/records/15571083",
+        "recordId": "5821867"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "derived-from-reviewed-public-domain-score"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 5466,
+      "sha256": "d38d42423b8e40505189b4f8e25c4165c96106230948b8013e8bc4a2a1822181"
+    },
+    {
+      "id": "gp-exercise-c-major-scale",
+      "title": "C Major Scale",
+      "composer": "Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-exercise-c-major-scale.gp",
+      "fileName": "gp-exercise-c-major-scale.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "exercise",
+        "scale",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "Melodica Trainer",
+        "url": "https://github.com/shafranek-js/MelodicaTrainer"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-work-dedicated-to-cc0"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3265,
+      "sha256": "cfde4c92237def34809ead15fbac972c72bbd02ae9b81315036ab78dfb244093"
+    },
+    {
+      "id": "gp-exercise-arpeggios",
+      "title": "Major Arpeggios",
+      "composer": "Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-exercise-arpeggios.gp",
+      "fileName": "gp-exercise-arpeggios.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "exercise",
+        "arpeggio",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "Melodica Trainer",
+        "url": "https://github.com/shafranek-js/MelodicaTrainer"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-work-dedicated-to-cc0"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3248,
+      "sha256": "8f087a41f01515f407d84e6cc9188713b65b4348a4054d0f8ee2313b454a0e93"
+    },
+    {
+      "id": "gp-exercise-intervals",
+      "title": "Interval Study",
+      "composer": "Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-exercise-intervals.gp",
+      "fileName": "gp-exercise-intervals.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "exercise",
+        "intervals",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "Melodica Trainer",
+        "url": "https://github.com/shafranek-js/MelodicaTrainer"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-work-dedicated-to-cc0"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3204,
+      "sha256": "bfafc066a2ec0d89c34665329af5927300d1546efa2fcc3b79430ab94a0d17e1"
+    },
+    {
+      "id": "gp-exercise-rhythm",
+      "title": "Rhythm and Articulation",
+      "composer": "Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-exercise-rhythm.gp",
+      "fileName": "gp-exercise-rhythm.gp",
+      "difficulty": "beginner",
+      "tags": [
+        "exercise",
+        "rhythm",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "Melodica Trainer",
+        "url": "https://github.com/shafranek-js/MelodicaTrainer"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-work-dedicated-to-cc0"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3123,
+      "sha256": "c762f28e2eedb9fcbc724ba0ab23bca490629c976a5f72421139c0ecf6f50679"
+    },
+    {
+      "id": "gp-exercise-chords",
+      "title": "Major and Minor Chords",
+      "composer": "Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-exercise-chords.gp",
+      "fileName": "gp-exercise-chords.gp",
+      "difficulty": "intermediate",
+      "tags": [
+        "exercise",
+        "chords",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "Melodica Trainer",
+        "url": "https://github.com/shafranek-js/MelodicaTrainer"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-work-dedicated-to-cc0"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3382,
+      "sha256": "8dbcd3cd9ef4f1e20796ebf7aec3b91fe9bfbf255d1947a3f3fd8f3a5d1a13d4"
+    },
+    {
+      "id": "gp-exercise-key-changes",
+      "title": "Changing Keys",
+      "composer": "Melodica Trainer",
+      "format": "guitar-pro",
+      "assetPath": "assets/guitar-pro/gp-exercise-key-changes.gp",
+      "fileName": "gp-exercise-key-changes.gp",
+      "difficulty": "intermediate",
+      "tags": [
+        "exercise",
+        "keys",
+        "guitar-pro"
+      ],
+      "source": {
+        "name": "Melodica Trainer",
+        "url": "https://github.com/shafranek-js/MelodicaTrainer"
+      },
+      "license": {
+        "kind": "CC0-1.0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "basis": "original-work-dedicated-to-cc0"
+      },
+      "rightsReviewedAt": "2026-07-17",
+      "bytes": 3146,
+      "sha256": "2652fa06d52ece5499b3ff77664c0a9ea3f4c5921abd5d74f62742879d567a08"
+    }
+  ]
+}

@@ -11,8 +11,16 @@ const entry: ScoreLibraryEntry = {
   id: "test-score",
   title: "Test Score",
   composer: "Test Composer",
+  format: "musicxml",
+  assetPath: "assets/test/Test_Score.mxl",
   fileName: "Test_Score.mxl",
+  bytes: 5,
+  sha256: "a".repeat(64),
+  difficulty: "beginner",
   tags: ["test"],
+  source: { name: "Test", url: "https://example.com" },
+  license: { kind: "CC0-1.0", url: "https://example.com/cc0", basis: "test" },
+  rightsReviewedAt: "2026-07-17",
 };
 
 const expectDownloadError = async (
@@ -44,7 +52,7 @@ describe("downloadScoreLibraryFile", () => {
     const file = await downloadScoreLibraryFile(entry, { fetchImpl });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://musetrainer.github.io/library/scores/Test_Score.mxl",
+      "/score-library/assets/test/Test_Score.mxl",
       { signal: undefined },
     );
     expect(file.name).toBe(entry.fileName);
@@ -66,7 +74,7 @@ describe("downloadScoreLibraryFile", () => {
 
     await expectDownloadError(
       downloadScoreLibraryFile(
-        { ...entry, fileName: "../outside-library.mxl" },
+        { ...entry, assetPath: "../outside-library.mxl" },
         { fetchImpl },
       ),
       "invalid-source",

@@ -13,7 +13,7 @@ MelodicaTrainer is an interactive React application for melodica practice. It co
 ### Note Highway
 
 - Load MusicXML, MXL, and Guitar Pro files.
-- Browse and load a curated set of public-domain MusicXML scores directly from MuseTrainer Library.
+- Browse a local, searchable library of 60 MusicXML scores and 12 Guitar Pro files, with difficulty, format, tag, source, and license filters.
 - Practice against synced playback and target lanes.
 - Auto-transpose material into the selected melodica range.
 - Track hits, misses, streak, and accuracy.
@@ -58,6 +58,8 @@ npm test
 npm run lint
 npm run build
 ```
+
+The production build starts with `npm run library:check`. It verifies the score catalog, local paths, sizes, SHA-256 hashes, MusicXML playback content, and Guitar Pro round trips before Vite builds the application. See [`public/score-library/README.md`](public/score-library/README.md) for the content breakdown and reproducible import commands.
 
 ## License
 
