@@ -91,6 +91,8 @@ Click `Browse library` to open the combined score library.
 
 - `Public` contains the built-in public-domain and CC0 collection.
 - `My files` contains supported files found in the folder selected in `Settings`.
+- Click the star on any public or local score to add it to `Favourites`. The selection is saved in this browser.
+- Choose `Favourites` in the source filter to show only starred scores.
 - Use the source, format, difficulty, and tag filters to narrow the list. Difficulty and public tags apply only to public entries.
 - Local entries have a `LOCAL` badge and are opened directly from your device; they are not downloaded from or uploaded to a server.
 

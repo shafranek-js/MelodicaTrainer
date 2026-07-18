@@ -59,14 +59,14 @@ const rawEntry = (entry: ScoreLibraryEntry) => {
   return value;
 };
 
-const renderDialog = async () => {
+const renderDialog = async (onLoadScore = vi.fn()) => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
     root.render(
       <MemoryRouter>
-        <ScoreLibraryDialog isOpen onClose={vi.fn()} onLoadScore={vi.fn()} />
+        <ScoreLibraryDialog isOpen onClose={vi.fn()} onLoadScore={onLoadScore} />
       </MemoryRouter>,
     );
     await Promise.resolve();
@@ -77,6 +77,7 @@ const renderDialog = async () => {
 
 describe("ScoreLibraryDialog", () => {
   beforeEach(() => {
+    localStorage.clear();
     resetScoreLibraryCatalogCacheForTests();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     userLibrary.directoryHandle = null;
@@ -96,8 +97,38 @@ describe("ScoreLibraryDialog", () => {
 
   it("filters public and user entries by source, metadata, and MIDI format", () => {
     const entries: LibraryEntry[] = [entry, localMidiEntry];
-    expect(filterScoreLibraryEntries(entries, { query: "arranger", difficulty: "all", format: "all", source: "all", tag: "all" })).toEqual([entry]);
-    expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "all", format: "midi", source: "user", tag: "all" })).toEqual([localMidiEntry]);
+    expect(filterScoreLibraryEntries(entries, { query: "arranger", difficulty: "all", favoriteIds: new Set(), format: "all", source: "all", tag: "all" })).toEqual([entry]);
+    expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "all", favoriteIds: new Set(), format: "midi", source: "user", tag: "all" })).toEqual([localMidiEntry]);
+    expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "all", favoriteIds: new Set([entry.id, localMidiEntry.id]), format: "all", source: "favorites", tag: "all" })).toEqual(entries);
+  });
+
+  it("marks scores as favourites without loading them and filters the list", async () => {
+    const onLoadScore = vi.fn();
+    const { container, root } = await renderDialog(onLoadScore);
+    const favoriteButton = container.querySelector(
+      'button[aria-label="Add Folk Song to favourites"]',
+    ) as HTMLButtonElement;
+
+    await act(async () => {
+      favoriteButton.click();
+      await Promise.resolve();
+    });
+
+    expect(onLoadScore).not.toHaveBeenCalled();
+    expect(favoriteButton.getAttribute("aria-pressed")).toBe("true");
+    expect(container.textContent).toContain("Favourites (1)");
+
+    const sourceFilter = container.querySelector(
+      'select[aria-label="Filter by source"]',
+    ) as HTMLSelectElement;
+    await act(async () => {
+      sourceFilter.value = "favorites";
+      sourceFilter.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain("1 of 1 scores");
+    expect(container.textContent).toContain("Folk Song");
+    act(() => root.unmount());
   });
 
   it("renders public rights metadata and the Settings setup action", async () => {

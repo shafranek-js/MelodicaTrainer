@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link2, Library, LoaderCircle, RefreshCw, RotateCcw, Search, Settings, Upload, X } from "lucide-react";
+import { Link2, Library, LoaderCircle, RefreshCw, RotateCcw, Search, Settings, Star, Upload, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usePersistentState } from "../hooks/usePersistentState";
 import {
   clearScoreLibraryCatalogCache,
   loadScoreLibraryCatalog,
@@ -19,6 +20,11 @@ import {
 } from "./scoreLibraryDownload";
 import { filterScoreLibraryEntries } from "./scoreLibraryFilter";
 import type { ScoreLibrarySourceFilter } from "./scoreLibraryFilter";
+import {
+  FAVORITE_SCORE_IDS_STORAGE_KEY,
+  sanitizeFavoriteScoreIds,
+  toggleFavoriteScoreId,
+} from "./scoreLibraryFavorites";
 import { useUserScoreLibrary } from "./UserScoreLibraryContext";
 import { USER_SCORE_FILE_ACCEPT } from "./userScoreLibrary";
 
@@ -59,6 +65,11 @@ export const ScoreLibraryDialog = ({
   const [format, setFormat] = useState<FilterValue<ScoreLibraryFormat>>("all");
   const [source, setSource] = useState<ScoreLibrarySourceFilter>("all");
   const [tag, setTag] = useState("all");
+  const [favoriteIds, setFavoriteIds] = usePersistentState<string[]>(
+    FAVORITE_SCORE_IDS_STORAGE_KEY,
+    [],
+    { sanitize: sanitizeFavoriteScoreIds },
+  );
   const abortControllerRef = useRef<AbortController | null>(null);
   const localFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -99,13 +110,16 @@ export const ScoreLibraryDialog = ({
     [catalog],
   );
 
+  const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+
   const filteredScores = useMemo(() => filterScoreLibraryEntries(entries, {
     difficulty,
+    favoriteIds: favoriteIdSet,
     format,
     query,
     source,
     tag,
-  }), [difficulty, entries, format, query, source, tag]);
+  }), [difficulty, entries, favoriteIdSet, format, query, source, tag]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -196,6 +210,9 @@ export const ScoreLibraryDialog = ({
 
   const hasFolder = Boolean(userLibrary.directoryHandle);
   const hasFolderPermission = userLibrary.permission === "granted";
+  const toggleFavorite = (entryId: string) => {
+    setFavoriteIds(toggleFavoriteScoreId(favoriteIds, entryId));
+  };
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && closeDialog()} role="presentation">
@@ -216,7 +233,7 @@ export const ScoreLibraryDialog = ({
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <select aria-label="Filter by source" className={selectClassName} onChange={(event) => setSource(event.target.value as ScoreLibrarySourceFilter)} value={source}>
-              <option value="all">All sources</option><option value="public">Public</option><option value="user">My files</option>
+              <option value="all">All sources</option><option value="public">Public</option><option value="user">My files</option><option value="favorites">Favourites ({favoriteIds.length})</option>
             </select>
             <select aria-label="Filter by format" className={selectClassName} onChange={(event) => setFormat(event.target.value as FilterValue<ScoreLibraryFormat>)} value={format}>
               <option value="all">All formats</option><option value="musicxml">MusicXML</option><option value="guitar-pro">Guitar Pro</option><option value="midi">MIDI</option>
@@ -259,20 +276,33 @@ export const ScoreLibraryDialog = ({
               {filteredScores.map((entry) => {
                 const publicEntry = entry.sourceKind === "public" ? entry : null;
                 const userEntry = entry.sourceKind === "user" ? entry : null;
+                const isFavorite = favoriteIdSet.has(entry.id);
                 return (
-                  <button className="group rounded-xl border border-gray-700 bg-gray-950/70 p-4 text-left transition hover:border-emerald-600 hover:bg-gray-800 disabled:opacity-50" disabled={Boolean(loadingId)} key={entry.id} onClick={() => void loadScore(entry)} type="button">
-                    <div className="flex items-start justify-between gap-2"><h3 className="font-bold leading-snug text-white">{entry.title}</h3><span className="shrink-0 rounded bg-gray-800 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-400">{formatBadge(entry)}</span></div>
-                    <p className="mt-1 text-xs text-gray-400">{entry.composer || (entry.sourceKind === "user" ? entry.fileName : "Unknown composer")}</p>
-                    {publicEntry ? (
-                      <>
-                        <div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full border border-emerald-900 bg-emerald-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-300">{publicEntry.difficulty}</span>{publicEntry.tags.map((value) => <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400" key={value}>{value}</span>)}</div>
-                        <p className="mt-3 text-[10px] leading-relaxed text-gray-500">Source: {publicEntry.source.name}<br />License: {publicEntry.license.kind}</p>
-                      </>
-                    ) : (
-                      <p className="mt-3 truncate text-[10px] text-gray-500" title={userEntry?.relativePath}>{userEntry?.relativePath}</p>
-                    )}
-                    {loadingId === entry.id && <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-300"><LoaderCircle className="animate-spin" size={13} /> Loading…</span>}
-                  </button>
+                  <article className="relative rounded-xl border border-gray-700 bg-gray-950/70 transition hover:border-emerald-600 hover:bg-gray-800" key={entry.id}>
+                    <button
+                      aria-label={`${isFavorite ? "Remove" : "Add"} ${entry.title} ${isFavorite ? "from" : "to"} favourites`}
+                      aria-pressed={isFavorite}
+                      className={`absolute right-3 top-3 z-10 rounded-lg border p-1.5 transition focus:outline-none focus:ring-2 focus:ring-amber-400/70 ${isFavorite ? "border-amber-500/60 bg-amber-950/70 text-amber-400 hover:bg-amber-900/70" : "border-gray-700 bg-gray-900 text-gray-500 hover:border-amber-600 hover:text-amber-300"}`}
+                      onClick={() => toggleFavorite(entry.id)}
+                      title={isFavorite ? "Remove from favourites" : "Add to favourites"}
+                      type="button"
+                    >
+                      <Star className={isFavorite ? "fill-current" : ""} size={17} />
+                    </button>
+                    <button className="group w-full p-4 pr-14 text-left disabled:opacity-50" disabled={Boolean(loadingId)} onClick={() => void loadScore(entry)} type="button">
+                      <div className="flex items-start gap-2"><h3 className="font-bold leading-snug text-white">{entry.title}</h3><span className="shrink-0 rounded bg-gray-800 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-400">{formatBadge(entry)}</span></div>
+                      <p className="mt-1 text-xs text-gray-400">{entry.composer || (entry.sourceKind === "user" ? entry.fileName : "Unknown composer")}</p>
+                      {publicEntry ? (
+                        <>
+                          <div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full border border-emerald-900 bg-emerald-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-300">{publicEntry.difficulty}</span>{publicEntry.tags.map((value) => <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400" key={value}>{value}</span>)}</div>
+                          <p className="mt-3 text-[10px] leading-relaxed text-gray-500">Source: {publicEntry.source.name}<br />License: {publicEntry.license.kind}</p>
+                        </>
+                      ) : (
+                        <p className="mt-3 truncate text-[10px] text-gray-500" title={userEntry?.relativePath}>{userEntry?.relativePath}</p>
+                      )}
+                      {loadingId === entry.id && <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-300"><LoaderCircle className="animate-spin" size={13} /> Loading…</span>}
+                    </button>
+                  </article>
                 );
               })}
             </div>

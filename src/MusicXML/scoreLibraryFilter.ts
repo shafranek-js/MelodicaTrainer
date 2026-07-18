@@ -4,10 +4,15 @@ import type {
   ScoreLibraryFormat,
 } from "./scoreLibrary";
 
-export type ScoreLibrarySourceFilter = "all" | "public" | "user";
+export type ScoreLibrarySourceFilter =
+  | "all"
+  | "public"
+  | "user"
+  | "favorites";
 
 export type ScoreLibraryFilters = {
   difficulty: ScoreLibraryDifficulty | "all";
+  favoriteIds: ReadonlySet<string>;
   format: ScoreLibraryFormat | "all";
   query: string;
   source: ScoreLibrarySourceFilter;
@@ -21,6 +26,11 @@ export const filterScoreLibraryEntries = (
   const normalizedQuery = filters.query.trim().toLocaleLowerCase();
   return entries.filter((entry) => {
     const publicEntry = entry.sourceKind === "public" ? entry : null;
+    const matchesSource =
+      filters.source === "all" ||
+      (filters.source === "favorites"
+        ? filters.favoriteIds.has(entry.id)
+        : entry.sourceKind === filters.source);
     const matchesQuery =
       !normalizedQuery ||
       [
@@ -35,7 +45,7 @@ export const filterScoreLibraryEntries = (
         .includes(normalizedQuery);
     return (
       matchesQuery &&
-      (filters.source === "all" || entry.sourceKind === filters.source) &&
+      matchesSource &&
       (filters.difficulty === "all" || publicEntry?.difficulty === filters.difficulty) &&
       (filters.format === "all" || entry.format === filters.format) &&
       (filters.tag === "all" || publicEntry?.tags.includes(filters.tag) === true)

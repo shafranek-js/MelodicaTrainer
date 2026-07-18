@@ -71,6 +71,7 @@ describe("helpMarkdown", () => {
   it("includes local-library setup, privacy, and recovery guidance", () => {
     const headings = buildTableOfContents(userGuideMarkdown).map((item) => item.text);
     expect(headings).toContain("Score Library");
+    expect(userGuideMarkdown).toContain("Choose `Favourites`");
     expect(headings).toContain("Settings And Local Library");
     expect(headings).toContain("Connecting A Folder");
     expect(headings).toContain("Folder Controls And Privacy");
