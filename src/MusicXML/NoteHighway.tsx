@@ -1,4 +1,5 @@
 import { useRef, useEffect, useMemo, useState } from "react";
+import { Note } from "tonal";
 import { generateMelodicaLayout, getMelodicaKeyboardGeometry } from "../utils/utils";
 import type { MelodicaKeyCount, freqToNoteAndCents } from "../utils/utils";
 import { buildNoteHighwayRenderData } from "./noteHighwayLayout";
@@ -141,6 +142,19 @@ export const NoteHighway = ({
 
     return active;
   }, [keyboardGeometry.keys, renderData]);
+  const outOfRangeHint = useMemo(() => {
+    if (renderData.length > 0 || visibleGameEvents.length === 0) return null;
+
+    const hasPlayableNotes = visibleGameEvents.some(({ event }) =>
+      event.notes.some((note) => note.shouldPlay),
+    );
+    if (!hasPlayableNotes || keyboardGeometry.keys.length === 0) return null;
+
+    const midiNumbers = keyboardGeometry.keys.map((key) => key.midi);
+    const firstNote = Math.min(...midiNumbers);
+    const lastNote = Math.max(...midiNumbers);
+    return `Upcoming notes are outside ${Note.fromMidi(firstNote)}–${Note.fromMidi(lastNote)}. Use Optimize or adjust Transpose.`;
+  }, [keyboardGeometry.keys, renderData.length, visibleGameEvents]);
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col rounded-lg border border-gray-700 bg-gray-900 p-4 shadow overflow-hidden">
@@ -158,6 +172,11 @@ export const NoteHighway = ({
             showNoteNames={showNoteNames}
             showNumbers={showNumbers}
           />
+          {outOfRangeHint && (
+            <div className="pointer-events-none absolute left-1/2 top-1/3 z-50 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 rounded-lg border border-amber-700/70 bg-amber-950/90 px-4 py-3 text-center text-sm text-amber-100 shadow-lg">
+              {outOfRangeHint}
+            </div>
+          )}
           <KeyboardAndHandOverlay
             ref={keyboardRef}
             activeKeyboardMidi={activeKeyboardMidi}

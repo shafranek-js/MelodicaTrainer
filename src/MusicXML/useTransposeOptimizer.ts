@@ -1,8 +1,5 @@
 import { useCallback, useMemo } from "react";
-import {
-  findAutoMelodicaTransposeIntervals,
-  findBestMelodicaTransposeIntervals,
-} from "./musicXmlTransform";
+import { findBestMelodicaTransposeIntervals } from "./musicXmlTransform";
 import { getPlayableMidiNumbers } from "./playbackTimeline";
 import { musicXmlDebugLogger } from "./debugLogger";
 import type { MelodicaKeyCount } from "../utils/utils";
@@ -20,6 +17,28 @@ type UseTransposeOptimizerOptions = {
   transpose: number;
 };
 
+type GetBestScoreTransposeIntervalsOptions = Pick<
+  UseTransposeOptimizerOptions,
+  "keyCount" | "originalMidiNumbers" | "playbackEvents" | "scoreFormat" | "transpose"
+>;
+
+export const getBestScoreTransposeIntervals = ({
+  keyCount,
+  originalMidiNumbers,
+  playbackEvents,
+  scoreFormat,
+  transpose,
+}: GetBestScoreTransposeIntervalsOptions) => {
+  const midiNumbers = scoreFormat === "guitar-pro" || scoreFormat === "midi"
+    ? originalMidiNumbers
+    : Array.from(getPlayableMidiNumbers(playbackEvents)).map(
+        (midi) => midi - transpose,
+      );
+
+  if (midiNumbers.length === 0) return [];
+  return findBestMelodicaTransposeIntervals(midiNumbers, { keyCount });
+};
+
 export const useTransposeOptimizer = ({
   originalMidiNumbers,
   keyCount,
@@ -31,20 +50,13 @@ export const useTransposeOptimizer = ({
 }: UseTransposeOptimizerOptions) => {
   const optimalVariantsCount = useMemo(() => {
     if (!rawFileContent) return 0;
-
-    let midiNumbers: number[] = [];
-    if (scoreFormat === "guitar-pro" || scoreFormat === "midi") {
-      midiNumbers = originalMidiNumbers;
-    } else {
-      if (playbackEvents.length === 0) return 0;
-      midiNumbers = Array.from(getPlayableMidiNumbers(playbackEvents)).map(
-        (midi) => midi - transpose
-      );
-    }
-
-    if (midiNumbers.length === 0) return 0;
-
-    return findBestMelodicaTransposeIntervals(midiNumbers, { keyCount }).length;
+    return getBestScoreTransposeIntervals({
+      keyCount,
+      originalMidiNumbers,
+      playbackEvents,
+      scoreFormat,
+      transpose,
+    }).length;
   }, [
     keyCount,
     originalMidiNumbers,
@@ -59,27 +71,15 @@ export const useTransposeOptimizer = ({
 
     if (scoreFormat === "guitar-pro" || scoreFormat === "midi") {
       musicXmlDebugLogger.log(`AutoTranspose: Analyzing ${scoreFormat} notes for melodica range.`);
-      if (originalMidiNumbers.length === 0) return;
-
-      const bestAbsoluteIntervals = findBestMelodicaTransposeIntervals(
-        originalMidiNumbers,
-        { keyCount }
-      );
-
-      if (bestAbsoluteIntervals.length === 0) return;
-
-      const currentIndex = bestAbsoluteIntervals.indexOf(transpose);
-      const nextTranspose =
-        currentIndex !== -1 && bestAbsoluteIntervals.length > 1
-          ? bestAbsoluteIntervals[(currentIndex + 1) % bestAbsoluteIntervals.length]
-          : bestAbsoluteIntervals[0];
-
-      setTranspose(nextTranspose);
-      return;
     }
 
-    if (typeof rawFileContent !== "string") return;
-    const bestIntervals = findAutoMelodicaTransposeIntervals(rawFileContent, { keyCount });
+    const bestIntervals = getBestScoreTransposeIntervals({
+      keyCount,
+      originalMidiNumbers,
+      playbackEvents,
+      scoreFormat,
+      transpose,
+    });
     if (bestIntervals.length === 0) return;
 
     const currentIndex = bestIntervals.indexOf(transpose);
@@ -91,6 +91,7 @@ export const useTransposeOptimizer = ({
   }, [
     keyCount,
     originalMidiNumbers,
+    playbackEvents,
     rawFileContent,
     scoreFormat,
     setTranspose,
