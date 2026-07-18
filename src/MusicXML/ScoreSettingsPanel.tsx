@@ -1,6 +1,7 @@
-import { FolderOpen, Library, Pin, PinOff } from "lucide-react";
+import { AlertTriangle, FolderOpen, Library, Pin, PinOff } from "lucide-react";
 import { useState } from "react";
 import type { ChangeEvent } from "react";
+import { Link } from "react-router-dom";
 import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
 import type { LibraryEntry } from "./scoreLibrary";
@@ -36,7 +37,9 @@ type GpTrack = {
 
 type ScoreSettingsPanelProps = {
   availablePresets: AvailablePreset[];
+  canTryHighFidelityMscz: boolean;
   canUseProcessedScore: boolean;
+  conversionWarnings: readonly string[];
   fileName: string | null;
   gpTracks: GpTrack[];
   midiParts: MidiPartInfo[];
@@ -46,6 +49,7 @@ type ScoreSettingsPanelProps = {
   keyCount: MelodicaKeyCount;
   melodicaRanges: readonly MelodicaRangeOption[];
   isPinned: boolean;
+  isTryingHighFidelityMscz: boolean;
   onDownloadMelodicaNotes: () => void;
   onDownloadTransposedXml: () => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -57,6 +61,7 @@ type ScoreSettingsPanelProps = {
   onSelectedPresetChange: (preset: string) => void;
   onSoundFontChange: (soundFont: string) => void;
   onTogglePin: () => void;
+  onTryHighFidelityMscz: () => void;
   routeStatus: RouteStatus | null;
   routeStatusClassNames: Record<RouteStatusTone, string>;
   scoreFormat: ScoreFormat | null;
@@ -70,7 +75,9 @@ type ScoreSettingsPanelProps = {
 
 export const ScoreSettingsPanel = ({
   availablePresets,
+  canTryHighFidelityMscz,
   canUseProcessedScore,
+  conversionWarnings,
   fileName,
   gpTracks,
   midiParts,
@@ -80,6 +87,7 @@ export const ScoreSettingsPanel = ({
   keyCount,
   melodicaRanges,
   isPinned,
+  isTryingHighFidelityMscz,
   onDownloadMelodicaNotes,
   onDownloadTransposedXml,
   onFileChange,
@@ -91,6 +99,7 @@ export const ScoreSettingsPanel = ({
   onSelectedPresetChange,
   onSoundFontChange,
   onTogglePin,
+  onTryHighFidelityMscz,
   routeStatus,
   routeStatusClassNames,
   scoreFormat,
@@ -102,6 +111,23 @@ export const ScoreSettingsPanel = ({
   soundFonts,
 }: ScoreSettingsPanelProps) => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const highFidelityAction = canTryHighFidelityMscz ? (
+    <div className="mt-2 space-y-1.5">
+      <button
+        className="w-full rounded-lg border border-amber-600 bg-amber-900/70 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-amber-50 transition-colors hover:bg-amber-800 disabled:cursor-wait disabled:opacity-60"
+        disabled={isTryingHighFidelityMscz}
+        onClick={onTryHighFidelityMscz}
+        type="button"
+      >
+        {isTryingHighFidelityMscz
+          ? "Loading compatibility engine…"
+          : "Try high-fidelity conversion"}
+      </button>
+      <p className="text-[9px] text-amber-300/80">
+        Downloads an optional ~18 MB MuseScore engine. Conversion remains local.
+      </p>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -235,10 +261,10 @@ export const ScoreSettingsPanel = ({
     <div className="space-y-2 pt-2">
       <label className="group relative flex items-center justify-center gap-2 cursor-pointer px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all w-full text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95">
         <FolderOpen size={16} />
-        Load XML/GP/MIDI
+        Load XML/GP/MIDI/MSCZ
         <input
           type="file"
-          accept=".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi"
+          accept=".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi,.mscz"
           onChange={onFileChange}
           className="hidden"
         />
@@ -252,6 +278,25 @@ export const ScoreSettingsPanel = ({
         Browse library
       </button>
       {fileName && <p className="mt-2 text-[10px] text-gray-500 font-bold truncate text-center uppercase tracking-tighter">Loaded: {fileName}</p>}
+      {conversionWarnings.length > 0 && (
+        <div className="rounded-xl border border-amber-800 bg-amber-950/50 p-3 text-left text-[10px] leading-relaxed text-amber-100">
+          <div className="flex gap-2">
+            <AlertTriangle className="mt-0.5 shrink-0 text-amber-400" size={15} />
+            <div>
+              <p className="font-bold">MSCZ converted with possible notation loss.</p>
+              <p className="mt-1">{conversionWarnings.join(" ")}</p>
+              {highFidelityAction}
+              <Link className="mt-1 inline-block font-bold text-amber-300 underline" to="/help">MSCZ conversion help</Link>
+            </div>
+          </div>
+        </div>
+      )}
+      {conversionWarnings.length === 0 && highFidelityAction && (
+        <div className="rounded-xl border border-amber-800 bg-amber-950/50 p-3 text-left text-[10px] leading-relaxed text-amber-100">
+          <p className="font-bold">The standard MSCZ converter could not safely open this score.</p>
+          {highFidelityAction}
+        </div>
+      )}
     </div>
 
     {scoreFormat === "musicxml" && (

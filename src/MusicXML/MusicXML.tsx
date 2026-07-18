@@ -46,6 +46,7 @@ import { useBpmOverlay } from "./useBpmOverlay";
 import { useEndStatsOverlay } from "./useEndStatsOverlay";
 import { useMidiScore } from "./useMidiScore";
 import { getMusicXmlFileErrorMessage } from "./musicXmlFile";
+import { getMsczFileErrorMessage } from "./msczFile";
 import { getMidiFileErrorMessage } from "./midiParser";
 import {
   sanitizeMidiQuantizationMode,
@@ -136,6 +137,7 @@ const MusicXML: React.FC = () => {
     });
   }, []);
   const {
+    conversionWarnings,
     fileName,
     isGpFile,
     isMidiFile,
@@ -154,6 +156,7 @@ const MusicXML: React.FC = () => {
   const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
   const [playbackEvents, setPlaybackEvents] = useState<PlaybackEvent[]>([]);
   const [playbackCompletionId, setPlaybackCompletionId] = useState(0);
+  const [isTryingHighFidelityMscz, setIsTryingHighFidelityMscz] = useState(false);
 
   const showNumbers = fingeringGuide === "numbers" || fingeringGuide === "debugBoth";
   const showVirtualHand = fingeringGuide === "virtualHand" || fingeringGuide === "debugBoth";
@@ -484,12 +487,18 @@ const MusicXML: React.FC = () => {
     setRouteStatus({
       tone: "error",
       message: getMidiFileErrorMessage(error) ??
+        getMsczFileErrorMessage(error) ??
         getMusicXmlFileErrorMessage(error) ??
         "Failed to load score file.",
     });
   }, []);
 
-  const { handleFileChange, importScoreFile } = useScoreFileImport({
+  const {
+    handleFileChange,
+    highFidelityMsczFile,
+    importScoreFile,
+    retryMsczWithHighFidelity,
+  } = useScoreFileImport({
     loadScoreFile,
     onImportError: handleImportError,
     resetGpScore,
@@ -501,6 +510,25 @@ const MusicXML: React.FC = () => {
     setTranspose,
     stopPlayback,
   });
+
+  const handleHighFidelityMsczRetry = useCallback(async () => {
+    setIsTryingHighFidelityMscz(true);
+    setRouteStatus({
+      tone: "info",
+      message: "Loading the optional MuseScore compatibility engine (~18 MB)…",
+    });
+    try {
+      await retryMsczWithHighFidelity();
+      setRouteStatus({
+        tone: "success",
+        message: "MSCZ loaded with the optional high-fidelity converter. Review the score before practice.",
+      });
+    } catch (error) {
+      handleImportError(error);
+    } finally {
+      setIsTryingHighFidelityMscz(false);
+    }
+  }, [handleImportError, retryMsczWithHighFidelity]);
 
   const handleLibraryScoreLoad = useCallback(
     async (entry: LibraryEntry, signal: AbortSignal) => {
@@ -625,10 +653,13 @@ const MusicXML: React.FC = () => {
         onTogglePlayback={togglePlayback}
         scoreSettingsProps={{
           availablePresets,
+          canTryHighFidelityMscz: highFidelityMsczFile !== null,
           canUseProcessedScore,
+          conversionWarnings,
           fileName,
           gpTracks,
           isPinned: panels.isDrawerPinned,
+          isTryingHighFidelityMscz,
           keyCount,
           melodicaRanges: melodicaRangeOptions,
           midiParts,
@@ -657,6 +688,7 @@ const MusicXML: React.FC = () => {
             stopPlayback();
           },
           onTogglePin: () => panels.setIsDrawerPinned(!panels.isDrawerPinned),
+          onTryHighFidelityMscz: () => { void handleHighFidelityMsczRetry(); },
           routeStatus,
           routeStatusClassNames,
           scoreFormat,

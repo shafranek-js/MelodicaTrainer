@@ -1,0 +1,3 @@
+public/vendor/webmscore/webmscore.js -text -diff
+public/vendor/webmscore/*.data -text -diff
+public/vendor/webmscore/*.wasm -text -diff

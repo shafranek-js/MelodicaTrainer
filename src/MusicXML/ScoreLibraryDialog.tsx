@@ -38,7 +38,13 @@ type FilterValue<T extends string> = T | "all";
 
 const formatBadge = (entry: LibraryEntry) => {
   if (entry.sourceKind === "user") {
-    const format = entry.format === "musicxml" ? "MXL" : entry.format === "guitar-pro" ? "GP" : "MIDI";
+    const format = entry.format === "musicxml"
+      ? "MXL"
+      : entry.format === "guitar-pro"
+        ? "GP"
+        : entry.format === "musescore"
+          ? "MSCZ"
+          : "MIDI";
     return `LOCAL · ${format}`;
   }
   if (entry.format === "musicxml") return "MXL";
@@ -236,7 +242,7 @@ export const ScoreLibraryDialog = ({
               <option value="all">All sources</option><option value="public">Public</option><option value="user">My files</option><option value="favorites">Favourites ({favoriteIds.length})</option>
             </select>
             <select aria-label="Filter by format" className={selectClassName} onChange={(event) => setFormat(event.target.value as FilterValue<ScoreLibraryFormat>)} value={format}>
-              <option value="all">All formats</option><option value="musicxml">MusicXML</option><option value="guitar-pro">Guitar Pro</option><option value="midi">MIDI</option>
+              <option value="all">All formats</option><option value="musicxml">MusicXML</option><option value="guitar-pro">Guitar Pro</option><option value="midi">MIDI</option><option value="musescore">MuseScore</option>
             </select>
             <select aria-label="Filter by difficulty" className={selectClassName} onChange={(event) => setDifficulty(event.target.value as FilterValue<ScoreLibraryDifficulty>)} value={difficulty}>
               <option value="all">All difficulties</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
@@ -298,7 +304,14 @@ export const ScoreLibraryDialog = ({
                           <p className="mt-3 text-[10px] leading-relaxed text-gray-500">Source: {publicEntry.source.name}<br />License: {publicEntry.license.kind}</p>
                         </>
                       ) : (
-                        <p className="mt-3 truncate text-[10px] text-gray-500" title={userEntry?.relativePath}>{userEntry?.relativePath}</p>
+                        <>
+                          <p className="mt-3 truncate text-[10px] text-gray-500" title={userEntry?.relativePath}>{userEntry?.relativePath}</p>
+                          {Boolean(userEntry?.conversionWarnings?.length) && (
+                            <p className="mt-2 text-[10px] font-semibold text-amber-400">
+                              Converted with {userEntry?.conversionWarnings?.length} warning{userEntry?.conversionWarnings?.length === 1 ? "" : "s"}
+                            </p>
+                          )}
+                        </>
                       )}
                       {loadingId === entry.id && <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-300"><LoaderCircle className="animate-spin" size={13} /> Loading…</span>}
                     </button>

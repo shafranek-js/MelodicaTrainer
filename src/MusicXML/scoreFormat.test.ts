@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getScoreFormat } from "./scoreFormat";
+import { getScoreFileFormat, getScoreFormat } from "./scoreFormat";
 
 describe("getScoreFormat", () => {
   it.each([
     ["score.xml", "musicxml"],
     ["score.musicxml", "musicxml"],
     ["score.mxl", "musicxml"],
+    ["score.mscz", "musicxml"],
     ["score.gp", "guitar-pro"],
     ["score.gp3", "guitar-pro"],
     ["score.gp4", "guitar-pro"],
@@ -19,5 +20,10 @@ describe("getScoreFormat", () => {
 
   it("rejects unsupported files", () => {
     expect(getScoreFormat("score.pdf")).toBeNull();
+  });
+
+  it("keeps MuseScore as a distinct source-file format", () => {
+    expect(getScoreFileFormat("score.MSCZ")).toBe("musescore");
+    expect(getScoreFormat("score.MSCZ")).toBe("musicxml");
   });
 });

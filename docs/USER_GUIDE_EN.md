@@ -7,7 +7,7 @@ The app has four practice sections plus Help and Settings:
 | Section | What it is for |
 | --- | --- |
 | `Melodica` | Check the pitch you play and see it on a virtual melodica keyboard. |
-| `Tabs` | Load MusicXML/MXL/Guitar Pro/MIDI files, start playback, and practice with Note Highway. |
+| `Tabs` | Load MusicXML/MXL/MSCZ/Guitar Pro/MIDI files, start playback, and practice with Note Highway. |
 | `Practice` | Train scales, individual notes, chord tones, and 12-bar blues. |
 | `Circle` | Explore the circle of fifths, modes, scales, and triads. |
 | `Help` | Read this guide and troubleshoot common problems. |
@@ -51,11 +51,12 @@ If the tuning line on the key is offset, the note is out of tune. A value near `
 
 ### Loading A File
 
-Click `Load XML/GP/MIDI` and choose a file. Supported formats:
+Click `Load XML/GP/MIDI/MSCZ` and choose a file. Supported formats:
 
 - `.xml`
 - `.musicxml`
 - `.mxl`
+- `.mscz`
 - `.gp`
 - `.gp3`
 - `.gp4`
@@ -64,7 +65,9 @@ Click `Load XML/GP/MIDI` and choose a file. Supported formats:
 - `.mid`
 - `.midi`
 
-MusicXML/MXL files are rendered with OpenSheetMusicDisplay. Guitar Pro files are rendered with alphaTab. MIDI files show approximate sheet-music notation generated from the selected part and quantization setting. In every case, Note Highway is built from the parsed playback events.
+MusicXML/MXL files are rendered with OpenSheetMusicDisplay. MSCZ files are converted locally to MusicXML first and then use the same rendering and practice pipeline. Guitar Pro files are rendered with alphaTab. MIDI files show approximate sheet-music notation generated from the selected part and quantization setting. In every case, Note Highway is built from the parsed playback events.
+
+MSCZ conversion happens entirely in the browser; the file is not uploaded. MuseScore-specific layout or playback details may not have a MusicXML equivalent. The app blocks files when notes or durations are lost, and shows a warning when only non-critical notation details were simplified. After a blocked conversion or a warning, `Try high-fidelity conversion` can load an optional MuseScore 4.0 compatibility engine of about 18 MB. It is downloaded only after your click and still processes the file locally.
 
 Important: MusicXML playback/rendering focuses on the first relevant part/staff. Guitar Pro uses the selected `GP Track`. MIDI uses the selected melodic `MIDI Part`; channel 10 drums are excluded.
 
@@ -80,7 +83,7 @@ The left panel contains file and sound settings.
 | `GP Track` | Selects the Guitar Pro track. Only visible for GP files. |
 | `MIDI Part` | Selects a melodic MIDI channel. Only visible for MIDI files. |
 | `Notation grid` | Chooses automatic or fixed quantization for approximate MIDI notation. Only visible for MIDI files. |
-| `Load XML/GP/MIDI` | Loads a new file. |
+| `Load XML/GP/MIDI/MSCZ` | Loads a new file. |
 | `Browse library` | Opens public scores and files indexed from your private folder. |
 | `XML` | Downloads the transposed MusicXML. Available for MusicXML files. |
 | `Text` | Downloads a text list of melodica notes. Available for MusicXML files. |
@@ -98,7 +101,7 @@ Click `Browse library` to open the combined score library.
 
 Before a folder is configured, the library shows `Set up local library`. After the folder is connected, it shows `Add files` and `Refresh`.
 
-`Add files` copies selected MusicXML/MXL, Guitar Pro, or MIDI files into the root of the connected folder. Exact duplicates are skipped. If a different file already uses the same name, the new file is saved with a suffix such as `Song (2).mxl`.
+`Add files` copies selected MusicXML/MXL, MSCZ, Guitar Pro, or MIDI files into the root of the connected folder. Exact duplicates are skipped. If a different file already uses the same name, the new file is saved with a suffix such as `Song (2).mxl`.
 
 ### Playback
 
@@ -195,13 +198,14 @@ Open the gear button in the top menu to manage `My score library`.
 
 The browser only shares the selected folder's name with the page, so MelodicaTrainer does not display its full system path.
 
-Persistent folder access requires a browser with the File System Access API, such as current desktop Chrome or Edge. In other browsers, `Load XML/GP/MIDI` still works for opening one file at a time, but the app cannot remember and rescan a normal folder.
+Persistent folder access requires a browser with the File System Access API, such as current desktop Chrome or Edge. In other browsers, `Load XML/GP/MIDI/MSCZ` still works for opening one file at a time, but the app cannot remember and rescan a normal folder.
 
 ### Adding And Organizing Files
 
 The folder and all its subfolders are scanned recursively for:
 
 - MusicXML: `.xml`, `.musicxml`, `.mxl`
+- MuseScore: `.mscz`
 - Guitar Pro: `.gp`, `.gp3`, `.gp4`, `.gp5`, `.gpx`
 - MIDI: `.mid`, `.midi`
 
@@ -280,11 +284,15 @@ Check that the microphone is enabled, the signal is loud enough, and the selecte
 
 ### File Does Not Load
 
-Check the file extension. `Tabs` supports MusicXML/MXL, Guitar Pro, and `.mid/.midi` SMF 0/1 files. If the file is damaged or does not contain playable notes, the app will show an error message.
+Check the file extension. `Tabs` supports MusicXML/MXL, MSCZ, Guitar Pro, and `.mid/.midi` SMF 0/1 files. If the file is damaged or does not contain playable notes, the app will show an error message.
+
+### MSCZ Conversion Fails Or Shows A Warning
+
+MSCZ is MuseScore's native archive format, so some editor-specific information cannot be represented exactly in MusicXML. A warning means the playable score was loaded but some non-critical notation was simplified. You can click `Try high-fidelity conversion` after a warning or a blocked conversion. This opt-in fallback downloads an approximately 18 MB engine based on MuseScore 4.0, converts locally, and validates that playable notes exist before replacing the current score. The fallback cannot diagnose partial notation loss and may not understand features added by later MuseScore 4 releases, so review its result. If it also fails or the score is complex, open the file in MuseScore Desktop and use `File` → `Export` to create a MusicXML or MXL file, then load that export instead.
 
 ### Local Folder Cannot Be Selected
 
-Use a current desktop version of Chrome or Edge and open MelodicaTrainer over HTTPS or localhost. If folder access is unavailable, use `Load XML/GP/MIDI` to open files individually.
+Use a current desktop version of Chrome or Edge and open MelodicaTrainer over HTTPS or localhost. If folder access is unavailable, use `Load XML/GP/MIDI/MSCZ` to open files individually.
 
 ### Local Folder Needs Permission Again
 
@@ -296,7 +304,7 @@ Check that the file is inside the connected folder or one of its subfolders and 
 
 ### File Is Too Large
 
-The app limits score and MIDI uploads to 10 MB. Use a smaller export or simplify the file in your editor.
+The app limits score, MSCZ, and MIDI files to 10 MB. The unpacked MSCX score inside an MSCZ file also has a 10 MB limit. Use a smaller export or simplify the file in your editor.
 
 ### Playback Is Silent
 

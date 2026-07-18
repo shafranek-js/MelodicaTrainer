@@ -53,7 +53,7 @@ const Settings = () => {
                   <div>
                     <p className="font-bold">Folder libraries are unavailable in this browser.</p>
                     <p className="mt-1 text-xs leading-relaxed text-amber-200/80">
-                      Use Chrome or Edge for a persistent folder. You can still use Load XML/GP/MIDI on the Tabs page.
+                      Use Chrome or Edge for a persistent folder. You can still use Load XML/GP/MIDI/MSCZ on the Tabs page.
                     </p>
                   </div>
                 </div>
@@ -98,16 +98,16 @@ const Settings = () => {
 
                 {library.scanSummary && (
                   <div className="rounded-xl border border-gray-700 bg-gray-950/60 px-4 py-3 text-xs text-gray-300">
-                    Last scan: {library.scanSummary.added} added, {library.scanSummary.updated} updated, {library.scanSummary.removed} removed, {library.scanSummary.skipped} skipped, {library.scanSummary.errors} errors.
+                    Last scan: {library.scanSummary.added} added, {library.scanSummary.updated} updated, {library.scanSummary.removed} removed, {library.scanSummary.skipped} skipped, {library.scanSummary.warnings} warnings, {library.scanSummary.errors} errors.
                   </div>
                 )}
 
                 {library.index.issues.length > 0 && (
                   <details className="rounded-xl border border-amber-900 bg-amber-950/30 px-4 py-3 text-xs text-amber-100">
-                    <summary className="cursor-pointer font-bold">{library.index.issues.length} file problems</summary>
+                    <summary className="cursor-pointer font-bold">{library.index.issues.length} file notices</summary>
                     <ul className="mt-3 space-y-2">
                       {library.index.issues.map((issue) => (
-                        <li key={`${issue.relativePath}:${issue.message}`}>
+                        <li className={issue.severity === "warning" ? "text-amber-200" : "text-red-200"} key={`${issue.relativePath}:${issue.message}`}>
                           <span className="font-semibold">{issue.relativePath}</span>: {issue.message}
                         </li>
                       ))}

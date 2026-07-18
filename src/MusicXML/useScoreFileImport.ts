@@ -1,9 +1,11 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { ChangeEvent } from "react";
+import { canRetryMsczWithHighFidelity } from "./msczFile";
 import { getResetTempoState } from "./tempoModel";
 import type {
   BeforeScoreFileCommit,
   LoadedScoreFile,
+  ScoreFileLoadOptions,
 } from "./useScoreFileLoader";
 import type { PlaybackEvent } from "./types";
 
@@ -11,6 +13,7 @@ type UseScoreFileImportOptions = {
   loadScoreFile: (
     file: File,
     beforeCommit?: BeforeScoreFileCommit,
+    options?: ScoreFileLoadOptions,
   ) => Promise<LoadedScoreFile>;
   onImportError: (error: unknown) => void;
   resetGpScore: (isGpFile: boolean) => void;
@@ -65,20 +68,37 @@ export const useScoreFileImport = ({
   setUserTempoBpm,
   stopPlayback,
 }: UseScoreFileImportOptions) => {
+  const [highFidelityMsczFile, setHighFidelityMsczFile] = useState<File | null>(null);
+
   const importScoreFile = useCallback(
-    async (file: File) => {
-      return loadScoreFile(file, (loadedFile) => {
-        resetImportedScoreState(loadedFile, {
-          resetGpScore,
-          resetMidiScore,
-          setDetectedTempoBpm,
-          setIsSheetReady,
-          setPlaybackEvents,
-          setTranspose,
-          setUserTempoBpm,
-          stopPlayback,
-        });
-      });
+    async (file: File, options: ScoreFileLoadOptions = {}) => {
+      try {
+        const loadedFile = await loadScoreFile(file, (nextLoadedFile) => {
+          resetImportedScoreState(nextLoadedFile, {
+            resetGpScore,
+            resetMidiScore,
+            setDetectedTempoBpm,
+            setIsSheetReady,
+            setPlaybackEvents,
+            setTranspose,
+            setUserTempoBpm,
+            stopPlayback,
+          });
+        }, options);
+        setHighFidelityMsczFile(
+          options.msczConverter !== "high-fidelity" &&
+          loadedFile.sourceFormat === "musescore" &&
+          loadedFile.warnings.length > 0
+            ? file
+            : null,
+        );
+        return loadedFile;
+      } catch (error) {
+        setHighFidelityMsczFile(
+          canRetryMsczWithHighFidelity(error) ? file : null,
+        );
+        throw error;
+      }
     },
     [
       loadScoreFile,
@@ -92,6 +112,15 @@ export const useScoreFileImport = ({
       stopPlayback,
     ],
   );
+
+  const retryMsczWithHighFidelity = useCallback(async () => {
+    if (!highFidelityMsczFile) {
+      throw new Error("Choose the MSCZ file again before retrying conversion.");
+    }
+    return importScoreFile(highFidelityMsczFile, {
+      msczConverter: "high-fidelity",
+    });
+  }, [highFidelityMsczFile, importScoreFile]);
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -110,5 +139,10 @@ export const useScoreFileImport = ({
     [importScoreFile, onImportError],
   );
 
-  return { handleFileChange, importScoreFile };
+  return {
+    handleFileChange,
+    highFidelityMsczFile,
+    importScoreFile,
+    retryMsczWithHighFidelity,
+  };
 };

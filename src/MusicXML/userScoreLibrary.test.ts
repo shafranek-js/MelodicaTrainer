@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import JSZip from "jszip";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   chooseUserScoreLibraryFolder,
@@ -28,6 +29,26 @@ class TestFile extends File {
   override slice(start = 0, end = this.testData.length) {
     const bytes = this.testData.slice(start, end);
     return { arrayBuffer: async () => bytes.buffer } as Blob;
+  }
+}
+
+class BinaryTestFile extends File {
+  private readonly testBuffer: ArrayBuffer;
+
+  constructor(data: Uint8Array, name: string, options?: FilePropertyBag) {
+    const buffer = new ArrayBuffer(data.byteLength);
+    new Uint8Array(buffer).set(data);
+    super([buffer], name, options);
+    this.testBuffer = buffer;
+  }
+
+  override async arrayBuffer() {
+    return this.testBuffer.slice(0);
+  }
+
+  override slice(start = 0, end = this.testBuffer.byteLength) {
+    const buffer = this.testBuffer.slice(start, end);
+    return { arrayBuffer: async () => buffer } as Blob;
   }
 }
 
@@ -170,6 +191,38 @@ describe("user score library", () => {
     const removed = await scanUserScoreLibrary(asDirectoryHandle(root), updated);
     expect(removed.entries).toHaveLength(0);
     expect(removed.summary.removed).toBe(1);
+  });
+
+  it("indexes MSCZ metadata and keeps non-critical conversion warnings", async () => {
+    const zip = new JSZip();
+    zip.file("Local.mscx", `
+      <museScore version="4.60"><Score><Division>480</Division>
+        <metaTag name="workTitle">Local MuseScore tune</metaTag>
+        <metaTag name="composer">Local Composer</metaTag>
+        <Staff id="1"><Measure><voice>
+          <Chord><durationType>quarter</durationType><Note><pitch>60</pitch></Note></Chord>
+          <UnsupportedDecoration />
+        </voice></Measure></Staff>
+      </Score></museScore>`);
+    const root = new FakeDirectoryHandle("Scores");
+    root.addFile(new BinaryTestFile(
+      await zip.generateAsync({ type: "uint8array" }),
+      "Local.mscz",
+      { lastModified: 1 },
+    ));
+
+    const result = await scanUserScoreLibrary(asDirectoryHandle(root));
+
+    expect(result.issues.filter((issue) => issue.severity === "error")).toEqual([]);
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]).toMatchObject({
+      composer: "Local Composer",
+      format: "musescore",
+      title: "Local MuseScore tune",
+    });
+    expect(result.entries[0].conversionWarnings?.length).toBeGreaterThan(0);
+    expect(result.summary.warnings).toBeGreaterThan(0);
+    expect(result.issues[0]).toMatchObject({ severity: "warning" });
   });
 
   it("copies imports, renames conflicts, and skips known hashes", async () => {

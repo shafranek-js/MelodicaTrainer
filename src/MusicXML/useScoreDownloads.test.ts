@@ -14,6 +14,9 @@ describe("score download file names", () => {
     expect(getTransposedXmlDownloadFileName("song.musicxml")).toBe(
       "transposed_song.musicxml"
     );
+    expect(getTransposedXmlDownloadFileName("song.mscz")).toBe(
+      "transposed_song.musicxml"
+    );
   });
 
   it("replaces the source extension for melodica note exports", () => {

@@ -1,13 +1,15 @@
 import { parseMidiFile } from "./midiParser";
 import { MAX_MUSIC_XML_FILE_BYTES, readMusicXmlFile } from "./musicXmlFile";
-import { getScoreFormat } from "./scoreFormat";
-import type { ScoreFormat } from "./scoreFormat";
+import { convertMsczFile } from "./msczFile";
+import { getScoreFileFormat } from "./scoreFormat";
+import type { ScoreFileFormat } from "./scoreFormat";
 
 export type UserScoreLibraryEntry = {
   bytes: number;
   composer?: string;
+  conversionWarnings?: readonly string[];
   fileName: string;
-  format: ScoreFormat;
+  format: ScoreFileFormat;
   id: string;
   lastModified: number;
   relativePath: string;
@@ -19,6 +21,7 @@ export type UserScoreLibraryEntry = {
 export type UserScoreLibraryIssue = {
   message: string;
   relativePath: string;
+  severity: "error" | "warning";
 };
 
 export type UserScoreLibraryIndex = {
@@ -33,6 +36,7 @@ export type UserScoreLibraryScanSummary = {
   removed: number;
   skipped: number;
   updated: number;
+  warnings: number;
 };
 
 export type UserScoreLibraryScanResult = UserScoreLibraryIndex & {
@@ -63,7 +67,7 @@ const EMPTY_INDEX: UserScoreLibraryIndex = {
 };
 
 export const USER_SCORE_FILE_ACCEPT =
-  ".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi";
+  ".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi,.mscz";
 
 const getIndexedDb = () => globalThis.indexedDB;
 
@@ -148,7 +152,10 @@ const bytesToHex = (bytes: Uint8Array) =>
   Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
 
 export const hashUserScoreFile = async (file: File) => {
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new Uint8Array(await file.arrayBuffer()),
+  );
   return bytesToHex(new Uint8Array(digest));
 };
 
@@ -163,25 +170,36 @@ const extractMusicXmlMetadata = (content: string) => {
   };
 };
 
-type ExtractedScoreMetadata = { composer?: string; title?: string };
+type ExtractedScoreMetadata = {
+  composer?: string;
+  title?: string;
+  warnings: string[];
+};
 
 const validateUserScoreFile = async (
   file: File,
-  format: ScoreFormat,
+  format: ScoreFileFormat,
 ): Promise<ExtractedScoreMetadata> => {
   if (file.size <= 0) throw new Error("The file is empty.");
   if (file.size > MAX_MUSIC_XML_FILE_BYTES) throw new Error("The file is larger than 10 MB.");
 
   if (format === "midi") {
     parseMidiFile(new Uint8Array(await file.arrayBuffer()), file.name);
-    return {};
+    return { warnings: [] };
   }
   if (format === "musicxml") {
     const content = await readMusicXmlFile(file);
-    return typeof content === "string" ? extractMusicXmlMetadata(content) : {};
+    return {
+      ...(typeof content === "string" ? extractMusicXmlMetadata(content) : {}),
+      warnings: [],
+    };
+  }
+  if (format === "musescore") {
+    const converted = await convertMsczFile(file);
+    return { ...converted.metadata, warnings: converted.warnings };
   }
   await file.slice(0, Math.min(file.size, 16)).arrayBuffer();
-  return {};
+  return { warnings: [] };
 };
 
 type DiscoveredFile = {
@@ -211,6 +229,7 @@ const emptySummary = (): UserScoreLibraryScanSummary => ({
   removed: 0,
   skipped: 0,
   updated: 0,
+  warnings: 0,
 });
 
 export const scanUserScoreLibrary = async (
@@ -227,7 +246,7 @@ export const scanUserScoreLibrary = async (
   const hashes = new Set<string>();
 
   for (const { file, relativePath } of discovered) {
-    const format = getScoreFormat(file.name);
+    const format = getScoreFileFormat(file.name);
     if (!format) {
       summary.skipped += 1;
       continue;
@@ -248,6 +267,7 @@ export const scanUserScoreLibrary = async (
         entry = {
           bytes: file.size,
           composer: metadata.composer,
+          conversionWarnings: metadata.warnings,
           fileName: file.name,
           format,
           id: `user:${sha256}`,
@@ -265,6 +285,10 @@ export const scanUserScoreLibrary = async (
       }
       hashes.add(entry.sha256);
       entries.push(entry);
+      for (const warning of entry.conversionWarnings ?? []) {
+        summary.warnings += 1;
+        issues.push({ message: warning, relativePath, severity: "warning" });
+      }
       if (!previousEntry) summary.added += 1;
       else if (entry !== previousEntry) summary.updated += 1;
     } catch (error) {
@@ -272,6 +296,7 @@ export const scanUserScoreLibrary = async (
       issues.push({
         message: error instanceof Error ? error.message : "The file could not be checked.",
         relativePath,
+        severity: "error",
       });
     }
   }
@@ -303,7 +328,7 @@ export const importUserScoreFiles = async (
   const knownHashes = new Set(existingEntries.map((entry) => entry.sha256));
 
   for (const file of files) {
-    const format = getScoreFormat(file.name);
+    const format = getScoreFileFormat(file.name);
     try {
       if (!format) throw new Error("Unsupported score file format.");
       await validateUserScoreFile(file, format);

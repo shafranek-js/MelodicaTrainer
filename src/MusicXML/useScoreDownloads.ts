@@ -13,7 +13,9 @@ type UseScoreDownloadsOptions = {
 };
 
 export const getTransposedXmlDownloadFileName = (fileName: string | null) =>
-  fileName ? `transposed_${fileName}` : "transposed.musicxml";
+  fileName
+    ? `transposed_${fileName.replace(/\.[^/.]+$/, "")}.musicxml`
+    : "transposed.musicxml";
 
 export const getMelodicaNotesDownloadFileName = (fileName: string | null) =>
   fileName ? `${fileName.replace(/\.[^/.]+$/, "")}_melodica_notes.txt` : "melodica_notes.txt";

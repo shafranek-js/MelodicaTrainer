@@ -1,7 +1,7 @@
-import type { ScoreFormat } from "./scoreFormat";
+import type { ScoreFileFormat } from "./scoreFormat";
 import type { UserScoreLibraryEntry } from "./userScoreLibrary";
 
-export type ScoreLibraryFormat = ScoreFormat;
+export type ScoreLibraryFormat = ScoreFileFormat;
 export type ScoreLibraryDifficulty = "beginner" | "intermediate" | "advanced";
 export type ScoreLibraryLicenseKind = "CC0-1.0" | "PUBLIC_DOMAIN";
 
@@ -12,7 +12,7 @@ export type PublicScoreLibraryEntry = {
   composer: string;
   difficulty: ScoreLibraryDifficulty;
   fileName: string;
-  format: Exclude<ScoreLibraryFormat, "midi">;
+  format: Exclude<ScoreLibraryFormat, "midi" | "musescore">;
   id: string;
   license: {
     basis: string;

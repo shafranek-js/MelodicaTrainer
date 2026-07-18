@@ -53,6 +53,19 @@ const localMidiEntry: UserScoreLibraryEntry = {
   title: "Practice MIDI",
 };
 
+const localMsczEntry: UserScoreLibraryEntry = {
+  bytes: 200,
+  conversionWarnings: ["Unsupported decoration was skipped."],
+  fileName: "local-score.mscz",
+  format: "musescore",
+  id: "user:ccc",
+  lastModified: 2,
+  relativePath: "MuseScore/local-score.mscz",
+  sha256: "c".repeat(64),
+  sourceKind: "user",
+  title: "Local MuseScore",
+};
+
 const rawEntry = (entry: ScoreLibraryEntry) => {
   const value: Partial<ScoreLibraryEntry> = { ...entry };
   delete value.sourceKind;
@@ -138,6 +151,15 @@ describe("ScoreLibraryDialog", () => {
     expect(container.textContent).toContain("License: CC0-1.0");
     expect(container.textContent).toContain("Set up local library");
     expect(container.querySelector('option[value="midi"]')).not.toBeNull();
+    expect(container.querySelector('option[value="musescore"]')).not.toBeNull();
+    act(() => root.unmount());
+  });
+
+  it("renders MSCZ local badges and conversion warnings", async () => {
+    userLibrary.index = { entries: [localMsczEntry], issues: [], lastScanAt: null };
+    const { container, root } = await renderDialog();
+    expect(container.textContent).toContain("LOCAL · MSCZ");
+    expect(container.textContent).toContain("Converted with 1 warning");
     act(() => root.unmount());
   });
 
@@ -152,6 +174,7 @@ describe("ScoreLibraryDialog", () => {
     expect(input.accept).toContain(".mxl");
     expect(input.accept).toContain(".gp");
     expect(input.accept).toContain(".mid");
+    expect(input.accept).toContain(".mscz");
     Object.defineProperty(input, "files", {
       configurable: true,
       value: [new File(["score"], "score.gp")],

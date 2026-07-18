@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { usePersistentState } from "../hooks/usePersistentState";
 import { readBinaryScoreFile, readMusicXmlFile } from "./musicXmlFile";
-import { getScoreFormat } from "./scoreFormat";
-import type { ScoreFormat } from "./scoreFormat";
+import { convertMsczWithHighFidelity } from "./msczHighFidelity";
+import { convertMsczFile } from "./msczFile";
+import { getScoreFileFormat, getScoreFormat } from "./scoreFormat";
+import type { ScoreFileFormat, ScoreFormat } from "./scoreFormat";
 import { parseMidiFile } from "./midiParser";
 
 export type ScoreFileContent = string | Uint8Array;
@@ -11,9 +13,15 @@ export type LoadedScoreFile = {
   content: ScoreFileContent;
   fileName: string;
   format: ScoreFormat;
+  sourceFormat: ScoreFileFormat;
+  warnings: string[];
 };
 
 export type BeforeScoreFileCommit = (loadedFile: LoadedScoreFile) => void;
+
+export type ScoreFileLoadOptions = {
+  msczConverter?: "standard" | "high-fidelity";
+};
 
 export const isGuitarProFileName = (fileName: string | null) =>
   getScoreFormat(fileName) === "guitar-pro";
@@ -26,6 +34,11 @@ const sanitizeScoreFileContent = (value: unknown): ScoreFileContent | null | und
 const sanitizeFileName = (value: unknown): string | null | undefined => {
   if (value === null || typeof value === "string") return value;
   return undefined;
+};
+
+const sanitizeWarnings = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) return undefined;
+  return value.slice(0, 256);
 };
 
 type UseScoreFileLoaderOptions = {
@@ -64,7 +77,13 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
     null,
     { legacyKeys: LEGACY_STORAGE_KEYS.fileName, sanitize: sanitizeFileName }
   );
+  const [conversionWarnings, setConversionWarnings] = usePersistentState<string[]>(
+    "melodicatrainer_score_conversion_warnings",
+    [],
+    { sanitize: sanitizeWarnings },
+  );
   const scoreFormat = useMemo(() => getScoreFormat(fileName), [fileName]);
+  const sourceFormat = useMemo(() => getScoreFileFormat(fileName), [fileName]);
   const isGpFile = scoreFormat === "guitar-pro";
   const isMidiFile = scoreFormat === "midi";
 
@@ -79,22 +98,34 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
       .then((buf) => {
         setFileName(DEFAULT_SCORE_FILE);
         setRawFileContent(new Uint8Array(buf));
+        setConversionWarnings([]);
       })
       .catch(onDefaultLoadError);
-  }, [fileName, onDefaultLoadError, rawFileContent, setFileName, setRawFileContent]);
+  }, [fileName, onDefaultLoadError, rawFileContent, setConversionWarnings, setFileName, setRawFileContent]);
 
   const loadScoreFile = useCallback(async (
     file: File,
     beforeCommit?: BeforeScoreFileCommit,
+    options: ScoreFileLoadOptions = {},
   ): Promise<LoadedScoreFile> => {
-    const format = getScoreFormat(file.name);
-    if (!format) {
+    const nextSourceFormat = getScoreFileFormat(file.name);
+    if (!nextSourceFormat) {
       throw new Error("Unsupported score file format.");
     }
 
-    const content = format === "midi"
-      ? await readBinaryScoreFile(file)
-      : await readMusicXmlFile(file);
+    const msczResult = nextSourceFormat === "musescore"
+      ? options.msczConverter === "high-fidelity"
+        ? await convertMsczWithHighFidelity(file)
+        : await convertMsczFile(file)
+      : null;
+    const format: ScoreFormat = nextSourceFormat === "musescore"
+      ? "musicxml"
+      : nextSourceFormat;
+    const content = msczResult
+      ? msczResult.musicXml
+      : format === "midi"
+        ? await readBinaryScoreFile(file)
+        : await readMusicXmlFile(file);
     if (format === "midi" && content instanceof Uint8Array) {
       parseMidiFile(content, file.name);
     }
@@ -102,19 +133,24 @@ export const useScoreFileLoader = ({ onDefaultLoadError }: UseScoreFileLoaderOpt
       content,
       fileName: file.name,
       format,
+      sourceFormat: nextSourceFormat,
+      warnings: msczResult?.warnings ?? [],
     };
     beforeCommit?.(loadedFile);
     setFileName(loadedFile.fileName);
     setRawFileContent(loadedFile.content);
+    setConversionWarnings(loadedFile.warnings);
     return loadedFile;
-  }, [setFileName, setRawFileContent]);
+  }, [setConversionWarnings, setFileName, setRawFileContent]);
 
   return {
     fileName,
+    conversionWarnings,
     isGpFile,
     isMidiFile,
     loadScoreFile,
     rawFileContent,
     scoreFormat,
+    sourceFormat,
   };
 };

@@ -7,13 +7,13 @@ const library = vi.hoisted(() => ({
   directoryHandle: null as FileSystemDirectoryHandle | null,
   disconnect: vi.fn(),
   error: null as string | null,
-  index: { entries: [] as unknown[], issues: [] as { message: string; relativePath: string }[], lastScanAt: null as string | null },
+  index: { entries: [] as unknown[], issues: [] as { message: string; relativePath: string; severity: "error" | "warning" }[], lastScanAt: null as string | null },
   isInitializing: false,
   isScanning: false,
   permission: "prompt" as string,
   reconnect: vi.fn(),
   rescan: vi.fn(),
-  scanSummary: null,
+  scanSummary: null as null | { added: number; errors: number; removed: number; skipped: number; updated: number; warnings: number },
   supported: true,
 }));
 
@@ -83,6 +83,27 @@ describe("Settings local library", () => {
     const { container, root } = renderSettings();
     expect(container.textContent).toContain("Permission required");
     expect(container.textContent).toContain("Reconnect");
+    act(() => root.unmount());
+  });
+
+  it("shows MSCZ conversion warnings separately from scan errors", () => {
+    library.directoryHandle = { name: "My Scores" } as FileSystemDirectoryHandle;
+    library.permission = "granted";
+    library.scanSummary = { added: 1, errors: 0, removed: 0, skipped: 0, updated: 0, warnings: 1 };
+    library.index = {
+      entries: [{}],
+      issues: [{
+        message: "An unsupported decoration was skipped.",
+        relativePath: "Tune.mscz",
+        severity: "warning",
+      }],
+      lastScanAt: "2026-07-18T10:00:00.000Z",
+    };
+
+    const { container, root } = renderSettings();
+    expect(container.textContent).toContain("1 warnings, 0 errors");
+    expect(container.textContent).toContain("1 file notices");
+    expect(container.textContent).toContain("Tune.mscz");
     act(() => root.unmount());
   });
 });
