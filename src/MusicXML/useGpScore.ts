@@ -6,6 +6,7 @@ import type { PlaybackEvent } from "./types";
 import type { MutableRefObject } from "react";
 import type * as alphaTab from "@coderline/alphatab";
 import type { MelodicaKeyCount } from "../utils/utils";
+import type { AccompanimentTrack } from "./accompaniment";
 
 const DEFAULT_GP_SCORE_HEIGHT_PX = 128;
 const MIN_GP_SCORE_HEIGHT_PX = 72;
@@ -47,6 +48,8 @@ export const useGpScore = ({
   transpose,
 }: UseGpScoreOptions) => {
   const [gpOriginalMidiNumbers, setGpOriginalMidiNumbers] = useState<number[]>([]);
+  const [gpAccompanimentTracks, setGpAccompanimentTracks] = useState<AccompanimentTrack[]>([]);
+  const [gpAccompanimentWarnings, setGpAccompanimentWarnings] = useState<string[]>([]);
   const [gpTracks, setGpTracks] = useState<TrackInfo[]>([]);
   const [selectedGpTrackIndex, setSelectedGpTrackIndex] = useState(0);
   const [gpScoreHeightPx, setGpScoreHeightPx] = useState(DEFAULT_GP_SCORE_HEIGHT_PX);
@@ -72,7 +75,9 @@ export const useGpScore = ({
     events: PlaybackEvent[],
     _score: alphaTab.model.Score,
     tracks: TrackInfo[],
-    scoreTempo: number
+    scoreTempo: number,
+    accompanimentTracks: AccompanimentTrack[],
+    accompanimentWarnings: string[],
   ) => {
     musicXmlDebugLogger.log(`MusicXML: Score loaded. Extracted tempo: ${scoreTempo}`);
     const originalMidiNumbers = Array.from(getPlayableMidiNumbers(events)).map((m) => m - transpose);
@@ -90,6 +95,8 @@ export const useGpScore = ({
     }
 
     setPlaybackEvents(events);
+    setGpAccompanimentTracks(accompanimentTracks);
+    setGpAccompanimentWarnings(accompanimentWarnings);
     setGpTracks(tracks || []);
     if (scoreTempo) {
       setDetectedTempoBpm(scoreTempo);
@@ -121,6 +128,8 @@ export const useGpScore = ({
   const resetGpScore = useCallback((shouldAutoTranspose: boolean) => {
     shouldAutoTransposeGpRef.current = shouldAutoTranspose;
     setGpOriginalMidiNumbers([]);
+    setGpAccompanimentTracks([]);
+    setGpAccompanimentWarnings([]);
     setGpTracks([]);
     setSelectedGpTrackIndex(0);
     setGpScoreHeightPx(DEFAULT_GP_SCORE_HEIGHT_PX);
@@ -128,6 +137,8 @@ export const useGpScore = ({
   }, []);
 
   return {
+    gpAccompanimentTracks,
+    gpAccompanimentWarnings,
     gpOriginalMidiNumbers,
     gpScorePaneHeightPx,
     gpTracks,

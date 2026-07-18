@@ -14,6 +14,7 @@ interface FileSystemDirectoryPickerOptions {
 }
 
 interface FileSystemDirectoryHandle {
+  removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
   values(): AsyncIterableIterator<FileSystemFileHandle | FileSystemDirectoryHandle>;
 }
 

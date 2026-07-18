@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { Link2, Library, LoaderCircle, RefreshCw, RotateCcw, Search, Settings, Star, Upload, X } from "lucide-react";
+import { Link2, Library, LoaderCircle, Pencil, Plus, RefreshCw, RotateCcw, Search, Settings, Star, Trash2, Upload, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePersistentState } from "../hooks/usePersistentState";
 import {
@@ -19,14 +19,15 @@ import {
   ScoreLibraryDownloadError,
 } from "./scoreLibraryDownload";
 import { filterScoreLibraryEntries } from "./scoreLibraryFilter";
-import type { ScoreLibrarySourceFilter } from "./scoreLibraryFilter";
+import type { ScoreLibraryDifficultyFilter, ScoreLibrarySourceFilter } from "./scoreLibraryFilter";
 import {
   FAVORITE_SCORE_IDS_STORAGE_KEY,
   sanitizeFavoriteScoreIds,
   toggleFavoriteScoreId,
 } from "./scoreLibraryFavorites";
 import { useUserScoreLibrary } from "./UserScoreLibraryContext";
-import { USER_SCORE_FILE_ACCEPT } from "./userScoreLibrary";
+import { normalizeUserScoreTags, USER_SCORE_FILE_ACCEPT } from "./userScoreLibrary";
+import type { UserScoreLibraryEntry } from "./userScoreLibrary";
 
 type ScoreLibraryDialogProps = {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export const ScoreLibraryDialog = ({
   const [isImporting, setIsImporting] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [difficulty, setDifficulty] = useState<FilterValue<ScoreLibraryDifficulty>>("all");
+  const [difficulty, setDifficulty] = useState<ScoreLibraryDifficultyFilter>("all");
   const [format, setFormat] = useState<FilterValue<ScoreLibraryFormat>>("all");
   const [source, setSource] = useState<ScoreLibrarySourceFilter>("all");
   const [tag, setTag] = useState("all");
@@ -76,6 +77,13 @@ export const ScoreLibraryDialog = ({
     [],
     { sanitize: sanitizeFavoriteScoreIds },
   );
+  const [editingEntry, setEditingEntry] = useState<UserScoreLibraryEntry | null>(null);
+  const [editingDifficulty, setEditingDifficulty] = useState<ScoreLibraryDifficulty | "">("");
+  const [editingTags, setEditingTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+  const [deletingEntry, setDeletingEntry] = useState<UserScoreLibraryEntry | null>(null);
+  const [isSavingMetadata, setIsSavingMetadata] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const localFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -110,10 +118,12 @@ export const ScoreLibraryDialog = ({
   );
 
   const availableTags = useMemo(
-    () => [...new Set(catalog?.entries.flatMap((entry) => [...entry.tags]) ?? [])].sort(
+    () => [...new Set(entries.flatMap((entry) =>
+      entry.sourceKind === "public" ? [...entry.tags] : [...(entry.tags ?? [])],
+    ))].sort(
       (left, right) => left.localeCompare(right),
     ),
-    [catalog],
+    [entries],
   );
 
   const favoriteIdSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
@@ -134,12 +144,20 @@ export const ScoreLibraryDialog = ({
     }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (deletingEntry) {
+        setDeletingEntry(null);
+        return;
+      }
+      if (editingEntry) {
+        setEditingEntry(null);
+        return;
+      }
       abortControllerRef.current?.abort();
       onClose();
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [deletingEntry, editingEntry, isOpen, onClose]);
 
   useEffect(() => () => abortControllerRef.current?.abort(), []);
 
@@ -219,6 +237,48 @@ export const ScoreLibraryDialog = ({
   const toggleFavorite = (entryId: string) => {
     setFavoriteIds(toggleFavoriteScoreId(favoriteIds, entryId));
   };
+  const openMetadataEditor = (entry: UserScoreLibraryEntry) => {
+    setEditingEntry(entry);
+    setEditingDifficulty(entry.difficulty ?? "");
+    setEditingTags([...(entry.tags ?? [])]);
+    setNewTag("");
+  };
+  const addEditingTag = (value: string) => {
+    const normalized = normalizeUserScoreTags([...editingTags, value]);
+    setEditingTags(normalized);
+    setNewTag("");
+  };
+  const saveMetadata = async () => {
+    if (!editingEntry || isSavingMetadata) return;
+    setIsSavingMetadata(true);
+    setErrorMessage(null);
+    try {
+      await userLibrary.updateMetadata(editingEntry.id, {
+        difficulty: editingDifficulty || undefined,
+        tags: editingTags,
+      });
+      setEditingEntry(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Local score metadata could not be saved.");
+    } finally {
+      setIsSavingMetadata(false);
+    }
+  };
+  const confirmDelete = async () => {
+    if (!deletingEntry || isDeleting) return;
+    setIsDeleting(true);
+    setErrorMessage(null);
+    try {
+      await userLibrary.deleteFile(deletingEntry);
+      setFavoriteIds(favoriteIds.filter((id) => id !== deletingEntry.id));
+      setImportMessage({ isError: false, text: `Deleted ${deletingEntry.fileName}.` });
+      setDeletingEntry(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "The local score could not be deleted.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && closeDialog()} role="presentation">
@@ -244,8 +304,8 @@ export const ScoreLibraryDialog = ({
             <select aria-label="Filter by format" className={selectClassName} onChange={(event) => setFormat(event.target.value as FilterValue<ScoreLibraryFormat>)} value={format}>
               <option value="all">All formats</option><option value="musicxml">MusicXML</option><option value="guitar-pro">Guitar Pro</option><option value="midi">MIDI</option><option value="musescore">MuseScore</option>
             </select>
-            <select aria-label="Filter by difficulty" className={selectClassName} onChange={(event) => setDifficulty(event.target.value as FilterValue<ScoreLibraryDifficulty>)} value={difficulty}>
-              <option value="all">All difficulties</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
+            <select aria-label="Filter by difficulty" className={selectClassName} onChange={(event) => setDifficulty(event.target.value as ScoreLibraryDifficultyFilter)} value={difficulty}>
+              <option value="all">All difficulties</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="unrated">Unrated</option>
             </select>
             <select aria-label="Filter by tag" className={selectClassName} onChange={(event) => setTag(event.target.value)} value={tag}>
               <option value="all">All tags</option>{availableTags.map((value) => <option key={value} value={value}>{value}</option>)}
@@ -285,24 +345,33 @@ export const ScoreLibraryDialog = ({
                 const isFavorite = favoriteIdSet.has(entry.id);
                 return (
                   <article className="relative rounded-xl border border-gray-700 bg-gray-950/70 transition hover:border-emerald-600 hover:bg-gray-800" key={entry.id}>
-                    <button
-                      aria-label={`${isFavorite ? "Remove" : "Add"} ${entry.title} ${isFavorite ? "from" : "to"} favourites`}
-                      aria-pressed={isFavorite}
-                      className={`absolute right-3 top-3 z-10 rounded-lg border p-1.5 transition focus:outline-none focus:ring-2 focus:ring-amber-400/70 ${isFavorite ? "border-amber-500/60 bg-amber-950/70 text-amber-400 hover:bg-amber-900/70" : "border-gray-700 bg-gray-900 text-gray-500 hover:border-amber-600 hover:text-amber-300"}`}
-                      onClick={() => toggleFavorite(entry.id)}
-                      title={isFavorite ? "Remove from favourites" : "Add to favourites"}
-                      type="button"
-                    >
-                      <Star className={isFavorite ? "fill-current" : ""} size={17} />
-                    </button>
-                    <button className="group w-full p-4 pr-14 text-left disabled:opacity-50" disabled={Boolean(loadingId)} onClick={() => void loadScore(entry)} type="button">
+                    <div className="absolute right-3 top-3 z-10 flex items-center gap-1">
+                      <button
+                        aria-label={`${isFavorite ? "Remove" : "Add"} ${entry.title} ${isFavorite ? "from" : "to"} favourites`}
+                        aria-pressed={isFavorite}
+                        className={`rounded-lg border p-1.5 transition focus:outline-none focus:ring-2 focus:ring-amber-400/70 ${isFavorite ? "border-amber-500/60 bg-amber-950/70 text-amber-400 hover:bg-amber-900/70" : "border-gray-700 bg-gray-900 text-gray-500 hover:border-amber-600 hover:text-amber-300"}`}
+                        onClick={() => toggleFavorite(entry.id)}
+                        title={isFavorite ? "Remove from favourites" : "Add to favourites"}
+                        type="button"
+                      >
+                        <Star className={isFavorite ? "fill-current" : ""} size={17} />
+                      </button>
+                      {userEntry && (
+                        <>
+                          <button aria-label={`Edit metadata for ${entry.title}`} className="rounded-lg border border-gray-700 bg-gray-900 p-1.5 text-gray-400 transition hover:border-blue-600 hover:text-blue-300 disabled:opacity-40" disabled={userLibrary.isScanning} onClick={() => openMetadataEditor(userEntry)} title="Edit difficulty and tags" type="button"><Pencil size={17} /></button>
+                          <button aria-label={`Delete ${entry.title}`} className="rounded-lg border border-gray-700 bg-gray-900 p-1.5 text-gray-400 transition hover:border-red-600 hover:text-red-300 disabled:opacity-40" disabled={!hasFolderPermission || userLibrary.isScanning} onClick={() => setDeletingEntry(userEntry)} title="Delete local file" type="button"><Trash2 size={17} /></button>
+                        </>
+                      )}
+                    </div>
+                    <button className={`group w-full p-4 text-left disabled:opacity-50 ${userEntry ? "pr-32" : "pr-14"}`} disabled={Boolean(loadingId)} onClick={() => void loadScore(entry)} type="button">
                       <div className="flex items-start gap-2"><h3 className="font-bold leading-snug text-white">{entry.title}</h3><span className="shrink-0 rounded bg-gray-800 px-1.5 py-0.5 text-[9px] font-bold uppercase text-gray-400">{formatBadge(entry)}</span></div>
                       <p className="mt-1 text-xs text-gray-400">{entry.composer || (entry.sourceKind === "user" ? entry.fileName : "Unknown composer")}</p>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${entry.difficulty ? "border-emerald-900 bg-emerald-950/50 text-emerald-300" : "border-gray-700 bg-gray-900 text-gray-500"}`}>{entry.difficulty ?? "unrated"}</span>
+                        {(entry.sourceKind === "public" ? entry.tags : entry.tags ?? []).map((value) => <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400" key={value}>{value}</span>)}
+                      </div>
                       {publicEntry ? (
-                        <>
-                          <div className="mt-3 flex flex-wrap gap-1.5"><span className="rounded-full border border-emerald-900 bg-emerald-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-300">{publicEntry.difficulty}</span>{publicEntry.tags.map((value) => <span className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400" key={value}>{value}</span>)}</div>
-                          <p className="mt-3 text-[10px] leading-relaxed text-gray-500">Source: {publicEntry.source.name}<br />License: {publicEntry.license.kind}</p>
-                        </>
+                        <p className="mt-3 text-[10px] leading-relaxed text-gray-500">Source: {publicEntry.source.name}<br />License: {publicEntry.license.kind}</p>
                       ) : (
                         <>
                           <p className="mt-3 truncate text-[10px] text-gray-500" title={userEntry?.relativePath}>{userEntry?.relativePath}</p>
@@ -322,6 +391,53 @@ export const ScoreLibraryDialog = ({
           )}
         </div>
       </section>
+
+      {editingEntry && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4" onMouseDown={(event) => event.target === event.currentTarget && setEditingEntry(null)} role="presentation">
+          <section aria-labelledby="local-score-metadata-title" aria-modal="true" className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 p-5 shadow-2xl" onMouseDown={(event) => event.stopPropagation()} role="dialog">
+            <div className="flex items-start justify-between gap-4">
+              <div><h3 className="font-black text-white" id="local-score-metadata-title">Edit local score</h3><p className="mt-1 truncate text-xs text-gray-400" title={editingEntry.relativePath}>{editingEntry.relativePath}</p></div>
+              <button aria-label="Close metadata editor" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-800 hover:text-white" onClick={() => setEditingEntry(null)} type="button"><X size={17} /></button>
+            </div>
+            <label className="mt-5 block text-xs font-bold uppercase tracking-wide text-gray-400" htmlFor="local-score-difficulty">Difficulty</label>
+            <select className={`${selectClassName} mt-2 w-full`} id="local-score-difficulty" onChange={(event) => setEditingDifficulty(event.target.value as ScoreLibraryDifficulty | "")} value={editingDifficulty}>
+              <option value="">Unrated</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
+            </select>
+            <span className="mt-5 block text-xs font-bold uppercase tracking-wide text-gray-400">Tags</span>
+            {editingTags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {editingTags.map((value) => <button aria-label={`Remove tag ${value}`} className="inline-flex items-center gap-1 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-1 text-xs font-bold text-gray-300 hover:border-red-700 hover:text-red-300" key={value} onClick={() => setEditingTags(editingTags.filter((tagValue) => tagValue !== value))} type="button">{value}<X size={12} /></button>)}
+              </div>
+            )}
+            <div className="mt-2 flex gap-2">
+              <input aria-label="New tag" className="min-w-0 flex-1 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500" maxLength={32} onChange={(event) => setNewTag(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addEditingTag(newTag); } }} placeholder="Add a tag" value={newTag} />
+              <button aria-label="Add tag" className="rounded-lg bg-gray-800 px-3 text-gray-300 hover:bg-gray-700 disabled:opacity-40" disabled={!newTag.trim() || editingTags.length >= 20} onClick={() => addEditingTag(newTag)} type="button"><Plus size={17} /></button>
+            </div>
+            {availableTags.some((value) => !editingTags.includes(value)) && (
+              <select aria-label="Add existing tag" className={`${selectClassName} mt-2 w-full`} onChange={(event) => { if (event.target.value) addEditingTag(event.target.value); }} value="">
+                <option value="">Add an existing tag…</option>{availableTags.filter((value) => !editingTags.includes(value)).map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            )}
+            <p className="mt-2 text-[11px] text-gray-500">Up to 20 tags, 32 characters each. Metadata stays in this browser.</p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-bold text-gray-300 hover:bg-gray-800" disabled={isSavingMetadata} onClick={() => setEditingEntry(null)} type="button">Cancel</button>
+              <button className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50" disabled={isSavingMetadata} onClick={() => void saveMetadata()} type="button">{isSavingMetadata && <LoaderCircle className="animate-spin" size={14} />}Save</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {deletingEntry && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4" onMouseDown={(event) => event.target === event.currentTarget && setDeletingEntry(null)} role="presentation">
+          <section aria-labelledby="delete-local-score-title" aria-modal="true" className="w-full max-w-md rounded-2xl border border-red-900 bg-gray-900 p-5 shadow-2xl" onMouseDown={(event) => event.stopPropagation()} role="alertdialog">
+            <div className="flex items-start gap-3"><span className="rounded-full bg-red-950 p-2 text-red-300"><Trash2 size={20} /></span><div><h3 className="font-black text-white" id="delete-local-score-title">Delete local file?</h3><p className="mt-2 text-sm text-gray-300">This permanently deletes <strong>{deletingEntry.fileName}</strong> from your local library folder.</p><p className="mt-2 break-all text-xs text-gray-500">{deletingEntry.relativePath}</p><p className="mt-3 text-xs font-semibold text-red-300">This action cannot be undone. Public library scores are not affected.</p></div></div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button className="rounded-lg border border-gray-700 px-4 py-2 text-sm font-bold text-gray-300 hover:bg-gray-800" disabled={isDeleting} onClick={() => setDeletingEntry(null)} type="button">Cancel</button>
+              <button className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-50" disabled={isDeleting} onClick={() => void confirmDelete()} type="button">{isDeleting ? <LoaderCircle className="animate-spin" size={14} /> : <Trash2 size={14} />}Delete file</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 };

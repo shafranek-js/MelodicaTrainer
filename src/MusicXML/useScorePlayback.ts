@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   changeInstrument,
   ensureAudioContext,
   initSynthesizer,
   playPlaybackNotes,
+  setAccompanimentVolume as setSynthAccompanimentVolume,
   stopAudioNodes,
 } from "./audioPlayback";
 import { musicXmlDebugLogger } from "./debugLogger";
@@ -14,6 +15,7 @@ import { usePlaybackScheduler } from "./usePlaybackScheduler";
 import { parsePresetSelection } from "./useSoundFontPresets";
 import type { PlaybackEvent } from "./types";
 import { createPlaybackStartGate } from "./playbackStartGate";
+import { useAccompanimentScheduler } from "./useAccompanimentScheduler";
 
 /**
  * Keeps the latest value available to stable callbacks without forcing those
@@ -32,12 +34,17 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
   const clearPlaybackResources = useCallback(() => {
     const {
       callbacks: { stopGpCursorAnimation },
-      refs: { gameClockFrameRef, playbackTimerRef },
+      refs: { accompanimentTimerRef, gameClockFrameRef, playbackTimerRef },
     } = latestOptionsRef.current;
 
     if (playbackTimerRef.current !== null) {
       window.clearTimeout(playbackTimerRef.current);
       playbackTimerRef.current = null;
+    }
+
+    if (accompanimentTimerRef.current !== null) {
+      window.clearTimeout(accompanimentTimerRef.current);
+      accompanimentTimerRef.current = null;
     }
 
     if (gameClockFrameRef.current !== null) {
@@ -137,16 +144,26 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
       notes: PlaybackEvent["notes"],
       tempoBpm: number,
       tempoScale: number,
+      channel = 0,
     ) => {
       const {
         refs: { audioContextRef },
       } = latestOptionsRef.current;
       const audioContext = ensureAudioContext(audioContextRef.current);
       audioContextRef.current = audioContext;
-      playPlaybackNotes(notes, tempoBpm, tempoScale);
+      playPlaybackNotes(notes, tempoBpm, tempoScale, channel);
     },
     [latestOptionsRef],
   );
+
+  const { startAccompaniment } = useAccompanimentScheduler({
+    latestOptionsRef,
+    playNotes,
+  });
+
+  useEffect(() => {
+    setSynthAccompanimentVolume(options.state.accompanimentVolume);
+  }, [options.state.accompanimentVolume]);
 
   const { startGameClock } = useGameClock({ latestOptionsRef });
   const restartPlaybackLoop = useCallback(
@@ -205,6 +222,9 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
         isGpPlaybackReady,
         isSheetReady,
         playbackEvents,
+        playbackTimeline,
+        accompanimentSchedule,
+        accompanimentVolume,
         selectedPreset,
         selectedSf,
       },
@@ -255,6 +275,7 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
         if (preset) {
           changeInstrument(preset.program, preset.bank);
         }
+        setSynthAccompanimentVolume(accompanimentVolume);
 
         setRouteStatus({
           tone: "success",
@@ -282,6 +303,12 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
         startGameClock();
 
         schedulePlaybackRef.current(startIndex, runId);
+        if (accompanimentSchedule.length > 0) {
+          startAccompaniment(
+            runId,
+            playbackTimeline[startIndex]?.startMs ?? currentGameTimeMs,
+          );
+        }
       } catch (err) {
         console.error("Playback error:", err);
         setRouteStatus({
@@ -290,7 +317,13 @@ export const useScorePlayback = (options: UseScorePlaybackOptions) => {
         });
       }
     });
-  }, [latestOptionsRef, schedulePlaybackRef, startGameClock, stopPlayback]);
+  }, [
+    latestOptionsRef,
+    schedulePlaybackRef,
+    startAccompaniment,
+    startGameClock,
+    stopPlayback,
+  ]);
 
   return useMemo(
     () => ({

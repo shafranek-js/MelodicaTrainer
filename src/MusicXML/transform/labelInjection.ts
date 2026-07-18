@@ -5,7 +5,10 @@ import {
 import type { MelodicaKeyCount } from "../../utils/utils";
 import { getPitchNoteName } from "../playbackParser";
 import { parseMusicXmlDocument } from "../musicXmlParser";
-import { getFirstStaffNoteElements } from "../musicXmlSelection";
+import {
+  getFirstStaffNoteElements,
+  getStaffNoteElements,
+} from "../musicXmlSelection";
 import {
   transposeKeySignatures,
   transposeNoteName,
@@ -50,16 +53,24 @@ export const injectHarmonicaTabs = (
 type InjectMelodicaLabelsOptions = {
   keyCount: MelodicaKeyCount;
   labelMode?: "note" | "keyNumber";
+  staffNumber?: string | null;
   transpose: number;
 };
 
 export const injectMelodicaLabels = (
   xml: string,
-  { keyCount, labelMode = "note", transpose }: InjectMelodicaLabelsOptions,
+  {
+    keyCount,
+    labelMode = "note",
+    staffNumber,
+    transpose,
+  }: InjectMelodicaLabelsOptions,
 ): string => {
   const xmlDoc = parseMusicXmlDocument(xml);
-  const noteElements = getFirstStaffNoteElements(xmlDoc);
-  transposeKeySignatures(xmlDoc, transpose);
+  const noteElements = staffNumber === undefined
+    ? getFirstStaffNoteElements(xmlDoc)
+    : getStaffNoteElements(xmlDoc, staffNumber);
+  transposeKeySignatures(xmlDoc, transpose, staffNumber);
 
   noteElements.forEach((note) => {
     const pitch = note.getElementsByTagName("pitch")[0];

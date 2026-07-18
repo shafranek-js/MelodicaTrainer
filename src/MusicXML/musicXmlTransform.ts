@@ -3,6 +3,15 @@ export {
   exportMelodicaNotesText,
 } from "./transform/displayXml";
 export {
+  getMusicXmlStaves,
+  getMusicXmlParts,
+  selectMusicXmlPart,
+} from "./transform/partSelection";
+export type {
+  MusicXmlPartInfo,
+  MusicXmlStaffInfo,
+} from "./transform/partSelection";
+export {
   injectHarmonicaTabs,
   injectMelodicaLabels,
 } from "./transform/labelInjection";

@@ -4,12 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   chooseUserScoreLibraryFolder,
   clearStoredUserScoreLibrary,
+  deleteUserScoreFile,
   getUserScoreFile,
   importUserScoreFiles,
   isUserScoreLibrarySupported,
   loadStoredUserScoreLibrary,
   saveStoredUserScoreLibrary,
   scanUserScoreLibrary,
+  updateUserScoreLibraryMetadata,
 } from "./userScoreLibrary";
 import type { UserScoreLibraryEntry } from "./userScoreLibrary";
 
@@ -115,6 +117,10 @@ class FakeDirectoryHandle {
     if (!options?.create) throw new DOMException("Not found", "NotFoundError");
     return this.addFile(new File([], name)) as unknown as FileSystemFileHandle;
   }
+
+  async removeEntry(name: string) {
+    if (!this.children.delete(name)) throw new DOMException("Not found", "NotFoundError");
+  }
 }
 
 const asDirectoryHandle = (directory: FakeDirectoryHandle) =>
@@ -193,6 +199,36 @@ describe("user score library", () => {
     expect(removed.summary.removed).toBe(1);
   });
 
+  it("preserves local difficulty and tags across changes and renames", async () => {
+    const root = new FakeDirectoryHandle("Scores");
+    root.addFile(scoreFile("Tune.gp", "first", 1));
+    const first = await scanUserScoreLibrary(asDirectoryHandle(root));
+    const enriched = updateUserScoreLibraryMetadata(first, first.entries[0].id, {
+      difficulty: "intermediate",
+      tags: [" Folk ", "folk", "Practice"],
+    });
+    expect(enriched.entries[0]).toMatchObject({
+      difficulty: "intermediate",
+      tags: ["folk", "practice"],
+    });
+
+    root.addFile(scoreFile("Tune.gp", "changed", 2));
+    const changed = await scanUserScoreLibrary(asDirectoryHandle(root), enriched);
+    expect(changed.entries[0]).toMatchObject({
+      difficulty: "intermediate",
+      tags: ["folk", "practice"],
+    });
+
+    const renamedRoot = new FakeDirectoryHandle("Scores");
+    renamedRoot.addFile(scoreFile("Renamed.gp", "changed", 2));
+    const renamed = await scanUserScoreLibrary(asDirectoryHandle(renamedRoot), changed);
+    expect(renamed.entries[0]).toMatchObject({
+      difficulty: "intermediate",
+      relativePath: "Renamed.gp",
+      tags: ["folk", "practice"],
+    });
+  });
+
   it("indexes MSCZ metadata and keeps non-critical conversion warnings", async () => {
     const zip = new JSZip();
     zip.file("Local.mscx", `
@@ -255,5 +291,33 @@ describe("user score library", () => {
       title: "Practice",
     };
     await expect(getUserScoreFile(asDirectoryHandle(root), entry)).resolves.toBe(file);
+  });
+
+  it("deletes only the selected nested file and rejects unsafe paths", async () => {
+    const root = new FakeDirectoryHandle("Scores");
+    const nested = root.addDirectory(new FakeDirectoryHandle("Folk"));
+    nested.addFile(scoreFile("Delete.gp", "score"));
+    nested.addFile(scoreFile("Keep.gp", "other"));
+    const entry: UserScoreLibraryEntry = {
+      bytes: 5,
+      fileName: "Delete.gp",
+      format: "guitar-pro",
+      id: "user:delete",
+      lastModified: 1,
+      relativePath: "Folk/Delete.gp",
+      sha256: "d".repeat(64),
+      sourceKind: "user",
+      title: "Delete",
+    };
+
+    await deleteUserScoreFile(asDirectoryHandle(root), entry);
+    expect(nested.children.has("Delete.gp")).toBe(false);
+    expect(nested.children.has("Keep.gp")).toBe(true);
+
+    await expect(deleteUserScoreFile(asDirectoryHandle(root), {
+      ...entry,
+      relativePath: "../Keep.gp",
+    })).rejects.toThrow("path is invalid");
+    expect(nested.children.has("Keep.gp")).toBe(true);
   });
 });

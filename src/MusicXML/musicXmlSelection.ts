@@ -11,7 +11,7 @@ export const getFirstPartMeasures = (xmlDoc: XMLDocument) => {
   );
 };
 
-const getNoteStaff = (note: Element) =>
+export const getNoteStaff = (note: Element) =>
   note.getElementsByTagName("staff")[0]?.textContent?.trim() || null;
 
 export const getFirstStaffNumber = (part: Element) => {
@@ -31,6 +31,11 @@ export const isFirstStaffNote = (
   return getNoteStaff(note) === firstStaffNumber;
 };
 
+export const isStaffNote = (
+  note: Element,
+  staffNumber: string | null,
+) => !staffNumber || getNoteStaff(note) === staffNumber;
+
 export const getFirstStaffNoteElements = (xmlDoc: XMLDocument) => {
   const firstPart = getFirstPart(xmlDoc);
   if (!firstPart) return [];
@@ -39,5 +44,17 @@ export const getFirstStaffNoteElements = (xmlDoc: XMLDocument) => {
 
   return Array.from(firstPart.getElementsByTagName("note")).filter((note) =>
     isFirstStaffNote(note, firstStaffNumber)
+  );
+};
+
+export const getStaffNoteElements = (
+  xmlDoc: XMLDocument,
+  staffNumber: string | null,
+) => {
+  const firstPart = getFirstPart(xmlDoc);
+  if (!firstPart) return [];
+
+  return Array.from(firstPart.getElementsByTagName("note")).filter((note) =>
+    isStaffNote(note, staffNumber),
   );
 };

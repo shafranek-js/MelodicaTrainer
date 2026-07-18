@@ -2,6 +2,7 @@ import { Note } from "tonal";
 import type { PlaybackNote } from "./types";
 import { WorkletSynthesizer } from "spessasynth_lib";
 import { musicXmlDebugLogger } from "./debugLogger";
+import { ACCOMPANIMENT_CHANNELS } from "./accompaniment";
 
 export type SoundFontPreset = {
   bank: number;
@@ -29,6 +30,10 @@ type RawPreset = {
 
 type Logger = Pick<Console, "log" | "warn">;
 type TimerId = ReturnType<typeof setTimeout>;
+
+const PRIMARY_PLAYBACK_CHANNEL = 0;
+const PRIMARY_CHANNEL_VOLUME = 100;
+const PLAYBACK_CHANNELS = [PRIMARY_PLAYBACK_CHANNEL, ...ACCOMPANIMENT_CHANNELS];
 
 type AudioPlaybackServiceOptions = {
   baseUrl?: string;
@@ -165,8 +170,21 @@ export class AudioPlaybackService {
     if (!this.synth || Number.isNaN(program) || Number.isNaN(bank)) return;
 
     this.logger.log(`Changing instrument to ${bank}:${program}`);
-    this.synth.controllerChange(0, 0, bank);
-    this.synth.programChange(0, program);
+    PLAYBACK_CHANNELS.forEach((channel) => {
+      this.synth!.controllerChange(channel, 0, bank);
+      this.synth!.programChange(channel, program);
+    });
+    this.synth.controllerChange(PRIMARY_PLAYBACK_CHANNEL, 7, PRIMARY_CHANNEL_VOLUME);
+  }
+
+  setAccompanimentVolume(volumePercent: number) {
+    if (!this.synth) return;
+    const channelVolume = Math.round(
+      Math.min(100, Math.max(0, volumePercent)),
+    );
+    ACCOMPANIMENT_CHANNELS.forEach((channel) => {
+      this.synth!.controllerChange(channel, 7, channelVolume);
+    });
   }
 
   stopAudioNodes(nodes?: Set<AudioScheduledSourceNode>) {
@@ -215,6 +233,7 @@ export class AudioPlaybackService {
     notes: PlaybackNote[],
     tempoBpm: number,
     tempoScale = 1,
+    channel = PRIMARY_PLAYBACK_CHANNEL,
   ) {
     if (!this.synth) {
       this.logger.warn("Synthesizer not initialized yet.");
@@ -241,13 +260,12 @@ export class AudioPlaybackService {
       const velocity = Math.min(127, Math.max(0, Math.floor(note.velocity * 127)));
       const generation = this.noteGeneration;
 
-      this.synth!.noteOn(0, midiNote, velocity);
-      this.synth!.controllerChange(0, 7, 100);
+      this.synth!.noteOn(channel, midiNote, velocity);
 
       const timerId = this.setTimeoutFn(() => {
         this.noteOffTimers.delete(timerId);
         if (this.synth && generation === this.noteGeneration) {
-          this.synth.noteOff(0, midiNote);
+          this.synth.noteOff(channel, midiNote);
         }
       }, soundDurationMs);
       this.noteOffTimers.add(timerId);
@@ -268,6 +286,9 @@ export const getAvailablePresets = () => audioPlaybackService.getAvailablePreset
 export const changeInstrument = (program: number, bank: number = 0) =>
   audioPlaybackService.changeInstrument(program, bank);
 
+export const setAccompanimentVolume = (volumePercent: number) =>
+  audioPlaybackService.setAccompanimentVolume(volumePercent);
+
 export const stopAudioNodes = (nodes?: Set<AudioScheduledSourceNode>) =>
   audioPlaybackService.stopAudioNodes(nodes);
 
@@ -280,4 +301,5 @@ export const playPlaybackNotes = (
   notes: PlaybackNote[],
   tempoBpm: number,
   tempoScale = 1,
-) => audioPlaybackService.playPlaybackNotes(notes, tempoBpm, tempoScale);
+  channel = PRIMARY_PLAYBACK_CHANNEL,
+) => audioPlaybackService.playPlaybackNotes(notes, tempoBpm, tempoScale, channel);

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
+import { createMidiDisplayXml } from "./useMidiScore";
 import { parsePlaybackEvents } from "./playbackParser";
 import {
   generateMidiNotation,
@@ -126,6 +127,23 @@ describe("MIDI notation", () => {
     expect(xml.querySelector("key > fifths")?.textContent).toBe("-2");
     expect(xml.querySelectorAll("direction sound")).toHaveLength(2);
     expect(xml.querySelector("time-modification > actual-notes")?.textContent).toBe("3");
+  });
+
+  it("uses the compact XML practice display for generated MIDI notation", () => {
+    const result = generateMidiNotation(
+      makeScore([note(60, 0, PPQ)], {
+        tempoChanges: [{ bpm: 90, seconds: 0, ticks: 0 }],
+      }),
+      "channel-0",
+      "eighth",
+    );
+    const sourceXml = parseXml(result.musicXml);
+    const displayXml = parseXml(createMidiDisplayXml(result.musicXml, 32, 0));
+
+    expect(sourceXml.querySelector("direction")).not.toBeNull();
+    expect(displayXml.querySelector("direction")).toBeNull();
+    expect(displayXml.querySelector("lyric")).toBeNull();
+    expect(displayXml.querySelector("fingering")?.textContent).toBe("C4");
   });
 
   it("uses two voices for overlaps and simplifies a deterministic third line", () => {

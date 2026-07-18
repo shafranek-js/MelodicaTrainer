@@ -3,11 +3,13 @@ import { MAX_MUSIC_XML_FILE_BYTES, readMusicXmlFile } from "./musicXmlFile";
 import { convertMsczFile } from "./msczFile";
 import { getScoreFileFormat } from "./scoreFormat";
 import type { ScoreFileFormat } from "./scoreFormat";
+import type { ScoreLibraryDifficulty } from "./scoreLibrary";
 
 export type UserScoreLibraryEntry = {
   bytes: number;
   composer?: string;
   conversionWarnings?: readonly string[];
+  difficulty?: ScoreLibraryDifficulty;
   fileName: string;
   format: ScoreFileFormat;
   id: string;
@@ -15,7 +17,13 @@ export type UserScoreLibraryEntry = {
   relativePath: string;
   sha256: string;
   sourceKind: "user";
+  tags?: readonly string[];
   title: string;
+};
+
+export type UserScoreLibraryMetadata = {
+  difficulty?: ScoreLibraryDifficulty;
+  tags: readonly string[];
 };
 
 export type UserScoreLibraryIssue = {
@@ -68,6 +76,12 @@ const EMPTY_INDEX: UserScoreLibraryIndex = {
 
 export const USER_SCORE_FILE_ACCEPT =
   ".xml,.musicxml,.mxl,.gp,.gp3,.gp4,.gp5,.gpx,.mid,.midi,.mscz";
+
+export const normalizeUserScoreTags = (values: readonly string[]) =>
+  [...new Set(values
+    .map((value) => value.trim().toLocaleLowerCase())
+    .filter((value) => value.length > 0 && value.length <= 32))]
+    .slice(0, 20);
 
 const getIndexedDb = () => globalThis.indexedDB;
 
@@ -239,6 +253,7 @@ export const scanUserScoreLibrary = async (
   const summary = emptySummary();
   const issues: UserScoreLibraryIssue[] = [];
   const previousByPath = new Map(previous.entries.map((entry) => [entry.relativePath, entry]));
+  const previousByHash = new Map(previous.entries.map((entry) => [entry.sha256, entry]));
   const discovered = (await collectFiles(directory)).sort((left, right) =>
     left.relativePath.localeCompare(right.relativePath),
   );
@@ -264,10 +279,12 @@ export const scanUserScoreLibrary = async (
       } else {
         const metadata = await validateUserScoreFile(file, format);
         const sha256 = await hashUserScoreFile(file);
+        const metadataSource = previousEntry ?? previousByHash.get(sha256);
         entry = {
           bytes: file.size,
           composer: metadata.composer,
           conversionWarnings: metadata.warnings,
+          difficulty: metadataSource?.difficulty,
           fileName: file.name,
           format,
           id: `user:${sha256}`,
@@ -275,6 +292,7 @@ export const scanUserScoreLibrary = async (
           relativePath,
           sha256,
           sourceKind: "user",
+          tags: normalizeUserScoreTags(metadataSource?.tags ?? []),
           title: metadata.title ?? fileTitle(file.name),
         };
       }
@@ -383,13 +401,52 @@ export const getUserScoreFile = async (
   entry: UserScoreLibraryEntry,
 ) => {
   const parts = entry.relativePath.split("/").filter(Boolean);
+  if (parts.some((part) => part === "." || part === "..")) {
+    throw new Error("The local score path is invalid.");
+  }
   const fileName = parts.pop();
-  if (!fileName || parts.some((part) => part === "." || part === "..")) {
+  if (!fileName) {
     throw new Error("The local score path is invalid.");
   }
   let current = directory;
   for (const part of parts) current = await current.getDirectoryHandle(part);
   return (await current.getFileHandle(fileName)).getFile();
+};
+
+export const deleteUserScoreFile = async (
+  directory: FileSystemDirectoryHandle,
+  entry: UserScoreLibraryEntry,
+) => {
+  const parts = entry.relativePath.split("/").filter(Boolean);
+  if (parts.some((part) => part === "." || part === "..")) {
+    throw new Error("The local score path is invalid.");
+  }
+  const fileName = parts.pop();
+  if (!fileName) throw new Error("The local score path is invalid.");
+
+  let current = directory;
+  for (const part of parts) current = await current.getDirectoryHandle(part);
+  await current.getFileHandle(fileName);
+  await current.removeEntry(fileName);
+};
+
+export const updateUserScoreLibraryMetadata = (
+  index: UserScoreLibraryIndex,
+  entryId: string,
+  metadata: UserScoreLibraryMetadata,
+): UserScoreLibraryIndex => {
+  let found = false;
+  const entries = index.entries.map((entry) => {
+    if (entry.id !== entryId) return entry;
+    found = true;
+    return {
+      ...entry,
+      difficulty: metadata.difficulty,
+      tags: normalizeUserScoreTags(metadata.tags),
+    };
+  });
+  if (!found) throw new Error("That local score is no longer in the library.");
+  return { ...index, entries };
 };
 
 export const emptyUserScoreLibraryIndex = () => ({ ...EMPTY_INDEX });

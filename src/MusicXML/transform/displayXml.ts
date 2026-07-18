@@ -4,6 +4,7 @@ import {
   getFirstPartMeasures,
   getFirstStaffNumber,
   isFirstStaffNote,
+  isStaffNote,
 } from "../musicXmlSelection";
 import {
   getDirectChild,
@@ -41,24 +42,54 @@ export const exportMelodicaNotesText = (xml: string): string => {
     .join("\n");
 };
 
-export const createFirstStaffDisplayXml = (xml: string): string => {
+export const createFirstStaffDisplayXml = (
+  xml: string,
+  selectedStaffNumber?: string | null,
+): string => {
   const xmlDoc = parseMusicXmlDocument(xml);
   const firstPart = getFirstPart(xmlDoc);
   if (!firstPart) return xml;
 
-  const firstStaffNumber = getFirstStaffNumber(firstPart);
-  if (!firstStaffNumber) return xml;
-
   const firstPartId = firstPart.getAttribute("id");
+  let removedExtraPart = false;
   Array.from(xmlDoc.getElementsByTagName("score-part")).forEach((scorePart) => {
     if (firstPartId && scorePart.getAttribute("id") !== firstPartId) {
       scorePart.remove();
+      removedExtraPart = true;
     }
   });
 
   Array.from(xmlDoc.getElementsByTagName("part")).forEach((part) => {
-    if (part !== firstPart) part.remove();
+    if (part !== firstPart) {
+      part.remove();
+      removedExtraPart = true;
+    }
   });
+
+  // The practice view is intentionally compact. Keep musical notation and the
+  // generated fingering labels, but omit score-layout text and print layout
+  // directives. In particular, MusicXML exported from notation editors often
+  // contains <print new-system="yes"> elements that would force OSMD to wrap
+  // an otherwise horizontal practice staff. This only changes the XML copy
+  // sent to OSMD; playback continues to use the unsimplified selected part.
+  let removedDisplayText = false;
+  ["direction", "harmony", "figured-bass", "print"].forEach((tagName) => {
+    Array.from(firstPart.getElementsByTagName(tagName)).forEach((element) => {
+      element.remove();
+      removedDisplayText = true;
+    });
+  });
+  Array.from(firstPart.getElementsByTagName("lyric")).forEach((lyric) => {
+    lyric.remove();
+    removedDisplayText = true;
+  });
+
+  const firstStaffNumber = selectedStaffNumber ?? getFirstStaffNumber(firstPart);
+  if (!firstStaffNumber) {
+    return removedExtraPart || removedDisplayText
+      ? new XMLSerializer().serializeToString(xmlDoc)
+      : xml;
+  }
 
   getDirectChildren(firstPart, "measure").forEach((measure) => {
     Array.from(measure.children).forEach((child) => {
@@ -68,7 +99,7 @@ export const createFirstStaffDisplayXml = (xml: string): string => {
       }
 
       if (child.tagName === "note") {
-        if (!isFirstStaffNote(child, firstStaffNumber)) {
+        if (!isStaffNote(child, firstStaffNumber)) {
           child.remove();
           return;
         }

@@ -6,6 +6,10 @@ import { Note } from "tonal";
 import { resolveTiedNotes } from "./playbackParser";
 import { addLeadInIfNeeded } from "./playbackLeadIn";
 import { musicXmlDebugLogger } from "./debugLogger";
+import {
+    alignAccompanimentLeadIn,
+    type AccompanimentTrack,
+} from "./accompaniment";
 
 type AlphaTabTrackWithStaffs = alphaTab.model.Track & {
     staffs?: alphaTab.model.Staff[];
@@ -326,3 +330,62 @@ export function parseAlphaTabScore(
     musicXmlDebugLogger.log(`AlphaTab Parser: Success! Parsed ${resolvedEvents.length} events.`);
     return { events: resolvedEvents, tempo: initialTempo };
 }
+
+export const buildAlphaTabPlaybackSelection = (
+    score: alphaTab.model.Score,
+    keyCountInput: MelodicaKeyCount | string,
+    selectedTrackIndex: number,
+    manualTranspose: number,
+): {
+    accompanimentTracks: AccompanimentTrack[];
+    accompanimentWarnings: string[];
+    events: PlaybackEvent[];
+    tempo: number;
+} => {
+    const primary = parseAlphaTabScore(
+        score,
+        keyCountInput,
+        selectedTrackIndex,
+        manualTranspose,
+    );
+    const primaryWithoutLeadIn = parseAlphaTabScore(
+        score,
+        keyCountInput,
+        selectedTrackIndex,
+        manualTranspose,
+        { addLeadIn: false },
+    );
+    const accompanimentWarnings: string[] = [];
+    const accompanimentTracks = score.tracks.flatMap((track, trackIndex) => {
+        if (trackIndex === selectedTrackIndex) return [];
+        try {
+            const parsed = parseAlphaTabScore(
+                score,
+                keyCountInput,
+                trackIndex,
+                manualTranspose,
+                { addLeadIn: false },
+            );
+            if (!parsed.events.some((event) => event.notes.length > 0)) return [];
+            return [{
+                events: parsed.events,
+                id: `gp-track-${trackIndex}`,
+                label: track.name || `Track ${trackIndex + 1}`,
+            }];
+        } catch {
+            accompanimentWarnings.push(track.name || `Track ${trackIndex + 1}`);
+            return [];
+        }
+    });
+
+    return {
+        accompanimentTracks: alignAccompanimentLeadIn(
+            primary.events,
+            primaryWithoutLeadIn.events,
+            accompanimentTracks,
+        ),
+        accompanimentWarnings,
+        events: primary.events,
+        tempo: primary.tempo,
+    };
+};

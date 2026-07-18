@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   createFirstStaffDisplayXml,
   exportMelodicaNotesText,
+  getMusicXmlParts,
+  getMusicXmlStaves,
   injectHarmonicaTabs,
+  injectMelodicaLabels,
+  selectMusicXmlPart,
   transposeKeySignatureFifths,
   transposeNoteName,
   writePitch,
@@ -217,9 +221,10 @@ describe("createFirstStaffDisplayXml", () => {
     expect(xmlDoc.getElementsByTagName("staff")).toHaveLength(0);
     expect(xmlDoc.getElementsByTagName("backup")).toHaveLength(0);
     expect(xmlDoc.getElementsByTagName("staff-layout")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("print")).toHaveLength(0);
     expect(xmlDoc.getElementsByTagName("clef")).toHaveLength(1);
     expect(xmlDoc.getElementsByTagName("note")).toHaveLength(1);
-    expect(xmlDoc.getElementsByTagName("words")[0].textContent).toBe("Allegro");
+    expect(xmlDoc.getElementsByTagName("direction")).toHaveLength(0);
   });
 
   it("returns the XML unchanged when there are no staff numbers", () => {
@@ -234,6 +239,150 @@ describe("createFirstStaffDisplayXml", () => {
     `;
 
     expect(createFirstStaffDisplayXml(xml)).toBe(xml);
+  });
+
+  it("removes extra parts when the first part uses an implicit single staff", () => {
+    const output = createFirstStaffDisplayXml(`
+      <score-partwise>
+        <part-list>
+          <score-part id="P1"><part-name>Voice</part-name></score-part>
+          <score-part id="P2"><part-name>Piano</part-name></score-part>
+        </part-list>
+        <part id="P1">
+          <measure>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration><voice>1</voice>
+              <lyric><text>Sing</text></lyric>
+            </note>
+          </measure>
+        </part>
+        <part id="P2">
+          <measure><note><rest/><duration>1</duration><staff>1</staff></note></measure>
+        </part>
+      </score-partwise>
+    `);
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+
+    expect(xmlDoc.getElementsByTagName("part")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("score-part")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("part")[0].getAttribute("id")).toBe("P1");
+    expect(xmlDoc.getElementsByTagName("lyric")).toHaveLength(0);
+  });
+
+  it("removes text and forced system or page breaks from the practice display", () => {
+    const output = createFirstStaffDisplayXml(`
+      <score-partwise>
+        <part id="P1">
+          <measure>
+            <print new-system="yes" />
+            <direction><direction-type><words>dolce</words></direction-type></direction>
+            <harmony><root><root-step>C</root-step></root></harmony>
+            <figured-bass><figure><figure-number>6</figure-number></figure></figured-bass>
+            <note>
+              <pitch><step>C</step><octave>4</octave></pitch>
+              <duration>1</duration>
+              <lyric><text>Sing</text></lyric>
+              <notations><technical><fingering>1</fingering></technical></notations>
+            </note>
+          </measure>
+        </part>
+      </score-partwise>
+    `);
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+
+    expect(xmlDoc.getElementsByTagName("direction")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("harmony")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("figured-bass")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("print")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("lyric")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("fingering")[0].textContent).toBe("1");
+  });
+});
+
+describe("MusicXML part selection", () => {
+  const multipartXml = `
+    <score-partwise>
+      <part-list>
+        <score-part id="P1"><part-name>Voice</part-name></score-part>
+        <score-part id="P2"><part-name>Piano</part-name></score-part>
+      </part-list>
+      <part id="P1">
+        <measure><note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration></note></measure>
+      </part>
+      <part id="P2">
+        <measure><note><pitch><step>C</step><octave>3</octave></pitch><duration>1</duration></note></measure>
+      </part>
+    </score-partwise>
+  `;
+  const pianoXml = `
+    <score-partwise>
+      <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+      <part id="P1">
+        <measure>
+          <attributes>
+            <divisions>1</divisions><staves>2</staves>
+            <clef number="1"><sign>G</sign><line>2</line></clef>
+            <clef number="2"><sign>F</sign><line>4</line></clef>
+          </attributes>
+          <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff></note>
+          <backup><duration>1</duration></backup>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><staff>2</staff></note>
+        </measure>
+      </part>
+    </score-partwise>
+  `;
+
+  it("lists named score parts in document order", () => {
+    expect(getMusicXmlParts(multipartXml)).toEqual([
+      { id: "P1", name: "Voice" },
+      { id: "P2", name: "Piano" },
+    ]);
+  });
+
+  it("keeps only the selected part for the practice pipeline", () => {
+    const output = selectMusicXmlPart(multipartXml, "P2");
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+
+    expect(xmlDoc.getElementsByTagName("part")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("part")[0].getAttribute("id")).toBe("P2");
+    expect(xmlDoc.getElementsByTagName("score-part")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("part-name")[0].textContent).toBe("Piano");
+    expect(xmlDoc.getElementsByTagName("octave")[0].textContent).toBe("3");
+  });
+
+  it("disambiguates duplicate part names", () => {
+    expect(getMusicXmlParts(multipartXml.replace("Piano", "Voice"))).toEqual([
+      { id: "P1", name: "Voice (1)" },
+      { id: "P2", name: "Voice (2)" },
+    ]);
+  });
+
+  it("labels the two piano staves as hands", () => {
+    expect(getMusicXmlStaves(pianoXml)).toEqual([
+      { id: "1", name: "Right hand" },
+      { id: "2", name: "Left hand" },
+    ]);
+  });
+
+  it("renders and labels only the selected piano hand", () => {
+    const labelled = injectMelodicaLabels(pianoXml, {
+      keyCount: 32,
+      staffNumber: "2",
+      transpose: 0,
+    });
+    const labelledDoc = new DOMParser().parseFromString(labelled, "application/xml");
+    const labelledNotes = labelledDoc.getElementsByTagName("note");
+    expect(labelledNotes[0].getElementsByTagName("fingering")).toHaveLength(0);
+    expect(labelledNotes[1].getElementsByTagName("fingering")[0].textContent).toBe("C4");
+
+    const output = createFirstStaffDisplayXml(labelled, "2");
+    const xmlDoc = new DOMParser().parseFromString(output, "application/xml");
+    expect(xmlDoc.getElementsByTagName("note")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("octave")[0].textContent).toBe("4");
+    expect(xmlDoc.getElementsByTagName("staff")).toHaveLength(0);
+    expect(xmlDoc.getElementsByTagName("clef")).toHaveLength(1);
+    expect(xmlDoc.getElementsByTagName("sign")[0].textContent).toBe("F");
   });
 });
 

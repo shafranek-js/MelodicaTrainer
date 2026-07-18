@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMidiAccompanimentTracks,
   buildMidiPlaybackEvents,
   getMidiSecondsAtTick,
   MidiFileError,
@@ -185,6 +186,31 @@ describe("MIDI parsing", () => {
       name: "Melody",
       noteCount: 1,
     });
+  });
+
+  it("builds accompaniment from every melodic channel except the selected one", () => {
+    const bytes = midiFile(1, [
+      [tempo(0, 500_000)],
+      [
+        metaEvent(0, 0x03, text("Lead")),
+        midiEvent(0, 0x90, 72, 90),
+        midiEvent(480, 0x80, 72, 0),
+      ],
+      [
+        metaEvent(0, 0x03, text("Bass")),
+        midiEvent(0, 0x91, 48, 90),
+        midiEvent(480, 0x81, 48, 0),
+      ],
+    ]);
+    const score = parseMidiFile(bytes, "duet.mid");
+
+    const tracks = buildMidiAccompanimentTracks(score, "channel-0", 2, 32);
+
+    expect(tracks.map((track) => track.id)).toEqual(["channel-1"]);
+    expect(tracks[0].label).toBe("Bass — Ch. 2");
+    expect(tracks[0].events.flatMap((event) =>
+      event.notes.map((note) => note.name),
+    )).toEqual(["D3"]);
   });
 
   it("merges format-1 tracks that share a channel and supplies meta fallbacks", () => {

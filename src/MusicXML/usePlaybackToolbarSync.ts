@@ -5,9 +5,9 @@ import type { GameStats } from "./types";
 type UsePlaybackToolbarSyncOptions = {
   accuracy: number;
   canPlayback: boolean;
-  currentGameTimeMs: number;
   gameStats: GameStats;
   isLooping: boolean;
+  isPaused: boolean;
   isPlaying: boolean;
   onRestartPlayback: () => void;
   onSetTempo: (tempo: number) => void;
@@ -20,9 +20,9 @@ type UsePlaybackToolbarSyncOptions = {
 export const usePlaybackToolbarSync = ({
   accuracy,
   canPlayback,
-  currentGameTimeMs,
   gameStats,
   isLooping,
+  isPaused,
   isPlaying,
   onRestartPlayback,
   onSetTempo,
@@ -39,7 +39,7 @@ export const usePlaybackToolbarSync = ({
       canPlayback,
       gameStats,
       isLooping,
-      isPaused: !isPlaying && currentGameTimeMs > 0,
+      isPaused,
       isPlaying,
       onRestartPlayback,
       onToggleLoop,
@@ -51,9 +51,9 @@ export const usePlaybackToolbarSync = ({
   }, [
     accuracy,
     canPlayback,
-    currentGameTimeMs,
     gameStats,
     isLooping,
+    isPaused,
     isPlaying,
     onRestartPlayback,
     onSetTempo,

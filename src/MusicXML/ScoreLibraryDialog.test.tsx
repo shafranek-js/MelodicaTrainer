@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const userLibrary = vi.hoisted(() => ({
+  deleteFile: vi.fn().mockResolvedValue(undefined),
   directoryHandle: null as FileSystemDirectoryHandle | null,
   importFiles: vi.fn().mockResolvedValue({ copied: 1, errors: [], skipped: 0 }),
   index: { entries: [] as unknown[], issues: [], lastScanAt: null },
@@ -11,6 +12,7 @@ const userLibrary = vi.hoisted(() => ({
   permission: "unsupported" as string,
   reconnect: vi.fn(),
   rescan: vi.fn().mockResolvedValue(null),
+  updateMetadata: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./UserScoreLibraryContext", () => ({
@@ -43,6 +45,7 @@ const entry: ScoreLibraryEntry = {
 
 const localMidiEntry: UserScoreLibraryEntry = {
   bytes: 100,
+  difficulty: "beginner",
   fileName: "practice.mid",
   format: "midi",
   id: "user:bbb",
@@ -50,6 +53,7 @@ const localMidiEntry: UserScoreLibraryEntry = {
   relativePath: "midi/practice.mid",
   sha256: "b".repeat(64),
   sourceKind: "user",
+  tags: ["practice", "custom"],
   title: "Practice MIDI",
 };
 
@@ -97,7 +101,9 @@ describe("ScoreLibraryDialog", () => {
     userLibrary.index = { entries: [], issues: [], lastScanAt: null };
     userLibrary.permission = "unsupported";
     userLibrary.importFiles.mockClear();
+    userLibrary.deleteFile.mockClear();
     userLibrary.rescan.mockClear();
+    userLibrary.updateMetadata.mockClear();
     vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ catalogVersion: 1, entries: [rawEntry(entry)] })),
     ));
@@ -112,6 +118,8 @@ describe("ScoreLibraryDialog", () => {
     const entries: LibraryEntry[] = [entry, localMidiEntry];
     expect(filterScoreLibraryEntries(entries, { query: "arranger", difficulty: "all", favoriteIds: new Set(), format: "all", source: "all", tag: "all" })).toEqual([entry]);
     expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "all", favoriteIds: new Set(), format: "midi", source: "user", tag: "all" })).toEqual([localMidiEntry]);
+    expect(filterScoreLibraryEntries(entries, { query: "custom", difficulty: "beginner", favoriteIds: new Set(), format: "all", source: "user", tag: "practice" })).toEqual([localMidiEntry]);
+    expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "unrated", favoriteIds: new Set(), format: "all", source: "user", tag: "all" })).toEqual([]);
     expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "all", favoriteIds: new Set([entry.id, localMidiEntry.id]), format: "all", source: "favorites", tag: "all" })).toEqual(entries);
   });
 
@@ -194,6 +202,61 @@ describe("ScoreLibraryDialog", () => {
     const { container, root } = await renderDialog();
     expect(container.textContent).toContain("Reconnect folder");
     expect(container.textContent).not.toContain("Add files");
+    act(() => root.unmount());
+  });
+
+  it("edits local difficulty and tags without opening the score", async () => {
+    userLibrary.directoryHandle = { name: "Scores" } as FileSystemDirectoryHandle;
+    userLibrary.permission = "granted";
+    userLibrary.index = { entries: [localMidiEntry], issues: [], lastScanAt: null };
+    const onLoadScore = vi.fn();
+    const { container, root } = await renderDialog(onLoadScore);
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="Edit metadata for Practice MIDI"]') as HTMLButtonElement).click();
+    });
+    const difficultySelect = container.querySelector("#local-score-difficulty") as HTMLSelectElement;
+    const existingTagSelect = container.querySelector('select[aria-label="Add existing tag"]') as HTMLSelectElement;
+    await act(async () => {
+      difficultySelect.value = "advanced";
+      difficultySelect.dispatchEvent(new Event("change", { bubbles: true }));
+      existingTagSelect.value = "folk";
+      existingTagSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      await Promise.resolve();
+    });
+    const saveButton = [...container.querySelectorAll("button")].find((button) => button.textContent === "Save") as HTMLButtonElement;
+    await act(async () => {
+      saveButton.click();
+      await Promise.resolve();
+    });
+
+    expect(userLibrary.updateMetadata).toHaveBeenCalledWith(localMidiEntry.id, {
+      difficulty: "advanced",
+      tags: ["practice", "custom", "folk"],
+    });
+    expect(onLoadScore).not.toHaveBeenCalled();
+    act(() => root.unmount());
+  });
+
+  it("requires confirmation before deleting a local file", async () => {
+    userLibrary.directoryHandle = { name: "Scores" } as FileSystemDirectoryHandle;
+    userLibrary.permission = "granted";
+    userLibrary.index = { entries: [localMidiEntry], issues: [], lastScanAt: null };
+    const { container, root } = await renderDialog();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="Delete Practice MIDI"]') as HTMLButtonElement).click();
+    });
+    expect(container.textContent).toContain("This action cannot be undone");
+    expect(userLibrary.deleteFile).not.toHaveBeenCalled();
+    const deleteButton = [...container.querySelectorAll("button")].find((button) => button.textContent === "Delete file") as HTMLButtonElement;
+    await act(async () => {
+      deleteButton.click();
+      await Promise.resolve();
+    });
+
+    expect(userLibrary.deleteFile).toHaveBeenCalledWith(localMidiEntry);
+    expect(container.textContent).toContain("Deleted practice.mid.");
     act(() => root.unmount());
   });
 });

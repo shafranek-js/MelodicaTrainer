@@ -10,8 +10,10 @@ export type ScoreLibrarySourceFilter =
   | "user"
   | "favorites";
 
+export type ScoreLibraryDifficultyFilter = ScoreLibraryDifficulty | "unrated" | "all";
+
 export type ScoreLibraryFilters = {
-  difficulty: ScoreLibraryDifficulty | "all";
+  difficulty: ScoreLibraryDifficultyFilter;
   favoriteIds: ReadonlySet<string>;
   format: ScoreLibraryFormat | "all";
   query: string;
@@ -26,6 +28,8 @@ export const filterScoreLibraryEntries = (
   const normalizedQuery = filters.query.trim().toLocaleLowerCase();
   return entries.filter((entry) => {
     const publicEntry = entry.sourceKind === "public" ? entry : null;
+    const entryTags = entry.sourceKind === "public" ? entry.tags : entry.tags ?? [];
+    const entryDifficulty = entry.difficulty;
     const matchesSource =
       filters.source === "all" ||
       (filters.source === "favorites"
@@ -37,7 +41,7 @@ export const filterScoreLibraryEntries = (
         entry.title,
         entry.composer ?? "",
         publicEntry?.arranger ?? "",
-        publicEntry?.tags.join(" ") ?? "",
+        entryTags.join(" "),
         entry.fileName,
       ]
         .join(" ")
@@ -46,9 +50,12 @@ export const filterScoreLibraryEntries = (
     return (
       matchesQuery &&
       matchesSource &&
-      (filters.difficulty === "all" || publicEntry?.difficulty === filters.difficulty) &&
+      (filters.difficulty === "all" ||
+        (filters.difficulty === "unrated"
+          ? entryDifficulty === undefined
+          : entryDifficulty === filters.difficulty)) &&
       (filters.format === "all" || entry.format === filters.format) &&
-      (filters.tag === "all" || publicEntry?.tags.includes(filters.tag) === true)
+      (filters.tag === "all" || entryTags.includes(filters.tag))
     );
   });
 };

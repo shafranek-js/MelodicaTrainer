@@ -1,4 +1,4 @@
-import { AlertTriangle, FolderOpen, Library, Pin, PinOff } from "lucide-react";
+import { AlertTriangle, FolderOpen, Library, Pin, PinOff, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { Link } from "react-router-dom";
@@ -15,6 +15,10 @@ import type {
   ResolvedMidiQuantization,
 } from "./midiNotation";
 import type { ScoreFormat } from "./scoreFormat";
+import type {
+  MusicXmlPartInfo,
+  MusicXmlStaffInfo,
+} from "./musicXmlTransform";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string };
@@ -36,6 +40,10 @@ type GpTrack = {
 };
 
 type ScoreSettingsPanelProps = {
+  accompanimentChannelOverflow: boolean;
+  accompanimentTrackCount: number;
+  accompanimentVolume: number;
+  accompanimentWarnings: string[];
   availablePresets: AvailablePreset[];
   canTryHighFidelityMscz: boolean;
   canUseProcessedScore: boolean;
@@ -43,6 +51,8 @@ type ScoreSettingsPanelProps = {
   fileName: string | null;
   gpTracks: GpTrack[];
   midiParts: MidiPartInfo[];
+  musicXmlParts: MusicXmlPartInfo[];
+  musicXmlStaves: MusicXmlStaffInfo[];
   midiNotationStatus: MidiNotationStatus;
   midiNotationWarnings: string[];
   midiQuantizationMode: MidiQuantizationMode;
@@ -53,8 +63,11 @@ type ScoreSettingsPanelProps = {
   onDownloadMelodicaNotes: () => void;
   onDownloadTransposedXml: () => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onAccompanimentVolumeChange: (volume: number) => void;
   onGpTrackChange: (trackIndex: number) => void;
   onMidiPartChange: (partId: string) => void;
+  onMusicXmlPartChange: (partId: string) => void;
+  onMusicXmlStaffChange: (staffId: string) => void;
   onMidiQuantizationChange: (mode: MidiQuantizationMode) => void;
   onLibraryScoreLoad: (entry: LibraryEntry, signal: AbortSignal) => Promise<void>;
   onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
@@ -67,6 +80,8 @@ type ScoreSettingsPanelProps = {
   scoreFormat: ScoreFormat | null;
   selectedGpTrackIndex: number;
   selectedMidiPartId: string | null;
+  selectedMusicXmlPartId: string | null;
+  selectedMusicXmlStaffId: string | null;
   resolvedMidiQuantization: ResolvedMidiQuantization | null;
   selectedPreset: string;
   selectedSoundFont: string;
@@ -74,6 +89,10 @@ type ScoreSettingsPanelProps = {
 };
 
 export const ScoreSettingsPanel = ({
+  accompanimentChannelOverflow,
+  accompanimentTrackCount,
+  accompanimentVolume,
+  accompanimentWarnings,
   availablePresets,
   canTryHighFidelityMscz,
   canUseProcessedScore,
@@ -81,6 +100,8 @@ export const ScoreSettingsPanel = ({
   fileName,
   gpTracks,
   midiParts,
+  musicXmlParts,
+  musicXmlStaves,
   midiNotationStatus,
   midiNotationWarnings,
   midiQuantizationMode,
@@ -91,8 +112,11 @@ export const ScoreSettingsPanel = ({
   onDownloadMelodicaNotes,
   onDownloadTransposedXml,
   onFileChange,
+  onAccompanimentVolumeChange,
   onGpTrackChange,
   onMidiPartChange,
+  onMusicXmlPartChange,
+  onMusicXmlStaffChange,
   onMidiQuantizationChange,
   onLibraryScoreLoad,
   onMelodicaRangeChange,
@@ -105,6 +129,8 @@ export const ScoreSettingsPanel = ({
   scoreFormat,
   selectedGpTrackIndex,
   selectedMidiPartId,
+  selectedMusicXmlPartId,
+  selectedMusicXmlStaffId,
   resolvedMidiQuantization,
   selectedPreset,
   selectedSoundFont,
@@ -196,8 +222,9 @@ export const ScoreSettingsPanel = ({
 
       {scoreFormat === "guitar-pro" && gpTracks.length > 0 && (
         <div>
-          <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">GP Track</label>
+          <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Part</label>
           <select
+            aria-label="Part"
             value={selectedGpTrackIndex}
             onChange={(e) => onGpTrackChange(Number(e.target.value))}
             className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -211,11 +238,60 @@ export const ScoreSettingsPanel = ({
         </div>
       )}
 
+      {scoreFormat === "musicxml" &&
+        musicXmlParts.length > 0 &&
+        selectedMusicXmlPartId && (
+          <div>
+            <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">
+              Part
+            </label>
+            <select
+              aria-label="Part"
+              value={selectedMusicXmlPartId}
+              onChange={(event) => onMusicXmlPartChange(event.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            >
+              {musicXmlParts.map((part) => (
+                <option key={part.id} value={part.id}>
+                  {part.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+      {scoreFormat === "musicxml" &&
+        musicXmlStaves.length > 1 &&
+        selectedMusicXmlStaffId && (
+          <div>
+            <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">
+              {musicXmlStaves.some((staff) => staff.name.endsWith("hand"))
+                ? "Hand"
+                : "Staff"}
+            </label>
+            <select
+              aria-label={musicXmlStaves.some((staff) => staff.name.endsWith("hand"))
+                ? "Hand"
+                : "Staff"}
+              value={selectedMusicXmlStaffId}
+              onChange={(event) => onMusicXmlStaffChange(event.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            >
+              {musicXmlStaves.map((staff) => (
+                <option key={staff.id} value={staff.id}>
+                  {staff.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
       {scoreFormat === "midi" && midiParts.length > 0 && selectedMidiPartId && (
         <div className="space-y-4">
           <div>
-            <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">MIDI Part</label>
+            <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Part</label>
             <select
+              aria-label="Part"
               value={selectedMidiPartId}
               onChange={(e) => onMidiPartChange(e.target.value)}
               className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
@@ -254,6 +330,48 @@ export const ScoreSettingsPanel = ({
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {accompanimentTrackCount > 0 && (
+        <div className="rounded-xl border border-gray-700 bg-gray-950/55 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <label
+              className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400"
+              htmlFor="background-accompaniment-volume"
+            >
+              {accompanimentVolume === 0
+                ? <VolumeX size={13} />
+                : <Volume2 size={13} />}
+              Background accompaniment
+            </label>
+            <span className="text-[10px] font-black text-emerald-400">
+              {accompanimentVolume === 0 ? "Muted" : `${accompanimentVolume}%`}
+            </span>
+          </div>
+          <input
+            aria-label="Background accompaniment volume"
+            className="h-1 w-full accent-emerald-500"
+            id="background-accompaniment-volume"
+            max="100"
+            min="0"
+            onChange={(event) => onAccompanimentVolumeChange(Number(event.target.value))}
+            type="range"
+            value={accompanimentVolume}
+          />
+          <p className="mt-2 text-[9px] leading-relaxed text-gray-500">
+            {accompanimentTrackCount} hidden {accompanimentTrackCount === 1 ? "part" : "parts"} · practice scoring uses only the selected part.
+          </p>
+          {(accompanimentWarnings.length > 0 || accompanimentChannelOverflow) && (
+            <p className="mt-1 text-[9px] leading-relaxed text-amber-400">
+              {accompanimentWarnings.length > 0
+                ? `${accompanimentWarnings.length} background part could not be prepared. `
+                : ""}
+              {accompanimentChannelOverflow
+                ? "Some background parts share an audio channel."
+                : ""}
+            </p>
+          )}
         </div>
       )}
     </div>

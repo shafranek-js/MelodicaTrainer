@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type * as alphaTab from "@coderline/alphatab";
-import { parseAlphaTabScore } from "./alphaTabParser";
+import { buildAlphaTabPlaybackSelection, parseAlphaTabScore } from "./alphaTabParser";
 
 type TestBeat = {
     playbackStart: number;
@@ -52,6 +52,32 @@ const makeScore = (
 }) as unknown as alphaTab.model.Score;
 
 describe("parseAlphaTabScore", () => {
+    it("builds hidden GP tracks without duplicating the selected track", () => {
+        const bars = [{
+            voices: [{
+                beats: [{ playbackStart: 0, playbackDuration: 480, notes: [{ realValue: 60 }] }],
+            }],
+        }];
+        const score = {
+            tempo: 120,
+            midiTickResolution: 960,
+            masterBars: [masterBar(0)],
+            tracks: [
+                { name: "Lead", staves: [{ bars }] },
+                { name: "Bass", staves: [{ bars: [{ voices: [{ beats: [{ playbackStart: 0, playbackDuration: 480, notes: [{ realValue: 48 }] }] }] }] }] },
+            ],
+        } as unknown as alphaTab.model.Score;
+
+        const result = buildAlphaTabPlaybackSelection(score, "C", 0, 0);
+
+        expect(result.events.flatMap((event) => event.notes.map((note) => note.name))).toEqual(["C4"]);
+        expect(result.accompanimentTracks.map((track) => track.label)).toEqual(["Bass"]);
+        expect(result.accompanimentTracks[0].events[0].notes).toEqual([]);
+        expect(result.accompanimentTracks[0].events.flatMap((event) =>
+            event.notes.map((note) => note.name),
+        )).toEqual(["C3"]);
+    });
+
     it("uses score tempo and applies tempo automations to later beats", () => {
         const score = makeScore(
             [

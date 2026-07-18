@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import type { MutableRefObject } from "react";
 import * as alphaTab from "@coderline/alphatab";
-import { parseAlphaTabScore } from "./alphaTabParser";
+import { buildAlphaTabPlaybackSelection } from "./alphaTabParser";
 import { createAlphaTabSettings } from "./alphaTabSettings";
 import { getAutoFitZoom, measureRenderedContentHeight } from "./alphaTabAutoFit";
 import { getSelectedTrack, getTracksInfo, type TrackInfo } from "./alphaTabTrack";
@@ -9,6 +9,7 @@ import { musicXmlDebugLogger } from "./debugLogger";
 import { useAlphaTabEvents } from "./useAlphaTabEvents";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent } from "./types";
+import type { AccompanimentTrack } from "./accompaniment";
 
 type WindowWithAlphaTabApiDebug = Window & {
   alphaTabApi?: alphaTab.AlphaTabApi;
@@ -34,6 +35,8 @@ type UseAlphaTabApiOptions = {
       score: alphaTab.model.Score,
       tracks: TrackInfo[],
       tempo: number,
+      accompanimentTracks: AccompanimentTrack[],
+      accompanimentWarnings: string[],
     ) => void
   >;
   onTimeUpdateRef: MutableRefObject<(currentTimeMs: number) => void>;
@@ -114,13 +117,20 @@ export const useAlphaTabApi = ({
     (score: alphaTab.model.Score) => {
       const selected = getSelectedTrack(score, trackIndexRef.current);
       const selectedTrackIndex = selected?.index ?? 0;
-      const { events, tempo } = parseAlphaTabScore(
+      const playback = buildAlphaTabPlaybackSelection(
         score,
         keyCountRef.current,
         selectedTrackIndex,
         transposeRef.current,
       );
-      onScoreLoadedRef.current(events, score, getTracksInfo(score), tempo);
+      onScoreLoadedRef.current(
+        playback.events,
+        score,
+        getTracksInfo(score),
+        playback.tempo,
+        playback.accompanimentTracks,
+        playback.accompanimentWarnings,
+      );
     },
     [keyCountRef, onScoreLoadedRef, trackIndexRef, transposeRef],
   );

@@ -11,6 +11,7 @@ import type { ReactNode } from "react";
 import {
   chooseUserScoreLibraryFolder,
   clearStoredUserScoreLibrary,
+  deleteUserScoreFile,
   emptyUserScoreLibraryIndex,
   importUserScoreFiles,
   isUserScoreLibrarySupported,
@@ -19,16 +20,20 @@ import {
   requestUserScoreLibraryPermission,
   saveStoredUserScoreLibrary,
   scanUserScoreLibrary,
+  updateUserScoreLibraryMetadata,
 } from "./userScoreLibrary";
 import type {
+  UserScoreLibraryEntry,
   UserScoreLibraryImportResult,
   UserScoreLibraryIndex,
+  UserScoreLibraryMetadata,
   UserScoreLibraryPermission,
   UserScoreLibraryScanSummary,
 } from "./userScoreLibrary";
 
 type UserScoreLibraryContextValue = {
   chooseFolder: () => Promise<void>;
+  deleteFile: (entry: UserScoreLibraryEntry) => Promise<void>;
   directoryHandle: FileSystemDirectoryHandle | null;
   disconnect: () => Promise<void>;
   error: string | null;
@@ -41,6 +46,7 @@ type UserScoreLibraryContextValue = {
   rescan: () => Promise<UserScoreLibraryScanSummary | null>;
   scanSummary: UserScoreLibraryScanSummary | null;
   supported: boolean;
+  updateMetadata: (entryId: string, metadata: UserScoreLibraryMetadata) => Promise<void>;
 };
 
 const UserScoreLibraryContext = createContext<UserScoreLibraryContextValue | null>(null);
@@ -190,6 +196,53 @@ export const UserScoreLibraryProvider = ({ children }: { children: ReactNode }) 
     return result;
   }, [permission, rescan]);
 
+  const deleteFile = useCallback(async (entry: UserScoreLibraryEntry) => {
+    const handle = handleRef.current;
+    if (!handle) throw new Error("Connect the local library folder first.");
+    await scanPromiseRef.current;
+    const currentPermission = await queryUserScoreLibraryPermission(handle);
+    setPermission(currentPermission);
+    if (currentPermission !== "granted") {
+      throw new Error("Reconnect the local library folder before deleting files.");
+    }
+
+    setError(null);
+    try {
+      await deleteUserScoreFile(handle, entry);
+      const currentIndex = indexRef.current;
+      const nextIndex: UserScoreLibraryIndex = {
+        entries: currentIndex.entries.filter((candidate) => candidate.id !== entry.id),
+        issues: currentIndex.issues.filter((issue) => issue.relativePath !== entry.relativePath),
+        lastScanAt: new Date().toISOString(),
+      };
+      indexRef.current = nextIndex;
+      setIndex(nextIndex);
+      await saveStoredUserScoreLibrary({ directoryHandle: handle, index: nextIndex });
+    } catch (deleteError) {
+      setError(errorMessage(deleteError));
+      throw deleteError;
+    }
+  }, []);
+
+  const updateMetadata = useCallback(async (
+    entryId: string,
+    metadata: UserScoreLibraryMetadata,
+  ) => {
+    const handle = handleRef.current;
+    if (!handle) throw new Error("Connect the local library folder first.");
+    await scanPromiseRef.current;
+    setError(null);
+    try {
+      const nextIndex = updateUserScoreLibraryMetadata(indexRef.current, entryId, metadata);
+      indexRef.current = nextIndex;
+      setIndex(nextIndex);
+      await saveStoredUserScoreLibrary({ directoryHandle: handle, index: nextIndex });
+    } catch (metadataError) {
+      setError(errorMessage(metadataError));
+      throw metadataError;
+    }
+  }, []);
+
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && handleRef.current) void rescan();
@@ -220,6 +273,7 @@ export const UserScoreLibraryProvider = ({ children }: { children: ReactNode }) 
 
   const value = useMemo<UserScoreLibraryContextValue>(() => ({
     chooseFolder,
+    deleteFile,
     directoryHandle,
     disconnect,
     error,
@@ -232,8 +286,10 @@ export const UserScoreLibraryProvider = ({ children }: { children: ReactNode }) 
     rescan,
     scanSummary,
     supported,
+    updateMetadata,
   }), [
     chooseFolder,
+    deleteFile,
     directoryHandle,
     disconnect,
     error,
@@ -246,6 +302,7 @@ export const UserScoreLibraryProvider = ({ children }: { children: ReactNode }) 
     rescan,
     scanSummary,
     supported,
+    updateMetadata,
   ]);
 
   return <UserScoreLibraryContext.Provider value={value}>{children}</UserScoreLibraryContext.Provider>;

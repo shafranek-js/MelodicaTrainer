@@ -3,6 +3,7 @@ import { Note } from "tonal";
 import { getMelodicaKeyLabelForNote } from "../utils/utils";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent, PlaybackNote } from "./types";
+import type { AccompanimentTrack } from "./accompaniment";
 
 const DEFAULT_MIDI_TEMPO_BPM = 120;
 const MIDI_START_GROUP_PRECISION = 1_000_000;
@@ -436,6 +437,20 @@ export const buildMidiPlaybackEvents = (
 
   return events;
 };
+
+export const buildMidiAccompanimentTracks = (
+  score: ParsedMidiScore,
+  selectedPartId: string,
+  transpose: number,
+  keyCount: MelodicaKeyCount,
+): AccompanimentTrack[] => score.parts
+  .filter((part) => part.id !== selectedPartId)
+  .map((part) => ({
+    events: buildMidiPlaybackEvents(score, part.id, transpose, keyCount),
+    id: part.id,
+    label: `${part.name} — Ch. ${part.channel + 1}`,
+  }))
+  .filter((track) => track.events.some((event) => event.notes.length > 0));
 
 export const getMidiFileErrorMessage = (error: unknown) =>
   error instanceof MidiFileError ? error.userMessage : null;

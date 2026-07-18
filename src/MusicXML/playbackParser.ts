@@ -2,13 +2,14 @@ import type { PlaybackEvent, PlaybackNote } from "./types";
 import {
   getFirstPartMeasures,
   getFirstStaffNumber,
-  isFirstStaffNote,
+  isStaffNote,
 } from "./musicXmlSelection";
 import { parseMusicXmlDocument } from "./musicXmlParser";
 import { addLeadInIfNeeded } from "./playbackLeadIn";
 
 type ParsePlaybackEventsOptions = {
   addLeadIn?: boolean;
+  staffNumber?: string | null;
 };
 
 export const getPitchNoteName = (pitch: Element): string | null => {
@@ -230,7 +231,8 @@ export const parsePlaybackEvents = (
   let nextCursorPositionIndex = 0;
   let leadInBeats = 4;
   const firstPart = xmlDoc.getElementsByTagName("part")[0];
-  const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
+  const firstStaffNumber = options.staffNumber ??
+    (firstPart ? getFirstStaffNumber(firstPart) : null);
 
   Array.from(xmlDoc.getElementsByTagName("sound")).some((sound) => {
     const tempo = Number(sound.getAttribute("tempo"));
@@ -301,7 +303,7 @@ export const parsePlaybackEvents = (
         cursorPosition += duration;
       }
 
-      if (!isFirstStaffNote(child, firstStaffNumber)) return;
+      if (!isStaffNote(child, firstStaffNumber)) return;
 
       const tab = getTabFromNote(child);
       const ties = getTies(child);

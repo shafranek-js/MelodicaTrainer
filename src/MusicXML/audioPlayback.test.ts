@@ -144,4 +144,28 @@ describe("audio playback helpers", () => {
 
     expect(delays).toEqual([250]);
   });
+
+  it("uses isolated channels and applies live accompaniment volume", async () => {
+    vi.useFakeTimers();
+    const synth = makeSynth();
+    const service = new AudioPlaybackService({
+      baseUrl: "/",
+      createSynthesizer: () => synth as never,
+      fetchFn: vi.fn(makeFetchResponse) as unknown as typeof fetch,
+      logger: { log: vi.fn(), warn: vi.fn() },
+    });
+    await service.initSynthesizer(makeAudioContext(), "test.sf2");
+
+    service.changeInstrument(22, 0);
+    service.setAccompanimentVolume(10);
+    service.playPlaybackNotes([makeNote()], 120, 1, 2);
+
+    expect(synth.programChange).toHaveBeenCalledWith(0, 22);
+    expect(synth.programChange).toHaveBeenCalledWith(2, 22);
+    expect(synth.controllerChange).toHaveBeenCalledWith(2, 7, 10);
+    expect(synth.noteOn).toHaveBeenCalledWith(2, 60, 101);
+
+    await vi.runOnlyPendingTimersAsync();
+    expect(synth.noteOff).toHaveBeenCalledWith(2, 60);
+  });
 });

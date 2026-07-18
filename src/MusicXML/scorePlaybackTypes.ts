@@ -2,6 +2,7 @@ import type { MutableRefObject } from "react";
 import type { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import type { AlphaTabViewerRef } from "./AlphaTabViewer";
 import type { PlaybackEvent, PlaybackTiming } from "./types";
+import type { ScheduledAccompanimentEvent } from "./accompaniment";
 
 export type RouteStatus = {
   tone: "info" | "success" | "error";
@@ -9,6 +10,7 @@ export type RouteStatus = {
 };
 
 export type UseScorePlaybackRefs = {
+  accompanimentTimerRef: MutableRefObject<number | null>;
   alphaTabRef: MutableRefObject<AlphaTabViewerRef | null>;
   audioContextRef: MutableRefObject<AudioContext | null>;
   cursorEventIndexRef: MutableRefObject<number | null>;
@@ -29,6 +31,8 @@ export type UseScorePlaybackRefs = {
 };
 
 export type UseScorePlaybackState = {
+  accompanimentSchedule: ScheduledAccompanimentEvent[];
+  accompanimentVolume: number;
   canPlayback: boolean;
   currentEventIndex: number;
   currentGameTimeMs: number;

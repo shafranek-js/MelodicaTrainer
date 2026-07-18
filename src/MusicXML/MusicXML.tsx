@@ -57,6 +57,12 @@ import {
   MusicXmlWorkspace,
   ScoreWindowPanel,
 } from "./MusicXmlRoutePanels";
+import {
+  buildAccompanimentSchedule,
+  hasAccompanimentChannelOverflow,
+  sanitizeAccompanimentVolume,
+  type AccompanimentTrack,
+} from "./accompaniment";
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string; };
@@ -111,6 +117,11 @@ const MusicXML: React.FC = () => {
   const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("melodicatrainer_show_note_names", true, { legacyKeys: LEGACY_STORAGE_KEYS.showNoteNames, sanitize: sanitizeBoolean });
   const [fingeringGuide, setFingeringGuide] = usePersistentState<string>("melodicatrainer_fingering_guide", "numbers", { sanitize: sanitizeString });
   const [isStudyMode, setIsStudyMode] = usePersistentState<boolean>("melodicatrainer_study_mode", false, { sanitize: sanitizeBoolean });
+  const [accompanimentVolume, setAccompanimentVolume] = usePersistentState<number>(
+    "melodicatrainer_accompaniment_volume",
+    10,
+    { sanitize: sanitizeAccompanimentVolume },
+  );
   const [userTempoBpm, setUserTempoBpm] = usePersistentState<number | null>("melodicatrainer_user_tempo", null, { legacyKeys: LEGACY_STORAGE_KEYS.tempo, sanitize: sanitizeNullableTempo });
   const [midiQuantizationMode, setMidiQuantizationMode] =
     usePersistentState<MidiQuantizationMode>(
@@ -154,6 +165,7 @@ const MusicXML: React.FC = () => {
   const [currentGameTimeMs, setCurrentGameTimeMs] = useState(0);
   const [isSheetReady, setIsSheetReady] = useState(false);
   const [hasSheetRenderError, setHasSheetRenderError] = useState(false);
+  const [osmdScorePaneHeightPx, setOsmdScorePaneHeightPx] = useState(128);
   const [playbackEvents, setPlaybackEvents] = useState<PlaybackEvent[]>([]);
   const [playbackCompletionId, setPlaybackCompletionId] = useState(0);
   const [isTryingHighFidelityMscz, setIsTryingHighFidelityMscz] = useState(false);
@@ -185,6 +197,7 @@ const MusicXML: React.FC = () => {
     selectedSoundFont: selectedSf,
   });
   const playbackTimerRef = useRef<number | null>(null);
+  const accompanimentTimerRef = useRef<number | null>(null);
   const playbackRunRef = useRef(0);
   const cursorEventIndexRef = useRef<number | null>(null);
   const gameClockFrameRef = useRef<number | null>(null);
@@ -194,6 +207,8 @@ const MusicXML: React.FC = () => {
   const isPlayingRef = useRef(false);
   const moveCursorThroughEventRef = useRef<(eventIndex: number, durationMs: number) => void>(() => {});
   const {
+    gpAccompanimentTracks,
+    gpAccompanimentWarnings,
     gpOriginalMidiNumbers,
     gpScorePaneHeightPx,
     gpTracks,
@@ -217,7 +232,18 @@ const MusicXML: React.FC = () => {
     transpose,
   });
 
-  const { displayFileContent, fileContent } = useMusicXmlScore({
+  const {
+    displayFileContent,
+    fileContent,
+    handleMusicXmlPartChange,
+    handleMusicXmlStaffChange,
+    musicXmlAccompanimentTracks,
+    musicXmlAccompanimentWarnings,
+    musicXmlParts,
+    musicXmlStaves,
+    selectedMusicXmlPartId,
+    selectedMusicXmlStaffId,
+  } = useMusicXmlScore({
     keyCount,
     rawFileContent,
     scoreFormat,
@@ -230,6 +256,7 @@ const MusicXML: React.FC = () => {
 
   const {
     handleMidiPartChange,
+    midiAccompanimentTracks,
     midiDisplayFileContent,
     midiNotationStatus,
     midiNotationWarnings,
@@ -253,6 +280,30 @@ const MusicXML: React.FC = () => {
     setTranspose,
     transpose,
   });
+
+  const accompanimentTracks = useMemo<AccompanimentTrack[]>(() => {
+    if (scoreFormat === "guitar-pro") return gpAccompanimentTracks;
+    if (scoreFormat === "midi") return midiAccompanimentTracks;
+    if (scoreFormat === "musicxml") return musicXmlAccompanimentTracks;
+    return [];
+  }, [
+    gpAccompanimentTracks,
+    midiAccompanimentTracks,
+    musicXmlAccompanimentTracks,
+    scoreFormat,
+  ]);
+  const accompanimentWarnings = useMemo(() => {
+    if (scoreFormat === "guitar-pro") return gpAccompanimentWarnings;
+    if (scoreFormat === "musicxml") return musicXmlAccompanimentWarnings;
+    return [];
+  }, [gpAccompanimentWarnings, musicXmlAccompanimentWarnings, scoreFormat]);
+  const accompanimentSchedule = useMemo(
+    () => buildAccompanimentSchedule(accompanimentTracks),
+    [accompanimentTracks],
+  );
+  const accompanimentChannelOverflow = hasAccompanimentChannelOverflow(
+    accompanimentTracks.length,
+  );
 
   const handleOsmdRendered = useCallback(() => {
     setHasSheetRenderError(false);
@@ -280,6 +331,7 @@ const MusicXML: React.FC = () => {
       : displayFileContent,
     onRenderError: handleOsmdRenderError,
     onRendered: handleOsmdRendered,
+    onRenderedHeightChange: setOsmdScorePaneHeightPx,
     scoreFormat,
   });
   useEffect(() => {
@@ -379,6 +431,7 @@ const MusicXML: React.FC = () => {
       stopGpCursorAnimation,
     },
     refs: {
+      accompanimentTimerRef,
       alphaTabRef,
       audioContextRef,
       cursorEventIndexRef,
@@ -396,6 +449,8 @@ const MusicXML: React.FC = () => {
       tempoScaleRef,
     },
     state: {
+      accompanimentSchedule,
+      accompanimentVolume,
       canPlayback,
       currentEventIndex,
       currentGameTimeMs,
@@ -434,9 +489,9 @@ const MusicXML: React.FC = () => {
   usePlaybackToolbarSync({
     accuracy,
     canPlayback,
-    currentGameTimeMs,
     gameStats,
     isLooping,
+    isPaused: !isPlaying && currentGameTimeMs > 0,
     isPlaying,
     onRestartPlayback: handleRestartPlayback,
     onSetTempo: handleSetTempo,
@@ -594,6 +649,7 @@ const MusicXML: React.FC = () => {
         }}
         alphaTabRef={alphaTabRef}
         gpScorePaneHeightPx={gpScorePaneHeightPx}
+        osmdScorePaneHeightPx={osmdScorePaneHeightPx}
         midiSummary={midiScore && selectedMidiPart ? {
           durationSeconds: selectedMidiPart.durationSeconds,
           fileName: midiScore.fileName,
@@ -652,6 +708,10 @@ const MusicXML: React.FC = () => {
         onRightDrawerHoverChange={panels.setIsRightDrawerHovered}
         onTogglePlayback={togglePlayback}
         scoreSettingsProps={{
+          accompanimentChannelOverflow,
+          accompanimentTrackCount: accompanimentTracks.length,
+          accompanimentVolume,
+          accompanimentWarnings,
           availablePresets,
           canTryHighFidelityMscz: highFidelityMsczFile !== null,
           canUseProcessedScore,
@@ -663,6 +723,8 @@ const MusicXML: React.FC = () => {
           keyCount,
           melodicaRanges: melodicaRangeOptions,
           midiParts,
+          musicXmlParts,
+          musicXmlStaves,
           midiNotationStatus: scoreFormat === "midi" && hasSheetRenderError
             ? "unavailable"
             : midiNotationStatus,
@@ -671,11 +733,20 @@ const MusicXML: React.FC = () => {
           onDownloadMelodicaNotes: downloadMelodicaNotes,
           onDownloadTransposedXml: downloadTransposedXml,
           onFileChange: handleFileChange,
+          onAccompanimentVolumeChange: setAccompanimentVolume,
           onGpTrackChange: (trackIndex) => handleGpTrackChange(trackIndex, handleRestartPlayback),
           onLibraryScoreLoad: handleLibraryScoreLoad,
           onMidiPartChange: (partId) => {
             stopPlayback(true);
             handleMidiPartChange(partId);
+          },
+          onMusicXmlPartChange: (partId) => {
+            stopPlayback(true);
+            handleMusicXmlPartChange(partId);
+          },
+          onMusicXmlStaffChange: (staffId) => {
+            stopPlayback(true);
+            handleMusicXmlStaffChange(staffId);
           },
           onMidiQuantizationChange: (mode) => {
             stopPlayback(true);
@@ -694,6 +765,8 @@ const MusicXML: React.FC = () => {
           scoreFormat,
           selectedGpTrackIndex,
           selectedMidiPartId,
+          selectedMusicXmlPartId,
+          selectedMusicXmlStaffId,
           resolvedMidiQuantization,
           selectedPreset,
           selectedSoundFont: selectedSf,

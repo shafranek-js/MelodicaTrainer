@@ -69,7 +69,9 @@ MusicXML/MXL files are rendered with OpenSheetMusicDisplay. MSCZ files are conve
 
 MSCZ conversion happens entirely in the browser; the file is not uploaded. MuseScore-specific layout or playback details may not have a MusicXML equivalent. The app blocks files when notes or durations are lost, and shows a warning when only non-critical notation details were simplified. After a blocked conversion or a warning, `Try high-fidelity conversion` can load an optional MuseScore 4.0 compatibility engine of about 18 MB. It is downloaded only after your click and still processes the file locally.
 
-Important: MusicXML playback/rendering focuses on the first relevant part/staff. Guitar Pro uses the selected `GP Track`. MIDI uses the selected melodic `MIDI Part`; channel 10 drums are excluded.
+Choose the practice `Part` for MusicXML/MXL/MSCZ, Guitar Pro, and MIDI. A two-staff keyboard part also provides a `Hand` selector. Only the selected part or hand is rendered, shown in Note Highway, and used for scoring. MIDI channel 10 drums are excluded.
+
+When the score contains other playable parts, `Background accompaniment` plays them quietly with the same SoundFont and Instrument. Its slider controls all hidden parts from `Muted` to `100%` and is saved in this browser. Background notes follow tempo, pause, loop, transpose, and Study Mode, but never count as hits or misses.
 
 ### Left Panel
 
@@ -80,8 +82,9 @@ The left panel contains file and sound settings.
 | `Melodica Range` | Selects the range used for labels and Note Highway. |
 | `SoundFont` | Selects the sound bank for playback. |
 | `Instrument` | Selects an instrument inside the SoundFont, when available. |
-| `GP Track` | Selects the Guitar Pro track. Only visible for GP files. |
-| `MIDI Part` | Selects a melodic MIDI channel. Only visible for MIDI files. |
+| `Part` | Selects the MusicXML/MSCZ part, Guitar Pro track, or melodic MIDI channel. |
+| `Hand` | Selects the right or left staff of a two-staff keyboard part. |
+| `Background accompaniment` | Sets the volume of hidden playable parts. Only visible when accompaniment is available. |
 | `Notation grid` | Chooses automatic or fixed quantization for approximate MIDI notation. Only visible for MIDI files. |
 | `Load XML/GP/MIDI/MSCZ` | Loads a new file. |
 | `Browse library` | Opens public scores and files indexed from your private folder. |
@@ -96,8 +99,10 @@ Click `Browse library` to open the combined score library.
 - `My files` contains supported files found in the folder selected in `Settings`.
 - Click the star on any public or local score to add it to `Favourites`. The selection is saved in this browser.
 - Choose `Favourites` in the source filter to show only starred scores.
-- Use the source, format, difficulty, and tag filters to narrow the list. Difficulty and public tags apply only to public entries.
+- Use the source, format, difficulty, and tag filters to narrow the list. Local scores can use the same difficulty and tag filters as public scores.
 - Local entries have a `LOCAL` badge and are opened directly from your device; they are not downloaded from or uploaded to a server.
+- On a local score, use the pencil button to set its difficulty and tags. These labels stay in this browser and survive folder rescans.
+- Use the trash button to delete a local file. The app shows the exact relative path and asks for confirmation because deletion from the selected folder cannot be undone.
 
 Before a folder is configured, the library shows `Set up local library`. After the folder is connected, it shows `Add files` and `Refresh`.
 
@@ -210,6 +215,10 @@ The folder and all its subfolders are scanned recursively for:
 - MIDI: `.mid`, `.midi`
 
 You can organize files in subfolders and copy files into the folder manually while MelodicaTrainer is closed. The app rescans when it starts, when the score library opens, when the browser tab becomes active, and when supported browsers report a folder change. Use `Rescan` in Settings or `Refresh` in the library whenever you want an immediate check.
+
+In `Browse library`, the pencil button on each local score lets you assign `Beginner`, `Intermediate`, or `Advanced` difficulty and up to 20 custom tags. The metadata is stored in the browser's local index, not written into your score file. It is preserved when the file changes or is renamed and the app can match it by path or file hash.
+
+The trash button permanently removes the selected file from the connected folder after a confirmation step. It removes only that file, never its parent folder or public catalog entries. `Disconnect` remains non-destructive and only forgets browser access and the local index.
 
 Files larger than 10 MB, damaged files, and unsupported formats are not added as playable entries. Settings lists any file problems found during a scan. One bad file does not stop other files from being indexed.
 

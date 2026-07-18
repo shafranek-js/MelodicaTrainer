@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { findBestMelodicaTransposeIntervals } from "./musicXmlTransform";
+import {
+  createFirstStaffDisplayXml,
+  findBestMelodicaTransposeIntervals,
+} from "./musicXmlTransform";
 import {
   buildMidiPlaybackEvents,
+  buildMidiAccompanimentTracks,
   getMidiFileErrorMessage,
   parseMidiFile,
 } from "./midiParser";
@@ -42,6 +46,14 @@ type ParsedMidiResult = {
   error: unknown | null;
   score: ParsedMidiScore | null;
 };
+
+export const createMidiDisplayXml = (
+  musicXml: string,
+  keyCount: MelodicaKeyCount,
+  transpose: number,
+) => createFirstStaffDisplayXml(
+  injectMelodicaLabels(musicXml, { keyCount, transpose }),
+);
 
 export const useMidiScore = ({
   fileName,
@@ -109,6 +121,16 @@ export const useMidiScore = ({
     [parsedResult.score, selectedMidiPartId],
   );
 
+  const midiAccompanimentTracks = useMemo(() => {
+    if (!parsedResult.score || !selectedMidiPart) return [];
+    return buildMidiAccompanimentTracks(
+      parsedResult.score,
+      selectedMidiPart.id,
+      transpose,
+      keyCount,
+    );
+  }, [keyCount, parsedResult.score, selectedMidiPart, transpose]);
+
   const notationResult = useMemo<MidiNotationResult | null>(() => {
     if (!isMidiFile || !parsedResult.score || !selectedMidiPart) return null;
     try {
@@ -126,10 +148,7 @@ export const useMidiScore = ({
   const midiDisplayFileContent = useMemo(() => {
     if (!notationResult) return null;
     try {
-      return injectMelodicaLabels(notationResult.musicXml, {
-        keyCount,
-        transpose,
-      });
+      return createMidiDisplayXml(notationResult.musicXml, keyCount, transpose);
     } catch (error) {
       console.error("MIDI notation transform error:", error);
       return null;
@@ -207,6 +226,7 @@ export const useMidiScore = ({
 
   return {
     handleMidiPartChange,
+    midiAccompanimentTracks,
     midiOriginalMidiNumbers: selectedMidiPart?.originalMidiNumbers ?? [],
     midiDisplayFileContent,
     midiNotationStatus,

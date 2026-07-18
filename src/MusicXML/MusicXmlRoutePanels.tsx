@@ -24,6 +24,7 @@ type ScoreWindowPanelProps = {
   };
   alphaTabRef: RefObject<AlphaTabViewerRef | null>;
   gpScorePaneHeightPx: number;
+  osmdScorePaneHeightPx: number;
   midiSummary: MidiSummaryData | null;
   midiNotationStatus: MidiNotationStatus;
   midiNotationWarnings: string[];
@@ -77,6 +78,7 @@ export const ScoreWindowPanel = ({
   alphaTabProps,
   alphaTabRef,
   gpScorePaneHeightPx,
+  osmdScorePaneHeightPx,
   midiSummary,
   midiNotationStatus,
   midiNotationWarnings,
@@ -95,7 +97,7 @@ export const ScoreWindowPanel = ({
     />
 
     <div
-      className={`w-full shrink-0 transition-all duration-300 ease-in-out grid bg-white relative z-30
+      className={`w-full shrink-0 transition-all duration-300 ease-in-out grid bg-gray-950 relative z-30
         ${isTopDrawerHovered || isTopDrawerPinned ? "grid-rows-[1fr] opacity-100 border-b border-gray-800 shadow-2xl" : "grid-rows-[0fr] opacity-0 border-b-0 shadow-none"}
       `}
       onMouseLeave={() => onTopDrawerHoverChange(false)}
@@ -103,19 +105,22 @@ export const ScoreWindowPanel = ({
       <div className="overflow-hidden w-full max-w-full relative">
         <button
           onClick={onToggleTopPinned}
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 z-50 bg-white/80 rounded"
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-200 transition-colors p-1 z-50 bg-gray-950/80 rounded"
           title={isTopDrawerPinned ? "Unpin score" : "Pin score"}
         >
           {isTopDrawerPinned ? <Pin size={16} className="text-emerald-500" /> : <PinOff size={16} />}
         </button>
         <div
           ref={sheetScrollRef}
-          className={`${scoreFormat === "guitar-pro" ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black scrollbar-hide`}
-          style={scoreFormat === "guitar-pro" ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
+          className="w-full overflow-x-auto overflow-y-hidden bg-gray-950 text-white scrollbar-hide"
+          style={{
+            height: `${scoreFormat === "guitar-pro" ? gpScorePaneHeightPx : osmdScorePaneHeightPx}px`,
+            minHeight: `${scoreFormat === "guitar-pro" ? gpScorePaneHeightPx : osmdScorePaneHeightPx}px`,
+          }}
         >
           {scoreFormat === "musicxml" ||
           (scoreFormat === "midi" && midiNotationStatus === "ready") ? (
-            <div ref={osmdRef} className="h-full flex items-center min-w-max" />
+            <div ref={osmdRef} className="h-full flex items-center min-w-max osmd-dark" />
           ) : scoreFormat === "guitar-pro" ? (
             <AlphaTabViewer ref={alphaTabRef} {...alphaTabProps} />
           ) : scoreFormat === "midi" ? (

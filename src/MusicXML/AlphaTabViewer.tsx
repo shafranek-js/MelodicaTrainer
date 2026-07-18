@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import * as alphaTab from "@coderline/alphatab";
-import { parseAlphaTabScore } from "./alphaTabParser";
+import { buildAlphaTabPlaybackSelection } from "./alphaTabParser";
 import {
     applySelectedTrackRenderState,
     getTracksInfo,
@@ -10,6 +10,7 @@ import { musicXmlDebugLogger } from "./debugLogger";
 import { useAlphaTabApi } from "./useAlphaTabApi";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { PlaybackEvent } from "./types";
+import type { AccompanimentTrack } from "./accompaniment";
 
 export interface AlphaTabViewerRef {
     playPause: () => void;
@@ -26,7 +27,14 @@ interface AlphaTabViewerProps {
     isPlaybackActive?: boolean;
     trackIndex?: number;
     transpose?: number;
-    onScoreLoaded: (events: PlaybackEvent[], score: alphaTab.model.Score, tracks: TrackInfo[], tempo: number) => void;
+    onScoreLoaded: (
+        events: PlaybackEvent[],
+        score: alphaTab.model.Score,
+        tracks: TrackInfo[],
+        tempo: number,
+        accompanimentTracks: AccompanimentTrack[],
+        accompanimentWarnings: string[],
+    ) => void;
     onTimeUpdate: (currentTimeMs: number) => void;
     onPlaybackFinished: () => void;
     onRenderedHeightChange?: (heightPx: number) => void;
@@ -170,8 +178,20 @@ const AlphaTabViewer = forwardRef<AlphaTabViewerRef, AlphaTabViewerProps>(({
             }
 
             const selectedTrackIndex = Math.max(0, currentApi.score.tracks.indexOf(currentTrack));
-            const { events, tempo } = parseAlphaTabScore(currentApi.score, keyCount, selectedTrackIndex, transpose);
-            onScoreLoadedRef.current(events, currentApi.score, getTracksInfo(currentApi.score), tempo);
+            const playback = buildAlphaTabPlaybackSelection(
+                currentApi.score,
+                keyCount,
+                selectedTrackIndex,
+                transpose,
+            );
+            onScoreLoadedRef.current(
+                playback.events,
+                currentApi.score,
+                getTracksInfo(currentApi.score),
+                playback.tempo,
+                playback.accompanimentTracks,
+                playback.accompanimentWarnings,
+            );
         });
 
         return () => {

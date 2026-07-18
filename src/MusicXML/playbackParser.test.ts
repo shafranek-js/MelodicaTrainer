@@ -29,6 +29,29 @@ describe("getTabHole", () => {
 });
 
 describe("parsePlaybackEvents", () => {
+  it("targets the selected staff in a two-hand piano part", () => {
+    const xml = `
+      <score-partwise><part><measure>
+        <attributes><divisions>1</divisions><staves>2</staves></attributes>
+        <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><staff>1</staff></note>
+        <backup><duration>1</duration></backup>
+        <note><pitch><step>C</step><octave>3</octave></pitch><duration>1</duration><staff>2</staff></note>
+      </measure></part></score-partwise>
+    `;
+
+    const rightHand = parsePlaybackEvents(xml, {
+      addLeadIn: false,
+      staffNumber: "1",
+    });
+    const leftHand = parsePlaybackEvents(xml, {
+      addLeadIn: false,
+      staffNumber: "2",
+    });
+
+    expect(rightHand.events[0].notes[0].name).toBe("C5");
+    expect(leftHand.events[0].notes[0].name).toBe("C3");
+  });
+
   it("builds timed note events with chords, rests, tabs, and articulations", () => {
     const result = parsePlaybackEventsWithoutLeadIn(`
       <score-partwise>

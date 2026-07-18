@@ -26,6 +26,7 @@ const createPlaybackOptions = (): MutableRefObject<UseScorePlaybackOptions> => (
       stopGpCursorAnimation: vi.fn(),
     },
     refs: {
+      accompanimentTimerRef: { current: null },
       alphaTabRef: { current: null },
       audioContextRef: { current: null },
       cursorEventIndexRef: { current: null },
@@ -41,6 +42,8 @@ const createPlaybackOptions = (): MutableRefObject<UseScorePlaybackOptions> => (
       tempoScaleRef: { current: 1 },
     },
     state: {
+      accompanimentSchedule: [],
+      accompanimentVolume: 10,
       canPlayback: true,
       currentEventIndex: 0,
       currentGameTimeMs: 0,

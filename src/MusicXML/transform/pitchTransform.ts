@@ -73,9 +73,11 @@ export const transposeKeySignatureFifths = (
 export const transposeKeySignatures = (
   xmlDoc: XMLDocument,
   semitones: number,
+  selectedStaffNumber?: string | null,
 ) => {
   const firstPart = getFirstPart(xmlDoc);
-  const firstStaffNumber = firstPart ? getFirstStaffNumber(firstPart) : null;
+  const firstStaffNumber = selectedStaffNumber ??
+    (firstPart ? getFirstStaffNumber(firstPart) : null);
   const keyElements = firstPart
     ? Array.from(firstPart.getElementsByTagName("key"))
     : Array.from(xmlDoc.getElementsByTagName("key"));
