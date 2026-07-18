@@ -5,6 +5,7 @@ import {
   slugify,
   stripMarkdown,
 } from "./helpMarkdown";
+import userGuideMarkdown from "../../docs/USER_GUIDE_EN.md?raw";
 
 describe("helpMarkdown", () => {
   it("strips inline markdown from heading text", () => {
@@ -65,5 +66,17 @@ describe("helpMarkdown", () => {
   it("builds help anchor hrefs for hash routing", () => {
     expect(getHelpSectionHref("tabs")).toBe("#/help#tabs");
     expect(getHelpSectionHref("mouse actions")).toBe("#/help#mouse%20actions");
+  });
+
+  it("includes local-library setup, privacy, and recovery guidance", () => {
+    const headings = buildTableOfContents(userGuideMarkdown).map((item) => item.text);
+    expect(headings).toContain("Score Library");
+    expect(headings).toContain("Settings And Local Library");
+    expect(headings).toContain("Connecting A Folder");
+    expect(headings).toContain("Folder Controls And Privacy");
+    expect(headings).toContain("A File Does Not Appear In My Files");
+    expect(userGuideMarkdown).toContain("never uploaded");
+    expect(userGuideMarkdown).toContain("Disconnect");
+    expect(userGuideMarkdown).toContain("Chrome or Edge");
   });
 });

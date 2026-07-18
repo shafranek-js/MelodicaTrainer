@@ -2,7 +2,7 @@
 
 MelodicaTrainer helps you practice melodica: it shows a virtual keyboard, listens through your microphone, checks pitch accuracy, plays scores, and turns score notes into a falling-note `Tabs` practice view.
 
-The app has four main sections:
+The app has four practice sections plus Help and Settings:
 
 | Section | What it is for |
 | --- | --- |
@@ -10,16 +10,18 @@ The app has four main sections:
 | `Tabs` | Load MusicXML/MXL/Guitar Pro/MIDI files, start playback, and practice with Note Highway. |
 | `Practice` | Train scales, individual notes, chord tones, and 12-bar blues. |
 | `Circle` | Explore the circle of fifths, modes, scales, and triads. |
+| `Help` | Read this guide and troubleshoot common problems. |
+| `Settings` | Connect and manage a private score-library folder on your device. |
 
 ## Common Controls
 
-The top menu opens `Circle`, `Melodica`, `Tabs`, `Practice`, and `Help`.
+The top menu opens `Circle`, `Melodica`, `Tabs`, `Practice`, and `Help`. The gear button opens `Settings`.
 
 The `A-B-C` switch changes note display between letter names and solfege. This only changes labels; the musical calculations stay the same.
 
 The app uses your microphone in `Melodica`, `Practice`, and `Tabs`. The browser will ask for permission the first time listening starts. If microphone access is denied, pitch detection will not work and the app will show an error.
 
-Some settings are saved in your browser: melodica range, tempo, SoundFont, display mode, pinned panels, and the loaded score. If the app behaves unexpectedly after old experiments, manually changing the setting or reloading the page is usually enough.
+Some settings are saved in your browser: melodica range, tempo, SoundFont, display mode, pinned panels, and the loaded score. A connected score-library folder and its local index are stored separately in the browser's IndexedDB storage. If the app behaves unexpectedly after old experiments, manually changing the setting or reloading the page is usually enough.
 
 ## Melodica
 
@@ -62,7 +64,7 @@ Click `Load XML/GP/MIDI` and choose a file. Supported formats:
 - `.mid`
 - `.midi`
 
-MusicXML/MXL files are rendered with OpenSheetMusicDisplay. Guitar Pro files are rendered with alphaTab. MIDI files show a compact file/part summary instead of notation. In every case, Note Highway is built from the parsed playback events.
+MusicXML/MXL files are rendered with OpenSheetMusicDisplay. Guitar Pro files are rendered with alphaTab. MIDI files show approximate sheet-music notation generated from the selected part and quantization setting. In every case, Note Highway is built from the parsed playback events.
 
 Important: MusicXML playback/rendering focuses on the first relevant part/staff. Guitar Pro uses the selected `GP Track`. MIDI uses the selected melodic `MIDI Part`; channel 10 drums are excluded.
 
@@ -77,9 +79,24 @@ The left panel contains file and sound settings.
 | `Instrument` | Selects an instrument inside the SoundFont, when available. |
 | `GP Track` | Selects the Guitar Pro track. Only visible for GP files. |
 | `MIDI Part` | Selects a melodic MIDI channel. Only visible for MIDI files. |
+| `Notation grid` | Chooses automatic or fixed quantization for approximate MIDI notation. Only visible for MIDI files. |
 | `Load XML/GP/MIDI` | Loads a new file. |
+| `Browse library` | Opens public scores and files indexed from your private folder. |
 | `XML` | Downloads the transposed MusicXML. Available for MusicXML files. |
 | `Text` | Downloads a text list of melodica notes. Available for MusicXML files. |
+
+### Score Library
+
+Click `Browse library` to open the combined score library.
+
+- `Public` contains the built-in public-domain and CC0 collection.
+- `My files` contains supported files found in the folder selected in `Settings`.
+- Use the source, format, difficulty, and tag filters to narrow the list. Difficulty and public tags apply only to public entries.
+- Local entries have a `LOCAL` badge and are opened directly from your device; they are not downloaded from or uploaded to a server.
+
+Before a folder is configured, the library shows `Set up local library`. After the folder is connected, it shows `Add files` and `Refresh`.
+
+`Add files` copies selected MusicXML/MXL, Guitar Pro, or MIDI files into the root of the connected folder. Exact duplicates are skipped. If a different file already uses the same name, the new file is saved with a suffix such as `Song (2).mxl`.
 
 ### Playback
 
@@ -162,6 +179,45 @@ In the center area of `Tabs`:
 | Hover the top score edge | Shows the top score panel if it is not pinned. |
 | Hover the top window edge | Shows the top menu if it is not pinned. |
 
+## Settings And Local Library
+
+Open the gear button in the top menu to manage `My score library`.
+
+### Connecting A Folder
+
+1. Open `Settings`.
+2. Click `Choose local library folder`.
+3. Select any folder you can access on your computer or external drive.
+4. Approve read-and-write access when the browser asks.
+5. Open `Tabs` and click `Browse library`, then choose `My files`.
+
+The browser only shares the selected folder's name with the page, so MelodicaTrainer does not display its full system path.
+
+Persistent folder access requires a browser with the File System Access API, such as current desktop Chrome or Edge. In other browsers, `Load XML/GP/MIDI` still works for opening one file at a time, but the app cannot remember and rescan a normal folder.
+
+### Adding And Organizing Files
+
+The folder and all its subfolders are scanned recursively for:
+
+- MusicXML: `.xml`, `.musicxml`, `.mxl`
+- Guitar Pro: `.gp`, `.gp3`, `.gp4`, `.gp5`, `.gpx`
+- MIDI: `.mid`, `.midi`
+
+You can organize files in subfolders and copy files into the folder manually while MelodicaTrainer is closed. The app rescans when it starts, when the score library opens, when the browser tab becomes active, and when supported browsers report a folder change. Use `Rescan` in Settings or `Refresh` in the library whenever you want an immediate check.
+
+Files larger than 10 MB, damaged files, and unsupported formats are not added as playable entries. Settings lists any file problems found during a scan. One bad file does not stop other files from being indexed.
+
+### Folder Controls And Privacy
+
+| Control | What it does |
+| --- | --- |
+| `Reconnect` | Requests access again when the browser no longer grants permission. |
+| `Rescan` | Checks the folder immediately and reports added, updated, removed, skipped, and invalid files. |
+| `Change folder` | Selects a different folder and builds a new local index. |
+| `Disconnect` | Forgets the folder and local index in this browser. It never deletes files from disk. |
+
+The folder handle and local index stay in IndexedDB on this browser and device. Score contents stay on your device and are never uploaded by the local-library feature. Folder settings do not synchronize to another browser or computer.
+
 ## Practice
 
 Use `Practice` for targeted note and scale training.
@@ -223,6 +279,18 @@ Check that the microphone is enabled, the signal is loud enough, and the selecte
 ### File Does Not Load
 
 Check the file extension. `Tabs` supports MusicXML/MXL, Guitar Pro, and `.mid/.midi` SMF 0/1 files. If the file is damaged or does not contain playable notes, the app will show an error message.
+
+### Local Folder Cannot Be Selected
+
+Use a current desktop version of Chrome or Edge and open MelodicaTrainer over HTTPS or localhost. If folder access is unavailable, use `Load XML/GP/MIDI` to open files individually.
+
+### Local Folder Needs Permission Again
+
+Browsers can revoke folder access after tabs are closed or site permissions change. Open `Settings` and click `Reconnect`, then approve read-and-write access. MelodicaTrainer cannot request this permission silently; it requires your click.
+
+### A File Does Not Appear In My Files
+
+Check that the file is inside the connected folder or one of its subfolders and uses a supported extension. Then click `Rescan` in Settings. Look under `file problems` for invalid or oversized files. An exact duplicate of another indexed file is intentionally skipped.
 
 ### File Is Too Large
 
