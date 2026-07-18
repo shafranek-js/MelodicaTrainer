@@ -46,6 +46,10 @@ import { useMidiScore } from "./useMidiScore";
 import { getMusicXmlFileErrorMessage } from "./musicXmlFile";
 import { getMidiFileErrorMessage } from "./midiParser";
 import {
+  sanitizeMidiQuantizationMode,
+} from "./midiNotation";
+import type { MidiQuantizationMode } from "./midiNotation";
+import {
   EndStatsOverlay,
   MusicXmlWorkspace,
   ScoreWindowPanel,
@@ -104,6 +108,12 @@ const MusicXML: React.FC = () => {
   const [fingeringGuide, setFingeringGuide] = usePersistentState<string>("melodicatrainer_fingering_guide", "numbers", { sanitize: sanitizeString });
   const [isStudyMode, setIsStudyMode] = usePersistentState<boolean>("melodicatrainer_study_mode", false, { sanitize: sanitizeBoolean });
   const [userTempoBpm, setUserTempoBpm] = usePersistentState<number | null>("melodicatrainer_user_tempo", null, { legacyKeys: LEGACY_STORAGE_KEYS.tempo, sanitize: sanitizeNullableTempo });
+  const [midiQuantizationMode, setMidiQuantizationMode] =
+    usePersistentState<MidiQuantizationMode>(
+      "melodicatrainer_midi_quantization",
+      "auto",
+      { sanitize: sanitizeMidiQuantizationMode },
+    );
 
   const handleSetTempo = useCallback((newTempo: number) => {
     setUserTempoBpm(newTempo);
@@ -211,38 +221,24 @@ const MusicXML: React.FC = () => {
     setRouteStatus,
     transpose,
   });
-  const handleOsmdRendered = useCallback(() => {
-    setHasSheetRenderError(false);
-    setIsSheetReady(true);
-  }, []);
-  const handleOsmdRenderError = useCallback((err: unknown) => {
-    console.error("OSMD render error:", err);
-    setHasSheetRenderError(true);
-    setIsSheetReady(false);
-    setRouteStatus({
-      tone: "error",
-      message: "Failed to render MusicXML score.",
-    });
-  }, []);
-  const { osmdInstanceRef, osmdRef } = useOsmdScore({
-    displayFileContent,
-    onRenderError: handleOsmdRenderError,
-    onRendered: handleOsmdRendered,
-    scoreFormat,
-  });
 
   const {
     handleMidiPartChange,
+    midiDisplayFileContent,
+    midiNotationStatus,
+    midiNotationWarnings,
     midiOriginalMidiNumbers,
     midiParts,
     midiScore,
     resetMidiScore,
+    resolvedMidiQuantization,
     selectedMidiPart,
     selectedMidiPartId,
   } = useMidiScore({
     fileName,
     isMidiFile,
     keyCount,
+    quantizationMode: midiQuantizationMode,
     rawFileContent,
     setDetectedTempoBpm,
     setIsSheetReady,
@@ -251,6 +247,40 @@ const MusicXML: React.FC = () => {
     setTranspose,
     transpose,
   });
+
+  const handleOsmdRendered = useCallback(() => {
+    setHasSheetRenderError(false);
+    setIsSheetReady(true);
+  }, []);
+  const handleOsmdRenderError = useCallback((err: unknown) => {
+    console.error("OSMD render error:", err);
+    setHasSheetRenderError(true);
+    if (scoreFormat === "midi") {
+      setRouteStatus({
+        tone: "info",
+        message: "MIDI playback is ready, but approximate notation could not be rendered.",
+      });
+      return;
+    }
+    setIsSheetReady(false);
+    setRouteStatus({
+      tone: "error",
+      message: "Failed to render MusicXML score.",
+    });
+  }, [scoreFormat]);
+  const { osmdInstanceRef, osmdRef } = useOsmdScore({
+    displayFileContent: scoreFormat === "midi"
+      ? midiDisplayFileContent
+      : displayFileContent,
+    onRenderError: handleOsmdRenderError,
+    onRendered: handleOsmdRendered,
+    scoreFormat,
+  });
+  useEffect(() => {
+    if (scoreFormat === "midi" && midiDisplayFileContent) {
+      setHasSheetRenderError(false);
+    }
+  }, [midiDisplayFileContent, scoreFormat]);
   
   const tempoScale = getTempoScale({ detectedTempoBpm, userTempoBpm });
   const tempoScaleRef = useRef(tempoScale);
@@ -309,10 +339,11 @@ const MusicXML: React.FC = () => {
     studyModeNextIndexRef,
     studyModeOnHit: handleStudyModeHit,
   });
-  const canUseProcessedScore = (
-    Boolean(fileContent) ||
-    ((isGpFile || isMidiFile) && Boolean(rawFileContent))
-  ) && isSheetReady && (scoreFormat !== "musicxml" || !hasSheetRenderError);
+  const canUseProcessedScore = scoreFormat === "midi"
+    ? Boolean(rawFileContent) && playbackEvents.length > 0
+    : (
+        Boolean(fileContent) || (isGpFile && Boolean(rawFileContent))
+      ) && isSheetReady && (scoreFormat !== "musicxml" || !hasSheetRenderError);
   const canPlayback = canUseProcessedScore && playbackEvents.length > 0;
 
   const { downloadMelodicaNotes, downloadTransposedXml } = useScoreDownloads({
@@ -529,6 +560,10 @@ const MusicXML: React.FC = () => {
           partLabel: `${selectedMidiPart.name} — Ch. ${selectedMidiPart.channel + 1}`,
           tempoChangeCount: Math.max(0, midiScore.tempoChanges.length - 1),
         } : null}
+        midiNotationStatus={scoreFormat === "midi" && hasSheetRenderError
+          ? "unavailable"
+          : midiNotationStatus}
+        midiNotationWarnings={midiNotationWarnings}
         isTopDrawerHovered={panels.isTopDrawerHovered}
         isTopDrawerPinned={panels.isTopDrawerPinned}
         onTopDrawerHoverChange={panels.setIsTopDrawerHovered}
@@ -583,6 +618,11 @@ const MusicXML: React.FC = () => {
           keyCount,
           melodicaRanges: melodicaRangeOptions,
           midiParts,
+          midiNotationStatus: scoreFormat === "midi" && hasSheetRenderError
+            ? "unavailable"
+            : midiNotationStatus,
+          midiNotationWarnings,
+          midiQuantizationMode,
           onDownloadMelodicaNotes: downloadMelodicaNotes,
           onDownloadTransposedXml: downloadTransposedXml,
           onFileChange: handleFileChange,
@@ -591,6 +631,10 @@ const MusicXML: React.FC = () => {
           onMidiPartChange: (partId) => {
             stopPlayback(true);
             handleMidiPartChange(partId);
+          },
+          onMidiQuantizationChange: (mode) => {
+            stopPlayback(true);
+            setMidiQuantizationMode(mode);
           },
           onMelodicaRangeChange: setSelectedKeyCount,
           onSelectedPresetChange: setSelectedPreset,
@@ -604,6 +648,7 @@ const MusicXML: React.FC = () => {
           scoreFormat,
           selectedGpTrackIndex,
           selectedMidiPartId,
+          resolvedMidiQuantization,
           selectedPreset,
           selectedSoundFont: selectedSf,
           soundFonts: SOUNDFONTS,

@@ -5,6 +5,14 @@ import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
 import type { ScoreLibraryEntry } from "./scoreLibrary";
 import type { MidiPartInfo } from "./midiParser";
+import {
+  MIDI_QUANTIZATION_OPTIONS,
+} from "./midiNotation";
+import type {
+  MidiNotationStatus,
+  MidiQuantizationMode,
+  ResolvedMidiQuantization,
+} from "./midiNotation";
 import type { ScoreFormat } from "./scoreFormat";
 
 type RouteStatusTone = "info" | "success" | "error";
@@ -32,6 +40,9 @@ type ScoreSettingsPanelProps = {
   fileName: string | null;
   gpTracks: GpTrack[];
   midiParts: MidiPartInfo[];
+  midiNotationStatus: MidiNotationStatus;
+  midiNotationWarnings: string[];
+  midiQuantizationMode: MidiQuantizationMode;
   keyCount: MelodicaKeyCount;
   melodicaRanges: readonly MelodicaRangeOption[];
   isPinned: boolean;
@@ -40,6 +51,7 @@ type ScoreSettingsPanelProps = {
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onGpTrackChange: (trackIndex: number) => void;
   onMidiPartChange: (partId: string) => void;
+  onMidiQuantizationChange: (mode: MidiQuantizationMode) => void;
   onLibraryScoreLoad: (entry: ScoreLibraryEntry, signal: AbortSignal) => Promise<void>;
   onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
@@ -50,6 +62,7 @@ type ScoreSettingsPanelProps = {
   scoreFormat: ScoreFormat | null;
   selectedGpTrackIndex: number;
   selectedMidiPartId: string | null;
+  resolvedMidiQuantization: ResolvedMidiQuantization | null;
   selectedPreset: string;
   selectedSoundFont: string;
   soundFonts: SoundFontOption[];
@@ -61,6 +74,9 @@ export const ScoreSettingsPanel = ({
   fileName,
   gpTracks,
   midiParts,
+  midiNotationStatus,
+  midiNotationWarnings,
+  midiQuantizationMode,
   keyCount,
   melodicaRanges,
   isPinned,
@@ -69,6 +85,7 @@ export const ScoreSettingsPanel = ({
   onFileChange,
   onGpTrackChange,
   onMidiPartChange,
+  onMidiQuantizationChange,
   onLibraryScoreLoad,
   onMelodicaRangeChange,
   onSelectedPresetChange,
@@ -79,6 +96,7 @@ export const ScoreSettingsPanel = ({
   scoreFormat,
   selectedGpTrackIndex,
   selectedMidiPartId,
+  resolvedMidiQuantization,
   selectedPreset,
   selectedSoundFont,
   soundFonts,
@@ -168,19 +186,48 @@ export const ScoreSettingsPanel = ({
       )}
 
       {scoreFormat === "midi" && midiParts.length > 0 && selectedMidiPartId && (
-        <div>
-          <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">MIDI Part</label>
-          <select
-            value={selectedMidiPartId}
-            onChange={(e) => onMidiPartChange(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-          >
-            {midiParts.map((part) => (
-              <option key={part.id} value={part.id}>
-                {part.name} — Ch. {part.channel + 1}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-4">
+          <div>
+            <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">MIDI Part</label>
+            <select
+              value={selectedMidiPartId}
+              onChange={(e) => onMidiPartChange(e.target.value)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            >
+              {midiParts.map((part) => (
+                <option key={part.id} value={part.id}>
+                  {part.name} — Ch. {part.channel + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Notation grid</label>
+            <select
+              value={midiQuantizationMode}
+              onChange={(e) => onMidiQuantizationChange(e.target.value as MidiQuantizationMode)}
+              className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            >
+              {MIDI_QUANTIZATION_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[10px] font-semibold text-gray-500">
+              Approximate notation
+              {midiQuantizationMode === "auto" && resolvedMidiQuantization
+                ? ` · Auto detected: ${MIDI_QUANTIZATION_OPTIONS.find((option) => option.value === resolvedMidiQuantization)?.label ?? resolvedMidiQuantization}`
+                : midiNotationStatus === "preparing"
+                  ? " · Preparing…"
+                  : midiNotationStatus === "unavailable"
+                    ? " · Unavailable"
+                    : ""}
+            </p>
+            {midiNotationWarnings.length > 0 && (
+              <p className="mt-1 text-[10px] font-semibold text-amber-400">
+                {midiNotationWarnings.join(" ")}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

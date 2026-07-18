@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMidiPlaybackEvents,
+  getMidiSecondsAtTick,
   MidiFileError,
   parseMidiFile,
 } from "./midiParser";
@@ -74,6 +75,8 @@ describe("MIDI parsing", () => {
     const bytes = midiFile(0, [[
       metaEvent(0, 0x03, text("Lead")),
       tempo(0, 500_000),
+      metaEvent(0, 0x58, [3, 2, 24, 8]),
+      metaEvent(0, 0x59, [0xfe, 1]),
       midiEvent(240, 0x90, 60, 100),
       midiEvent(0, 0x90, 64, 80),
       midiEvent(240, 0x80, 60, 0),
@@ -85,7 +88,15 @@ describe("MIDI parsing", () => {
 
     const score = parseMidiFile(bytes, "tempo.mid");
     expect(score.initialTempoBpm).toBe(120);
+    expect(score.ticksPerQuarter).toBe(480);
     expect(score.tempoChanges).toHaveLength(2);
+    expect(score.tempoChanges.map((change) => change.ticks)).toEqual([0, 480]);
+    expect(score.timeSignatures).toEqual([
+      { denominator: 4, numerator: 3, ticks: 0 },
+    ]);
+    expect(score.keySignatures).toEqual([
+      { fifths: -2, mode: "minor", ticks: 0 },
+    ]);
     expect(score.parts).toHaveLength(1);
     expect(score.parts[0]).toMatchObject({
       channel: 0,
@@ -97,12 +108,16 @@ describe("MIDI parsing", () => {
       midi: 60,
       startSeconds: 0.25,
       durationSeconds: 0.25,
+      durationTicks: 240,
       velocity: 100 / 127,
+      startTick: 240,
     });
     expect(score.parts[0].notes[2]).toMatchObject({
       midi: 67,
       startSeconds: 1.5,
       durationSeconds: 0.5,
+      durationTicks: 240,
+      startTick: 960,
     });
 
     const events = buildMidiPlaybackEvents(score, "channel-0", 2, 32);
@@ -114,6 +129,37 @@ describe("MIDI parsing", () => {
     expect(events[1].notes[0].velocity).toBeCloseTo(100 / 127);
     expect(events[2].durationSeconds).toBe(0.5);
     expect(events[2].tempoBpm).toBe(60);
+    expect(getMidiSecondsAtTick(score, 960)).toBe(1.5);
+  });
+
+  it("adds silent cursor boundaries without changing exact MIDI notes", () => {
+    const bytes = midiFile(0, [[
+      tempo(0, 500_000),
+      midiEvent(0, 0x90, 60, 64),
+      midiEvent(480, 0x80, 60, 0),
+      midiEvent(480, 0x90, 62, 127),
+      midiEvent(480, 0x80, 62, 0),
+    ]]);
+    const score = parseMidiFile(bytes);
+    const events = buildMidiPlaybackEvents(score, "channel-0", 0, 32, {
+      cursorIndexByTick: new Map([[0, 0], [240, 1], [960, 2]]),
+      visualBoundaryTicks: [0, 240, 960],
+    });
+
+    expect(events.map((event) => event.tick)).toEqual([0, 240, 960]);
+    expect(events[1]).toMatchObject({
+      durationSeconds: 0.75,
+      notes: [],
+      sourceEventIndex: 1,
+    });
+    expect(events[0].notes[0]).toMatchObject({
+      durationSeconds: 0.5,
+      velocity: 64 / 127,
+    });
+    expect(events[2].notes[0]).toMatchObject({
+      durationSeconds: 0.5,
+      velocity: 1,
+    });
   });
 
   it("lists melodic channels as parts and excludes channel 10 drums", () => {
@@ -139,6 +185,37 @@ describe("MIDI parsing", () => {
       name: "Melody",
       noteCount: 1,
     });
+  });
+
+  it("merges format-1 tracks that share a channel and supplies meta fallbacks", () => {
+    const bytes = midiFile(1, [
+      [
+        metaEvent(0, 0x03, text("First")),
+        midiEvent(0, 0x92, 60, 90),
+        midiEvent(480, 0x82, 60, 0),
+      ],
+      [
+        metaEvent(0, 0x03, text("Second")),
+        midiEvent(480, 0x92, 64, 100),
+        midiEvent(480, 0x82, 64, 0),
+      ],
+    ]);
+
+    const score = parseMidiFile(bytes, "merged.mid");
+    expect(score.parts).toHaveLength(1);
+    expect(score.parts[0]).toMatchObject({
+      channel: 2,
+      name: "First",
+      noteCount: 2,
+      originalMidiNumbers: [60, 64],
+    });
+    expect(score.tempoChanges[0]).toEqual({ bpm: 120, seconds: 0, ticks: 0 });
+    expect(score.timeSignatures).toEqual([
+      { denominator: 4, numerator: 4, ticks: 0 },
+    ]);
+    expect(score.keySignatures).toEqual([
+      { fifths: 0, mode: "major", ticks: 0 },
+    ]);
   });
 
   it("rejects format 2, invalid files, and drum-only files", () => {

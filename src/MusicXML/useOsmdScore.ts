@@ -17,16 +17,29 @@ export const useOsmdScore = ({
 }: UseOsmdScoreOptions) => {
   const osmdRef = useRef<HTMLDivElement>(null);
   const osmdInstanceRef = useRef<OpenSheetMusicDisplay | null>(null);
+  const osmdContainerRef = useRef<HTMLDivElement | null>(null);
   const renderRunRef = useRef(0);
 
   useEffect(() => {
-    if (scoreFormat !== "musicxml" || !displayFileContent || !osmdRef.current) return;
+    const container = osmdRef.current;
+    if (
+      (scoreFormat !== "musicxml" && scoreFormat !== "midi") ||
+      !displayFileContent ||
+      !container
+    ) {
+      osmdInstanceRef.current?.clear();
+      osmdInstanceRef.current = null;
+      osmdContainerRef.current = null;
+      return;
+    }
 
     const renderRun = renderRunRef.current + 1;
     renderRunRef.current = renderRun;
 
-    if (!osmdInstanceRef.current) {
-      osmdInstanceRef.current = new OpenSheetMusicDisplay(osmdRef.current, {
+    if (!osmdInstanceRef.current || osmdContainerRef.current !== container) {
+      osmdInstanceRef.current?.clear();
+      osmdContainerRef.current = container;
+      osmdInstanceRef.current = new OpenSheetMusicDisplay(container, {
         backend: "svg",
         drawTitle: true,
         drawComposer: true,

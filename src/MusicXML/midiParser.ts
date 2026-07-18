@@ -37,8 +37,10 @@ export class MidiFileError extends Error {
 }
 
 export type MidiNoteData = {
+  durationTicks: number;
   durationSeconds: number;
   midi: number;
+  startTick: number;
   startSeconds: number;
   velocity: number;
 };
@@ -56,14 +58,30 @@ export type MidiPartInfo = {
 export type MidiTempoChange = {
   bpm: number;
   seconds: number;
+  ticks: number;
+};
+
+export type MidiTimeSignature = {
+  denominator: number;
+  numerator: number;
+  ticks: number;
+};
+
+export type MidiKeySignature = {
+  fifths: number;
+  mode: "major" | "minor";
+  ticks: number;
 };
 
 export type ParsedMidiScore = {
   durationSeconds: number;
   fileName: string;
   initialTempoBpm: number;
+  keySignatures: MidiKeySignature[];
   parts: MidiPartInfo[];
   tempoChanges: MidiTempoChange[];
+  ticksPerQuarter: number;
+  timeSignatures: MidiTimeSignature[];
 };
 
 const isFiniteNonNegative = (value: number) =>
@@ -97,6 +115,7 @@ const getTempoChanges = (midi: BasicMIDI): MidiTempoChange[] => {
     .map((change) => ({
       bpm: change.tempo,
       seconds: midi.midiTicksToSeconds(change.ticks),
+      ticks: change.ticks,
     }))
     .filter(
       (change) =>
@@ -106,15 +125,78 @@ const getTempoChanges = (midi: BasicMIDI): MidiTempoChange[] => {
     )
     .sort((a, b) => a.seconds - b.seconds);
 
-  return sortedChanges.reduce<MidiTempoChange[]>((changes, change) => {
-    const previous = changes[changes.length - 1];
+  const changes = sortedChanges.reduce<MidiTempoChange[]>((result, change) => {
+    const previous = result[result.length - 1];
     if (previous && Math.abs(previous.seconds - change.seconds) < 0.000001) {
-      changes[changes.length - 1] = change;
+      result[result.length - 1] = change;
     } else if (!previous || previous.bpm !== change.bpm) {
-      changes.push(change);
+      result.push(change);
     }
-    return changes;
+    return result;
   }, []);
+  if (changes.length === 0 || changes[0].ticks > 0) {
+    changes.unshift({ bpm: DEFAULT_MIDI_TEMPO_BPM, seconds: 0, ticks: 0 });
+  }
+  return changes;
+};
+
+const getMetaEvents = (midi: BasicMIDI, statusByte: number) =>
+  midi.tracks
+    .flatMap((track) => Array.from(track.events))
+    .filter((event) => event.statusByte === statusByte)
+    .sort((left, right) => left.ticks - right.ticks);
+
+const dedupeByTick = <T extends { ticks: number }>(values: T[]) =>
+  values.reduce<T[]>((result, value) => {
+    const previous = result[result.length - 1];
+    if (previous?.ticks === value.ticks) {
+      result[result.length - 1] = value;
+    } else {
+      result.push(value);
+    }
+    return result;
+  }, []);
+
+const getTimeSignatures = (midi: BasicMIDI): MidiTimeSignature[] => {
+  const signatures = getMetaEvents(midi, midiMessageTypes.timeSignature)
+    .map((event): MidiTimeSignature | null => {
+      const numerator = event.data[0];
+      const denominatorPower = event.data[1];
+      const denominator = 2 ** denominatorPower;
+      if (
+        !Number.isInteger(numerator) || numerator <= 0 ||
+        !Number.isInteger(denominatorPower) || denominatorPower < 0 || denominatorPower > 7
+      ) {
+        return null;
+      }
+      return { denominator, numerator, ticks: event.ticks };
+    })
+    .filter((signature): signature is MidiTimeSignature => signature !== null);
+
+  return dedupeByTick(signatures.length > 0
+    ? signatures
+    : [{ denominator: 4, numerator: 4, ticks: 0 }]);
+};
+
+const toSignedByte = (value: number) => value > 127 ? value - 256 : value;
+
+const getKeySignatures = (midi: BasicMIDI): MidiKeySignature[] => {
+  const signatures = getMetaEvents(midi, midiMessageTypes.keySignature)
+    .map((event): MidiKeySignature | null => {
+      const fifths = toSignedByte(event.data[0]);
+      const modeByte = event.data[1];
+      if (!Number.isInteger(fifths) || fifths < -7 || fifths > 7) return null;
+      return {
+        fifths,
+        mode: modeByte === 1 ? "minor" : "major",
+        ticks: event.ticks,
+      };
+    })
+    .filter((signature): signature is MidiKeySignature => signature !== null);
+
+  return dedupeByTick(signatures.length > 0
+    ? signatures
+    : [{ fifths: 0, mode: "major", ticks: 0 }]);
 };
 
 const getTempoAtSeconds = (
@@ -127,6 +209,35 @@ const getTempoAtSeconds = (
     tempo = change.bpm;
   }
   return tempo;
+};
+
+export const getMidiSecondsAtTick = (
+  score: Pick<ParsedMidiScore, "tempoChanges" | "ticksPerQuarter">,
+  targetTick: number,
+) => {
+  const normalizedTick = Math.max(0, targetTick);
+  const changes = [...score.tempoChanges]
+    .filter((change) => change.ticks >= 0 && change.bpm > 0)
+    .sort((left, right) => left.ticks - right.ticks);
+  let currentTick = 0;
+  let currentTempo = DEFAULT_MIDI_TEMPO_BPM;
+  let seconds = 0;
+
+  for (const change of changes) {
+    if (change.ticks > normalizedTick) break;
+    if (change.ticks > currentTick) {
+      seconds += (change.ticks - currentTick) * 60 /
+        (currentTempo * score.ticksPerQuarter);
+      currentTick = change.ticks;
+    }
+    currentTempo = change.bpm;
+  }
+
+  if (normalizedTick > currentTick) {
+    seconds += (normalizedTick - currentTick) * 60 /
+      (currentTempo * score.ticksPerQuarter);
+  }
+  return seconds;
 };
 
 export const parseMidiFile = (
@@ -164,8 +275,14 @@ export const parseMidiFile = (
           }
 
           return {
+            durationTicks: Math.max(
+              1,
+              Math.round(midi.secondsToMIDITicks(note.start + note.length)) -
+                Math.round(midi.secondsToMIDITicks(note.start)),
+            ),
             durationSeconds: note.length,
             midi: note.midiNote,
+            startTick: Math.max(0, Math.round(midi.secondsToMIDITicks(note.start))),
             startSeconds: note.start,
             velocity: Math.min(1, Math.max(0, note.velocity)),
           };
@@ -200,14 +317,15 @@ export const parseMidiFile = (
   }
 
   const tempoChanges = getTempoChanges(midi);
-  const firstNoteSeconds = Math.min(...parts.map((part) => part.notes[0].startSeconds));
-
   return {
     durationSeconds: Math.max(midi.duration, ...parts.map((part) => part.durationSeconds)),
     fileName,
-    initialTempoBpm: getTempoAtSeconds(tempoChanges, firstNoteSeconds),
+    initialTempoBpm: getTempoAtSeconds(tempoChanges, 0),
+    keySignatures: getKeySignatures(midi),
     parts,
     tempoChanges,
+    ticksPerQuarter: midi.timeDivision,
+    timeSignatures: getTimeSignatures(midi),
   };
 };
 
@@ -235,27 +353,50 @@ export const buildMidiPlaybackEvents = (
   partId: string,
   transpose: number,
   keyCount: MelodicaKeyCount,
+  notation?: {
+    cursorIndexByTick: ReadonlyMap<number, number>;
+    visualBoundaryTicks: readonly number[];
+  },
 ): PlaybackEvent[] => {
   const part = score.parts.find((candidate) => candidate.id === partId);
   if (!part) return [];
 
   const groups = new Map<number, MidiNoteData[]>();
   part.notes.forEach((note) => {
-    const key = Math.round(note.startSeconds * MIDI_START_GROUP_PRECISION);
-    const group = groups.get(key) ?? [];
+    const group = groups.get(note.startTick) ?? [];
     group.push(note);
-    groups.set(key, group);
+    groups.set(note.startTick, group);
   });
 
-  const starts = Array.from(groups.keys())
-    .sort((a, b) => a - b)
-    .map((key) => key / MIDI_START_GROUP_PRECISION);
+  const boundaryTicks = new Set(groups.keys());
+  notation?.visualBoundaryTicks.forEach((tick) => boundaryTicks.add(tick));
+  if (Math.min(...groups.keys()) > 0) boundaryTicks.add(0);
+
+  const boundaries = [...boundaryTicks]
+    .map((tick) => {
+      const notes = groups.get(tick) ?? [];
+      const startSeconds = notes.length > 0
+        ? Math.min(...notes.map((note) => note.startSeconds))
+        : getMidiSecondsAtTick(score, tick);
+      return { notes, startSeconds, tick };
+    })
+    .sort((left, right) =>
+      left.startSeconds - right.startSeconds || left.tick - right.tick
+    )
+    .filter((boundary, index, values) => {
+      if (index === 0) return true;
+      const previous = values[index - 1];
+      return boundary.tick !== previous.tick ||
+        Math.round(boundary.startSeconds * MIDI_START_GROUP_PRECISION) !==
+          Math.round(previous.startSeconds * MIDI_START_GROUP_PRECISION);
+    });
   const events: PlaybackEvent[] = [];
 
   const pushEvent = (
     startSeconds: number,
     durationSeconds: number,
     notes: PlaybackNote[],
+    tick: number,
   ) => {
     const normalizedDuration = Math.max(
       MIN_MIDI_DURATION_SECONDS,
@@ -265,33 +406,32 @@ export const buildMidiPlaybackEvents = (
       durationBeats: normalizedDuration,
       durationSeconds: normalizedDuration,
       notes,
-      sourceEventIndex: events.length,
+      sourceEventIndex: notation?.cursorIndexByTick.get(tick) ?? events.length,
       tabs: notes.map(
         (note) => getMelodicaKeyLabelForNote(keyCount, note.name) || "",
       ),
       tempoBpm: getTempoAtSeconds(score.tempoChanges, startSeconds),
+      tick,
     });
   };
 
-  if (starts[0] > 0) {
-    pushEvent(0, starts[0], []);
-  }
-
-  starts.forEach((startSeconds, index) => {
-    const sourceNotes = groups.get(
-      Math.round(startSeconds * MIDI_START_GROUP_PRECISION),
-    ) ?? [];
-    const notes = sourceNotes
+  boundaries.forEach((boundary, index) => {
+    const notes = boundary.notes
       .map((note) => toPlaybackNote(note, transpose))
       .filter((note): note is PlaybackNote => note !== null);
-    const nextStart = starts[index + 1];
-    const lastNoteEnd = sourceNotes.reduce(
+    const nextStart = boundaries[index + 1]?.startSeconds;
+    const lastNoteEnd = boundary.notes.reduce(
       (maximum, note) =>
         Math.max(maximum, note.startSeconds + note.durationSeconds),
-      startSeconds,
+      boundary.startSeconds,
     );
     const endSeconds = nextStart ?? lastNoteEnd;
-    pushEvent(startSeconds, endSeconds - startSeconds, notes);
+    pushEvent(
+      boundary.startSeconds,
+      endSeconds - boundary.startSeconds,
+      notes,
+      boundary.tick,
+    );
   });
 
   return events;

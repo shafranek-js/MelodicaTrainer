@@ -6,6 +6,15 @@ import {
   parseMidiFile,
 } from "./midiParser";
 import type { MidiPartInfo, ParsedMidiScore } from "./midiParser";
+import {
+  generateMidiNotation,
+} from "./midiNotation";
+import type {
+  MidiNotationResult,
+  MidiNotationStatus,
+  MidiQuantizationMode,
+} from "./midiNotation";
+import { injectMelodicaLabels } from "./musicXmlTransform";
 import type { MelodicaKeyCount } from "../utils/utils";
 import type { ScoreFileContent } from "./useScoreFileLoader";
 import type { PlaybackEvent } from "./types";
@@ -19,6 +28,7 @@ type UseMidiScoreOptions = {
   fileName: string | null;
   isMidiFile: boolean;
   keyCount: MelodicaKeyCount;
+  quantizationMode: MidiQuantizationMode;
   rawFileContent: ScoreFileContent | null;
   setDetectedTempoBpm: (tempoBpm: number) => void;
   setIsSheetReady: (isReady: boolean) => void;
@@ -37,6 +47,7 @@ export const useMidiScore = ({
   fileName,
   isMidiFile,
   keyCount,
+  quantizationMode,
   rawFileContent,
   setDetectedTempoBpm,
   setIsSheetReady,
@@ -98,6 +109,41 @@ export const useMidiScore = ({
     [parsedResult.score, selectedMidiPartId],
   );
 
+  const notationResult = useMemo<MidiNotationResult | null>(() => {
+    if (!isMidiFile || !parsedResult.score || !selectedMidiPart) return null;
+    try {
+      return generateMidiNotation(
+        parsedResult.score,
+        selectedMidiPart.id,
+        quantizationMode,
+      );
+    } catch (error) {
+      console.error("MIDI notation generation error:", error);
+      return null;
+    }
+  }, [isMidiFile, parsedResult.score, quantizationMode, selectedMidiPart]);
+
+  const midiDisplayFileContent = useMemo(() => {
+    if (!notationResult) return null;
+    try {
+      return injectMelodicaLabels(notationResult.musicXml, {
+        keyCount,
+        transpose,
+      });
+    } catch (error) {
+      console.error("MIDI notation transform error:", error);
+      return null;
+    }
+  }, [keyCount, notationResult, transpose]);
+
+  const midiNotationStatus: MidiNotationStatus = !isMidiFile
+    ? "unavailable"
+    : parsedResult.score && !selectedMidiPart
+      ? "preparing"
+      : midiDisplayFileContent
+        ? "ready"
+        : "unavailable";
+
   useEffect(() => {
     if (!isMidiFile || !parsedResult.score || !selectedMidiPart) return;
 
@@ -118,18 +164,27 @@ export const useMidiScore = ({
       selectedMidiPart.id,
       appliedTranspose,
       keyCount,
+      notationResult
+        ? {
+            cursorIndexByTick: notationResult.cursorIndexByTick,
+            visualBoundaryTicks: notationResult.visualBoundaryTicks,
+          }
+        : undefined,
     );
     setPlaybackEvents(events);
     setIsSheetReady(events.length > 0);
     setRouteStatus({
       tone: events.length > 0 ? "success" : "error",
       message: events.length > 0
-        ? `MIDI part loaded: ${selectedMidiPart.name} — Ch. ${selectedMidiPart.channel + 1}.`
+        ? notationResult
+          ? `MIDI part loaded: ${selectedMidiPart.name} — Ch. ${selectedMidiPart.channel + 1}.`
+          : "MIDI playback is ready, but approximate notation is unavailable."
         : "The selected MIDI part has no playable notes.",
     });
   }, [
     isMidiFile,
     keyCount,
+    notationResult,
     parsedResult.score,
     selectedMidiPart,
     setIsSheetReady,
@@ -153,8 +208,12 @@ export const useMidiScore = ({
   return {
     handleMidiPartChange,
     midiOriginalMidiNumbers: selectedMidiPart?.originalMidiNumbers ?? [],
+    midiDisplayFileContent,
+    midiNotationStatus,
+    midiNotationWarnings: notationResult?.warnings ?? [],
     midiParts: parsedResult.score?.parts ?? ([] as MidiPartInfo[]),
     midiScore: parsedResult.score,
+    resolvedMidiQuantization: notationResult?.resolvedQuantization ?? null,
     resetMidiScore,
     selectedMidiPart,
     selectedMidiPartId,

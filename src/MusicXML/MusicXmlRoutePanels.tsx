@@ -7,6 +7,7 @@ import { ScoreSettingsPanel } from "./ScoreSettingsPanel";
 import { TransposeControls } from "./TransposeControls";
 import type { GameStats } from "./types";
 import type { ScoreFormat } from "./scoreFormat";
+import type { MidiNotationStatus } from "./midiNotation";
 
 export type MidiSummaryData = {
   durationSeconds: number;
@@ -24,6 +25,8 @@ type ScoreWindowPanelProps = {
   alphaTabRef: RefObject<AlphaTabViewerRef | null>;
   gpScorePaneHeightPx: number;
   midiSummary: MidiSummaryData | null;
+  midiNotationStatus: MidiNotationStatus;
+  midiNotationWarnings: string[];
   isTopDrawerHovered: boolean;
   isTopDrawerPinned: boolean;
   onTopDrawerHoverChange: (isHovered: boolean) => void;
@@ -75,6 +78,8 @@ export const ScoreWindowPanel = ({
   alphaTabRef,
   gpScorePaneHeightPx,
   midiSummary,
+  midiNotationStatus,
+  midiNotationWarnings,
   isTopDrawerHovered,
   isTopDrawerPinned,
   onTopDrawerHoverChange,
@@ -108,7 +113,8 @@ export const ScoreWindowPanel = ({
           className={`${scoreFormat === "guitar-pro" ? "" : "h-48 min-h-[180px]"} w-full overflow-x-auto overflow-y-hidden bg-white text-black scrollbar-hide`}
           style={scoreFormat === "guitar-pro" ? { height: `${gpScorePaneHeightPx}px`, minHeight: `${gpScorePaneHeightPx}px` } : undefined}
         >
-          {scoreFormat === "musicxml" ? (
+          {scoreFormat === "musicxml" ||
+          (scoreFormat === "midi" && midiNotationStatus === "ready") ? (
             <div ref={osmdRef} className="h-full flex items-center min-w-max" />
           ) : scoreFormat === "guitar-pro" ? (
             <AlphaTabViewer ref={alphaTabRef} {...alphaTabProps} />
@@ -130,6 +136,11 @@ export const ScoreWindowPanel = ({
                     <MidiSummaryMetric label="Initial tempo" value={`${Math.round(midiSummary.initialTempoBpm)} BPM`} />
                     <MidiSummaryMetric label="Tempo changes" value={String(midiSummary.tempoChangeCount)} />
                   </div>
+                  {midiNotationWarnings.length > 0 && (
+                    <p className="truncate text-[10px] font-semibold text-amber-300">
+                      Approximate notation: {midiNotationWarnings.join(" ")}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-sm font-bold text-gray-500">
