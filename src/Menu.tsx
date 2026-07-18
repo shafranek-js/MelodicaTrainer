@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gauge, Github, Minus, Pause, Play, Plus, Repeat2, RotateCcw, Pin, PinOff } from "lucide-react";
+import { Gauge, Github, Minus, Pause, Play, Plus, Repeat2, RotateCcw, Pin, PinOff, Settings } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
 import { usePlaybackToolbarState } from "./PlaybackToolbarContext";
 
@@ -167,6 +167,14 @@ const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
 
         {/* Right-side Utils */}
         <div className="flex items-center gap-4">
+          <Link
+            aria-label="Settings"
+            className={`transition-colors ${location.pathname === "/settings" ? "text-green-400" : "text-white hover:text-green-400"}`}
+            title="Settings"
+            to="/settings"
+          >
+            <Settings size={18} />
+          </Link>
           <button
             onClick={onTogglePin}
             className="hidden lg:flex text-gray-500 hover:text-gray-300 transition-colors p-1"

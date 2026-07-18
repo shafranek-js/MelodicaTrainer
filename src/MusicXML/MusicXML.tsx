@@ -16,7 +16,7 @@ import { useScoreCursor } from "./useScoreCursor";
 import { useScorePlayback } from "./useScorePlayback";
 import { useScoreDownloads } from "./useScoreDownloads";
 import { useScoreFileImport } from "./useScoreFileImport";
-import type { ScoreLibraryEntry } from "./scoreLibrary";
+import type { LibraryEntry } from "./scoreLibrary";
 import {
   downloadScoreLibraryFile,
   getScoreLibraryDownloadErrorMessage,
@@ -38,6 +38,8 @@ import { usePhantomHand } from "./usePhantomHand";
 import { releaseSynthesizer } from "./audioPlayback";
 import { useMusicXmlPanels } from "./useMusicXmlPanels";
 import { useStudyModePlayback } from "./useStudyModePlayback";
+import { useUserScoreLibrary } from "./UserScoreLibraryContext";
+import { getUserScoreFile } from "./userScoreLibrary";
 import { usePlaybackToolbarSync } from "./usePlaybackToolbarSync";
 import { useMusicXmlKeyboardShortcuts } from "./useMusicXmlKeyboardShortcuts";
 import { useBpmOverlay } from "./useBpmOverlay";
@@ -101,6 +103,7 @@ const LEGACY_STORAGE_KEYS = {
 } as const;
 
 const MusicXML: React.FC = () => {
+  const userLibrary = useUserScoreLibrary();
   // PERSISTENT STATES
   const [transpose, setTranspose] = usePersistentState<number>("melodicatrainer_transpose", 0, { legacyKeys: LEGACY_STORAGE_KEYS.transpose, sanitize: sanitizeFiniteNumber });
   const [selectedKeyCount, setSelectedKeyCount] = usePersistentState<MelodicaKeyCount>("melodicatrainer_key_count", 32, { sanitize: sanitizeMelodicaKeyCount });
@@ -500,18 +503,25 @@ const MusicXML: React.FC = () => {
   });
 
   const handleLibraryScoreLoad = useCallback(
-    async (entry: ScoreLibraryEntry, signal: AbortSignal) => {
+    async (entry: LibraryEntry, signal: AbortSignal) => {
       setRouteStatus({
         tone: "info",
-        message: `Downloading ${entry.title}...`,
+        message: entry.sourceKind === "public"
+          ? `Downloading ${entry.title}...`
+          : `Opening ${entry.title}...`,
       });
 
       try {
-        const file = await downloadScoreLibraryFile(entry, { signal });
+        const file = entry.sourceKind === "public"
+          ? await downloadScoreLibraryFile(entry, { signal })
+          : userLibrary.directoryHandle
+            ? await getUserScoreFile(userLibrary.directoryHandle, entry)
+            : (() => { throw new Error("Reconnect the local library folder in Settings."); })();
+        if (signal.aborted) throw new DOMException("Loading cancelled.", "AbortError");
         await importScoreFile(file);
         setRouteStatus({
           tone: "success",
-          message: `${entry.title} loaded from Score Library.`,
+          message: `${entry.title} loaded from ${entry.sourceKind === "public" ? "Score Library" : "your local folder"}.`,
         });
       } catch (error) {
         if (
@@ -522,13 +532,17 @@ const MusicXML: React.FC = () => {
         } else {
           setRouteStatus({
             tone: "error",
-            message: getScoreLibraryDownloadErrorMessage(error),
+            message: entry.sourceKind === "public"
+              ? getScoreLibraryDownloadErrorMessage(error)
+              : error instanceof Error
+                ? error.message
+                : "Could not load that local score.",
           });
         }
         throw error;
       }
     },
-    [importScoreFile],
+    [importScoreFile, userLibrary.directoryHandle],
   );
 
   return (

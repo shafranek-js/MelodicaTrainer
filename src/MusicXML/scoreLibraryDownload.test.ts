@@ -21,6 +21,7 @@ const entry: ScoreLibraryEntry = {
   source: { name: "Test", url: "https://example.com" },
   license: { kind: "CC0-1.0", url: "https://example.com/cc0", basis: "test" },
   rightsReviewedAt: "2026-07-17",
+  sourceKind: "public",
 };
 
 const expectDownloadError = async (

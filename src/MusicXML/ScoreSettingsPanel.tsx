@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { ChangeEvent } from "react";
 import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
-import type { ScoreLibraryEntry } from "./scoreLibrary";
+import type { LibraryEntry } from "./scoreLibrary";
 import type { MidiPartInfo } from "./midiParser";
 import {
   MIDI_QUANTIZATION_OPTIONS,
@@ -52,7 +52,7 @@ type ScoreSettingsPanelProps = {
   onGpTrackChange: (trackIndex: number) => void;
   onMidiPartChange: (partId: string) => void;
   onMidiQuantizationChange: (mode: MidiQuantizationMode) => void;
-  onLibraryScoreLoad: (entry: ScoreLibraryEntry, signal: AbortSignal) => Promise<void>;
+  onLibraryScoreLoad: (entry: LibraryEntry, signal: AbortSignal) => Promise<void>;
   onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
   onSoundFontChange: (soundFont: string) => void;

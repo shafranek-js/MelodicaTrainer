@@ -1,10 +1,27 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const userLibrary = vi.hoisted(() => ({
+  directoryHandle: null as FileSystemDirectoryHandle | null,
+  importFiles: vi.fn().mockResolvedValue({ copied: 1, errors: [], skipped: 0 }),
+  index: { entries: [] as unknown[], issues: [], lastScanAt: null },
+  isScanning: false,
+  permission: "unsupported" as string,
+  reconnect: vi.fn(),
+  rescan: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("./UserScoreLibraryContext", () => ({
+  useUserScoreLibrary: () => userLibrary,
+}));
+
 import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
 import { filterScoreLibraryEntries } from "./scoreLibraryFilter";
 import { resetScoreLibraryCatalogCacheForTests } from "./scoreLibrary";
-import type { ScoreLibraryEntry } from "./scoreLibrary";
+import type { LibraryEntry, ScoreLibraryEntry } from "./scoreLibrary";
+import type { UserScoreLibraryEntry } from "./userScoreLibrary";
 
 const entry: ScoreLibraryEntry = {
   id: "folk-song",
@@ -21,109 +38,108 @@ const entry: ScoreLibraryEntry = {
   source: { name: "Open Source", url: "https://example.com/source" },
   license: { kind: "CC0-1.0", url: "https://example.com/license", basis: "test" },
   rightsReviewedAt: "2026-07-17",
+  sourceKind: "public",
 };
 
-const gpEntry: ScoreLibraryEntry = {
-  ...entry,
-  id: "gp-exercise",
-  title: "Exercise",
-  arranger: undefined,
-  format: "guitar-pro",
-  assetPath: "assets/test/exercise.gp",
-  fileName: "exercise.gp",
-  difficulty: "intermediate",
-  tags: ["rhythm"],
+const localMidiEntry: UserScoreLibraryEntry = {
+  bytes: 100,
+  fileName: "practice.mid",
+  format: "midi",
+  id: "user:bbb",
+  lastModified: 1,
+  relativePath: "midi/practice.mid",
+  sha256: "b".repeat(64),
+  sourceKind: "user",
+  title: "Practice MIDI",
+};
+
+const rawEntry = (entry: ScoreLibraryEntry) => {
+  const value: Partial<ScoreLibraryEntry> = { ...entry };
+  delete value.sourceKind;
+  return value;
+};
+
+const renderDialog = async () => {
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(
+      <MemoryRouter>
+        <ScoreLibraryDialog isOpen onClose={vi.fn()} onLoadScore={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  return { container, root };
 };
 
 describe("ScoreLibraryDialog", () => {
   beforeEach(() => {
     resetScoreLibraryCatalogCacheForTests();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  });
-  afterEach(() => vi.unstubAllGlobals());
-
-  it("searches arranger and tags and applies format/difficulty filters", () => {
-    expect(filterScoreLibraryEntries([entry, gpEntry], { query: "arranger", difficulty: "all", format: "all", tag: "all" })).toEqual([entry]);
-    expect(filterScoreLibraryEntries([entry, gpEntry], { query: "", difficulty: "intermediate", format: "guitar-pro", tag: "rhythm" })).toEqual([gpEntry]);
-  });
-
-  it("renders result count, source, and license from the lazy catalog", async () => {
+    userLibrary.directoryHandle = null;
+    userLibrary.index = { entries: [], issues: [], lastScanAt: null };
+    userLibrary.permission = "unsupported";
+    userLibrary.importFiles.mockClear();
+    userLibrary.rescan.mockClear();
     vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ catalogVersion: 1, entries: [entry] })),
+      new Response(JSON.stringify({ catalogVersion: 1, entries: [rawEntry(entry)] })),
     ));
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    await act(async () => {
-      root.render(<ScoreLibraryDialog isOpen onClose={vi.fn()} onLoadScore={vi.fn()} />);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+    vi.unstubAllGlobals();
+  });
+
+  it("filters public and user entries by source, metadata, and MIDI format", () => {
+    const entries: LibraryEntry[] = [entry, localMidiEntry];
+    expect(filterScoreLibraryEntries(entries, { query: "arranger", difficulty: "all", format: "all", source: "all", tag: "all" })).toEqual([entry]);
+    expect(filterScoreLibraryEntries(entries, { query: "", difficulty: "all", format: "midi", source: "user", tag: "all" })).toEqual([localMidiEntry]);
+  });
+
+  it("renders public rights metadata and the Settings setup action", async () => {
+    const { container, root } = await renderDialog();
     expect(container.textContent).toContain("1 of 1 scores");
     expect(container.textContent).toContain("Source: Open Source");
     expect(container.textContent).toContain("License: CC0-1.0");
+    expect(container.textContent).toContain("Set up local library");
+    expect(container.querySelector('option[value="midi"]')).not.toBeNull();
     act(() => root.unmount());
-    container.remove();
   });
 
-  it("keeps filters after closing and reopening and resets them explicitly", async () => {
-    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ catalogVersion: 1, entries: [entry, gpEntry] })),
-    ));
-    const container = document.createElement("div");
-    document.body.append(container);
-    const root = createRoot(container);
-    const onClose = vi.fn();
-    const onLoadScore = vi.fn();
+  it("shows Add files only for a configured folder with permission", async () => {
+    userLibrary.directoryHandle = { name: "Scores" } as FileSystemDirectoryHandle;
+    userLibrary.permission = "granted";
+    const { container, root } = await renderDialog();
+    expect(container.textContent).toContain("Add files");
+    expect(container.textContent).not.toContain("Set up local library");
 
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input.accept).toContain(".mxl");
+    expect(input.accept).toContain(".gp");
+    expect(input.accept).toContain(".mid");
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: [new File(["score"], "score.gp")],
+    });
     await act(async () => {
-      root.render(<ScoreLibraryDialog isOpen onClose={onClose} onLoadScore={onLoadScore} />);
+      input.dispatchEvent(new Event("change", { bubbles: true }));
       await Promise.resolve();
-      await Promise.resolve();
     });
-
-    const searchInput = container.querySelector('input[type="search"]') as HTMLInputElement;
-    const formatSelect = container.querySelector('select[aria-label="Filter by format"]') as HTMLSelectElement;
-    const resetButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Reset filters"),
-    ) as HTMLButtonElement;
-
-    expect(resetButton.disabled).toBe(true);
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(
-        searchInput,
-        "folk",
-      );
-      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
-      formatSelect.value = "musicxml";
-      formatSelect.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    expect(container.textContent).toContain("1 of 2 scores");
-    expect(resetButton.disabled).toBe(false);
-
-    await act(async () => {
-      root.render(<ScoreLibraryDialog isOpen={false} onClose={onClose} onLoadScore={onLoadScore} />);
-    });
-    await act(async () => {
-      root.render(<ScoreLibraryDialog isOpen onClose={onClose} onLoadScore={onLoadScore} />);
-    });
-
-    const reopenedSearchInput = container.querySelector('input[type="search"]') as HTMLInputElement;
-    const reopenedFormatSelect = container.querySelector('select[aria-label="Filter by format"]') as HTMLSelectElement;
-    expect(reopenedSearchInput.value).toBe("folk");
-    expect(reopenedFormatSelect.value).toBe("musicxml");
-    expect(container.textContent).toContain("1 of 2 scores");
-
-    const reopenedResetButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Reset filters"),
-    ) as HTMLButtonElement;
-    await act(async () => reopenedResetButton.click());
-    expect(reopenedSearchInput.value).toBe("");
-    expect(reopenedFormatSelect.value).toBe("all");
-    expect(container.textContent).toContain("2 of 2 scores");
-    expect(reopenedResetButton.disabled).toBe(true);
-
+    expect(userLibrary.importFiles).toHaveBeenCalledOnce();
+    expect(container.textContent).toContain("1 copied, 0 skipped");
     act(() => root.unmount());
-    container.remove();
+  });
+
+  it("shows Reconnect instead of Add files when permission expires", async () => {
+    userLibrary.directoryHandle = { name: "Scores" } as FileSystemDirectoryHandle;
+    userLibrary.permission = "prompt";
+    const { container, root } = await renderDialog();
+    expect(container.textContent).toContain("Reconnect folder");
+    expect(container.textContent).not.toContain("Add files");
+    act(() => root.unmount());
   });
 });

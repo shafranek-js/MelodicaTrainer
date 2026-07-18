@@ -1,15 +1,18 @@
-export type ScoreLibraryFormat = "musicxml" | "guitar-pro";
+import type { ScoreFormat } from "./scoreFormat";
+import type { UserScoreLibraryEntry } from "./userScoreLibrary";
+
+export type ScoreLibraryFormat = ScoreFormat;
 export type ScoreLibraryDifficulty = "beginner" | "intermediate" | "advanced";
 export type ScoreLibraryLicenseKind = "CC0-1.0" | "PUBLIC_DOMAIN";
 
-export type ScoreLibraryEntry = {
+export type PublicScoreLibraryEntry = {
   arranger?: string;
   assetPath: string;
   bytes: number;
   composer: string;
   difficulty: ScoreLibraryDifficulty;
   fileName: string;
-  format: ScoreLibraryFormat;
+  format: Exclude<ScoreLibraryFormat, "midi">;
   id: string;
   license: {
     basis: string;
@@ -23,13 +26,17 @@ export type ScoreLibraryEntry = {
     recordId?: string;
     url: string;
   };
+  sourceKind: "public";
   tags: readonly string[];
   title: string;
 };
 
+export type ScoreLibraryEntry = PublicScoreLibraryEntry;
+export type LibraryEntry = PublicScoreLibraryEntry | UserScoreLibraryEntry;
+
 export type ScoreLibraryCatalog = {
   catalogVersion: number;
-  entries: readonly ScoreLibraryEntry[];
+  entries: readonly PublicScoreLibraryEntry[];
 };
 
 export class ScoreLibraryCatalogError extends Error {
@@ -40,7 +47,7 @@ export class ScoreLibraryCatalogError extends Error {
   }
 }
 
-const formats = new Set<ScoreLibraryFormat>(["musicxml", "guitar-pro"]);
+const formats = new Set<PublicScoreLibraryEntry["format"]>(["musicxml", "guitar-pro"]);
 const difficulties = new Set<ScoreLibraryDifficulty>([
   "beginner",
   "intermediate",
@@ -63,7 +70,7 @@ const isSafeAssetPath = (value: string) =>
   !/^[a-z][a-z\d+.-]*:/i.test(value);
 
 const entryFileMatchesFormat = (
-  format: ScoreLibraryFormat,
+  format: PublicScoreLibraryEntry["format"],
   assetPath: string,
   fileName: string,
 ) => {
@@ -78,7 +85,9 @@ const entryFileMatchesFormat = (
   );
 };
 
-const isEntry = (value: unknown): value is ScoreLibraryEntry => {
+type RawPublicScoreLibraryEntry = Omit<PublicScoreLibraryEntry, "sourceKind">;
+
+const isEntry = (value: unknown): value is RawPublicScoreLibraryEntry => {
   if (!isRecord(value) || !isRecord(value.source) || !isRecord(value.license)) {
     return false;
   }
@@ -88,12 +97,12 @@ const isEntry = (value: unknown): value is ScoreLibraryEntry => {
     typeof value.composer === "string" &&
     (value.arranger === undefined || typeof value.arranger === "string") &&
     typeof value.format === "string" &&
-    formats.has(value.format as ScoreLibraryFormat) &&
+    formats.has(value.format as PublicScoreLibraryEntry["format"]) &&
     typeof value.assetPath === "string" &&
     isSafeAssetPath(value.assetPath) &&
     typeof value.fileName === "string" &&
     entryFileMatchesFormat(
-      value.format as ScoreLibraryFormat,
+      value.format as PublicScoreLibraryEntry["format"],
       value.assetPath,
       value.fileName,
     ) &&
@@ -111,8 +120,8 @@ const isEntry = (value: unknown): value is ScoreLibraryEntry => {
     (value.source.recordId === undefined || typeof value.source.recordId === "string") &&
     typeof value.license.kind === "string" &&
     licenseKinds.has(value.license.kind as ScoreLibraryLicenseKind) &&
-    typeof value.license.url === "string" &&
     typeof value.license.basis === "string" &&
+    typeof value.license.url === "string" &&
     typeof value.rightsReviewedAt === "string"
   );
 };
@@ -127,7 +136,13 @@ export const parseScoreLibraryCatalog = (value: unknown): ScoreLibraryCatalog =>
   ) {
     throw new ScoreLibraryCatalogError("The score library catalog is invalid.");
   }
-  return value as ScoreLibraryCatalog;
+  return {
+    catalogVersion: value.catalogVersion as number,
+    entries: (value.entries as RawPublicScoreLibraryEntry[]).map((entry) => ({
+      ...entry,
+      sourceKind: "public",
+    })),
+  };
 };
 
 let catalogPromise: Promise<ScoreLibraryCatalog> | null = null;
@@ -154,11 +169,13 @@ export const loadScoreLibraryCatalog = (
   return request;
 };
 
-export const resetScoreLibraryCatalogCacheForTests = () => {
+export const clearScoreLibraryCatalogCache = () => {
   catalogPromise = null;
 };
 
-export const getScoreLibraryAssetUrl = (entry: ScoreLibraryEntry) => {
+export const resetScoreLibraryCatalogCacheForTests = clearScoreLibraryCatalogCache;
+
+export const getScoreLibraryAssetUrl = (entry: PublicScoreLibraryEntry) => {
   if (!isSafeAssetPath(entry.assetPath)) throw new ScoreLibraryCatalogError();
   return `${import.meta.env.BASE_URL}score-library/${entry.assetPath}?v=${entry.sha256}`;
 };

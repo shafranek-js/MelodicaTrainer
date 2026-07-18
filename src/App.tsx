@@ -10,11 +10,13 @@ import Melodica from "./Melodica/Melodica";
 import { PlaybackToolbarProvider } from "./PlaybackToolbarProvider";
 import { RouteErrorBoundary } from "./ErrorBoundary";
 import { usePersistentState } from "./hooks/usePersistentState";
+import { UserScoreLibraryProvider } from "./MusicXML/UserScoreLibraryContext";
 
 const Circle = lazy(() => import("./Circle/Circle"));
 const Help = lazy(() => import("./Help/Help"));
 const MusicXML = lazy(() => import("./MusicXML/MusicXML"));
 const Practice = lazy(() => import("./Practice/Practice"));
+const Settings = lazy(() => import("./Settings/Settings"));
 
 function App() {
   const [isMenuPinned, setIsMenuPinned] = usePersistentState<boolean>("melodicatrainer_menu_pinned", true, {
@@ -33,7 +35,8 @@ function App() {
 
   return (
     <Router>
-      <PlaybackToolbarProvider>
+      <UserScoreLibraryProvider>
+        <PlaybackToolbarProvider>
         <div className="grid h-screen w-full max-w-full grid-rows-[auto_1fr] bg-gray-950 overflow-hidden relative">
           {/* Invisible Trigger for the Global Menu Drawer */}
           <div 
@@ -67,6 +70,7 @@ function App() {
                   <Route path="/practice" element={<Practice />} />
                   <Route path="/musicxml" element={<MusicXML />} />
                   <Route path="/help" element={<Help />} />
+                  <Route path="/settings" element={<Settings />} />
                   <Route path="/harmonica" element={<Navigate to="/melodica" replace />} />
                   <Route path="/" element={<Navigate to="/musicxml" replace />} />
                 </Routes>
@@ -74,7 +78,8 @@ function App() {
             </RouteErrorBoundary>
           </main>
         </div>
-      </PlaybackToolbarProvider>
+        </PlaybackToolbarProvider>
+      </UserScoreLibraryProvider>
     </Router>
   );
 }

@@ -31,5 +31,8 @@ codereview_13-27-2026.md
 correctionplan.md
 demo-video/
 outputs/
+
+# Development-only score library (never commit or deploy)
+public/local-score-library/
 run.bat
 

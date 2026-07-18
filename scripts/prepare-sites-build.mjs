@@ -1,4 +1,6 @@
-import { copyFile, cp, mkdir, readdir } from "node:fs/promises";
+import { copyFile, cp, mkdir, readdir, rm } from "node:fs/promises";
+
+await rm("dist/local-score-library", { force: true, recursive: true });
 
 const staticEntries = (await readdir("dist", { withFileTypes: true }))
   .filter(({ name }) => ![".openai", "client", "server"].includes(name));
