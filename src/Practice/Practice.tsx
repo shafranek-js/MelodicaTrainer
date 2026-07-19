@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Note } from "tonal";
 import { usePitchDetector } from "../hooks/usePitchDetector";
+import { useAppSettings } from "../Settings/AppSettingsContext";
 import {
   freqToNoteAndCents,
   generateMelodicaLayout,
   getMelodicaMidiNumbers,
 } from "../utils/utils";
-import type { MelodicaKeyCount } from "../utils/utils";
 import {
   BluesPanel,
   ListeningPanel,
@@ -21,7 +21,7 @@ import type { TrainerMode } from "./usePracticeViewModel";
 
 function Practice() {
   const { t } = useTranslation();
-  const [keyCount, setKeyCount] = useState<MelodicaKeyCount>(32);
+  const { melodicaRange: keyCount } = useAppSettings();
   const [tonic, setTonic] = useState("C");
   const [scaleValue, setScaleValue] = useState<PracticeScaleValue>("blues");
   const [trainerMode, setTrainerMode] = useState<TrainerMode>("explore");
@@ -88,11 +88,6 @@ function Practice() {
         </div>
 
         <PracticeControlsPanel
-          keyCount={keyCount}
-          onKeyCountChange={(value) => {
-            setKeyCount(value);
-            setTargetIndex(0);
-          }}
           onScaleValueChange={(value) => {
             setScaleValue(value);
             setTargetIndex(0);

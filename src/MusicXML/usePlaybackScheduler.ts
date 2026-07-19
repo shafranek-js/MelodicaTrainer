@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import type { MutableRefObject } from "react";
+import { Note } from "tonal";
 import { getAudioOutputLatencyMs } from "./audioPlayback";
 import {
   getLatencyAdjustedClockOffsetMs,
@@ -83,6 +84,14 @@ export const usePlaybackScheduler = ({
 
       setCurrentEventIndex(startIndex);
       moveCursorThroughEventRef.current(startIndex, durationMs);
+      const attackMidiNumbers = event.notes.flatMap((note) => {
+        if (!note.shouldPlay) return [];
+        const midi = Note.midi(note.name);
+        return midi === null ? [] : [midi];
+      });
+      if (attackMidiNumbers.length > 0) {
+        latestOptionsRef.current.callbacks.onPlaybackAttack(attackMidiNumbers);
+      }
       playNotes(event.notes, effectiveTempoBpm, tempoScaleRef.current);
 
       const scheduleNext = () => {

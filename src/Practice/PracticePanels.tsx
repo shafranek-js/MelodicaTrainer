@@ -3,9 +3,8 @@ import type { TFunction } from "i18next";
 import { MelodicaKeyboard } from "../Melodica/MelodicaKeyboard";
 import {
   getSuzukiNoteColor,
-  melodicaRangeOptions,
 } from "../utils/utils";
-import type { MelodicaKeyCount, MelodicaLayout } from "../utils/utils";
+import type { MelodicaLayout } from "../utils/utils";
 import { bluesBars, scaleOptions, tonicOptions } from "./practiceTargets";
 import type { PracticeScaleValue, PracticeTarget } from "./practiceTargets";
 import { trainerModes } from "./usePracticeViewModel";
@@ -17,8 +16,6 @@ type DetectedNote = {
 } | null;
 
 type PracticeControlsPanelProps = {
-  keyCount: MelodicaKeyCount;
-  onKeyCountChange: (keyCount: MelodicaKeyCount) => void;
   onScaleValueChange: (scaleValue: PracticeScaleValue) => void;
   onTonicChange: (tonic: string) => void;
   onTrainerModeChange: (mode: TrainerMode) => void;
@@ -29,8 +26,6 @@ type PracticeControlsPanelProps = {
 };
 
 export const PracticeControlsPanel = ({
-  keyCount,
-  onKeyCountChange,
   onScaleValueChange,
   onTonicChange,
   onTrainerModeChange,
@@ -39,24 +34,7 @@ export const PracticeControlsPanel = ({
   tonic,
   trainerMode,
 }: PracticeControlsPanelProps) => (
-  <div className="grid gap-3 rounded-lg border border-gray-800 bg-gray-900 p-4 lg:grid-cols-4">
-    <label className="text-sm text-gray-300">
-      Melodica range
-      <select
-        value={keyCount}
-        onChange={(event) =>
-          onKeyCountChange(Number(event.target.value) as MelodicaKeyCount)
-        }
-        className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
-      >
-        {melodicaRangeOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label} ({option.startNote}-{option.endNote})
-          </option>
-        ))}
-      </select>
-    </label>
-
+  <div className="grid gap-3 rounded-lg border border-gray-800 bg-gray-900 p-4 lg:grid-cols-3">
     <label className="text-sm text-gray-300">
       Tonic
       <select

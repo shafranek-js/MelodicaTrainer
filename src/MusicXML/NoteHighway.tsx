@@ -13,6 +13,9 @@ import {
   TargetLine,
 } from "./NoteHighwayPanels";
 import type { FingerVisualState } from "./usePhantomHand";
+import type { MidiAccessState } from "../hooks/useMidiInput";
+import type { EffectiveInputSource, InputMode } from "./inputMode";
+import type { PlaybackAttack } from "./noteHighwayKeyboardState";
 
 type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
 
@@ -32,8 +35,17 @@ export type NoteHighwayProps = {
   phantomStates?: FingerVisualState[];
   activeMidi?: number | null;
   activeFinger?: number | null;
+  connectedMidiInputCount: number;
+  effectiveInputSource: EffectiveInputSource;
+  inputError?: string | null;
+  inputMode: InputMode;
+  midiAccessState: MidiAccessState;
   showVirtualHand?: boolean;
   isWaiting?: boolean;
+  onNoteOn?: (midi: number) => void;
+  onNoteOff?: (midi: number) => void;
+  playbackAttack?: PlaybackAttack;
+  userActiveMidi?: ReadonlySet<number>;
 };
 
 export const NoteHighway = ({
@@ -52,8 +64,17 @@ export const NoteHighway = ({
   phantomStates,
   activeMidi,
   activeFinger,
+  connectedMidiInputCount,
+  effectiveInputSource,
+  inputError,
+  inputMode,
+  midiAccessState,
   showVirtualHand,
   isWaiting,
+  onNoteOn,
+  onNoteOff,
+  playbackAttack,
+  userActiveMidi,
 }: NoteHighwayProps) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -162,8 +183,13 @@ export const NoteHighway = ({
         <div className="relative h-full overflow-hidden rounded border border-gray-800 bg-gray-950" id="highway-container" ref={containerRef}>
           <PitchStatusBar
             clarity={clarity}
+            connectedMidiInputCount={connectedMidiInputCount}
             detectedNote={detectedNote}
+            effectiveInputSource={effectiveInputSource}
+            inputError={inputError}
+            inputMode={inputMode}
             isPlaying={isPlaying}
+            midiAccessState={midiAccessState}
             pitchError={pitchError}
           />
           <LaneTracks keys={keyboardGeometry.keys} />
@@ -185,6 +211,10 @@ export const NoteHighway = ({
             onSvgWidthChange={setMeasuredSvgWidth}
             phantomStates={phantomStates}
             showVirtualHand={showVirtualHand}
+            onNoteOn={onNoteOn}
+            onNoteOff={onNoteOff}
+            playbackAttack={playbackAttack}
+            userActiveMidi={userActiveMidi}
           />
           <TargetLine
             isWaiting={isWaiting}

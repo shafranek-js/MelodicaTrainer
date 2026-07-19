@@ -2,9 +2,8 @@ import { Music2 } from "lucide-react";
 import type { TFunction } from "i18next";
 import {
   getSuzukiNoteColor,
-  melodicaRangeOptions,
 } from "../utils/utils";
-import type { MelodicaKeyCount, MelodicaLayout } from "../utils/utils";
+import type { MelodicaLayout } from "../utils/utils";
 import { MelodicaKeyboard } from "./MelodicaKeyboard";
 
 type DetectedNote = {
@@ -13,17 +12,13 @@ type DetectedNote = {
 } | null;
 
 type MelodicaHeaderPanelProps = {
-  keyCount: MelodicaKeyCount;
-  onKeyCountChange: (keyCount: MelodicaKeyCount) => void;
   rangeSummary: string;
 };
 
 export const MelodicaHeaderPanel = ({
-  keyCount,
-  onKeyCountChange,
   rangeSummary,
 }: MelodicaHeaderPanelProps) => (
-  <header className="flex flex-col gap-4 rounded-lg border border-gray-800 bg-gray-900 p-4 sm:flex-row sm:items-center sm:justify-between">
+  <header className="rounded-lg border border-gray-800 bg-gray-900 p-4">
     <div>
       <div className="mb-2 flex items-center gap-2 text-emerald-300">
         <Music2 size={20} />
@@ -37,28 +32,6 @@ export const MelodicaHeaderPanel = ({
       <p className="mt-1 text-sm text-gray-400">{rangeSummary}</p>
     </div>
 
-    <div className="flex flex-col gap-3 sm:min-w-56">
-      <label
-        htmlFor="melodica-range"
-        className="text-[10px] font-black uppercase tracking-widest text-gray-400"
-      >
-        Melodica range
-      </label>
-      <select
-        id="melodica-range"
-        value={keyCount}
-        onChange={(event) =>
-          onKeyCountChange(Number(event.target.value) as MelodicaKeyCount)
-        }
-        className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-semibold text-white outline-none transition focus:ring-2 focus:ring-emerald-500"
-      >
-        {melodicaRangeOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label} ({option.startNote}-{option.endNote})
-          </option>
-        ))}
-      </select>
-    </div>
   </header>
 );
 
@@ -121,6 +94,9 @@ type MelodicaKeyboardPanelProps = {
   keyboardRangeLabel: string;
   layout: MelodicaLayout;
   t: TFunction;
+  onNoteOn?: (midi: number) => void;
+  onNoteOff?: (midi: number) => void;
+  userActiveMidi: ReadonlySet<number>;
 };
 
 export const MelodicaKeyboardPanel = ({
@@ -129,6 +105,9 @@ export const MelodicaKeyboardPanel = ({
   keyboardRangeLabel,
   layout,
   t,
+  onNoteOn,
+  onNoteOff,
+  userActiveMidi,
 }: MelodicaKeyboardPanelProps) => (
   <div className="min-w-0 rounded-lg border border-gray-800 bg-gray-900 p-4">
     <div className="mb-3 flex items-center justify-between gap-3">
@@ -142,10 +121,12 @@ export const MelodicaKeyboardPanel = ({
         formatPitchClass={t}
         getKeyState={(key) => ({
           activeColor: getSuzukiNoteColor(key.name),
-          isActive: detectedMidi === key.midi,
+          isActive: detectedMidi === key.midi || userActiveMidi.has(key.midi),
           tuningCents: detectedMidi === key.midi ? detectedNote?.cents : null,
         })}
         layout={layout}
+        onNoteOn={onNoteOn}
+        onNoteOff={onNoteOff}
       />
     </div>
   </div>

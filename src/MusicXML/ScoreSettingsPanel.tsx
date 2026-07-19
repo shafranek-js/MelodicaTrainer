@@ -2,7 +2,6 @@ import { AlertTriangle, FolderOpen, Library, Pin, PinOff, Volume2, VolumeX } fro
 import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { Link } from "react-router-dom";
-import type { MelodicaRangeOption, MelodicaKeyCount } from "../utils/utils";
 import { ScoreLibraryDialog } from "./ScoreLibraryDialog";
 import type { LibraryEntry } from "./scoreLibrary";
 import type { MidiPartInfo } from "./midiParser";
@@ -22,11 +21,6 @@ import type {
 
 type RouteStatusTone = "info" | "success" | "error";
 type RouteStatus = { tone: RouteStatusTone; message: string };
-
-type SoundFontOption = {
-  label: string;
-  value: string;
-};
 
 type AvailablePreset = {
   bank: number;
@@ -56,8 +50,6 @@ type ScoreSettingsPanelProps = {
   midiNotationStatus: MidiNotationStatus;
   midiNotationWarnings: string[];
   midiQuantizationMode: MidiQuantizationMode;
-  keyCount: MelodicaKeyCount;
-  melodicaRanges: readonly MelodicaRangeOption[];
   isPinned: boolean;
   isTryingHighFidelityMscz: boolean;
   onDownloadMelodicaNotes: () => void;
@@ -70,9 +62,7 @@ type ScoreSettingsPanelProps = {
   onMusicXmlStaffChange: (staffId: string) => void;
   onMidiQuantizationChange: (mode: MidiQuantizationMode) => void;
   onLibraryScoreLoad: (entry: LibraryEntry, signal: AbortSignal) => Promise<void>;
-  onMelodicaRangeChange: (keyCount: MelodicaKeyCount) => void;
   onSelectedPresetChange: (preset: string) => void;
-  onSoundFontChange: (soundFont: string) => void;
   onTogglePin: () => void;
   onTryHighFidelityMscz: () => void;
   routeStatus: RouteStatus | null;
@@ -84,8 +74,6 @@ type ScoreSettingsPanelProps = {
   selectedMusicXmlStaffId: string | null;
   resolvedMidiQuantization: ResolvedMidiQuantization | null;
   selectedPreset: string;
-  selectedSoundFont: string;
-  soundFonts: SoundFontOption[];
 };
 
 export const ScoreSettingsPanel = ({
@@ -105,8 +93,6 @@ export const ScoreSettingsPanel = ({
   midiNotationStatus,
   midiNotationWarnings,
   midiQuantizationMode,
-  keyCount,
-  melodicaRanges,
   isPinned,
   isTryingHighFidelityMscz,
   onDownloadMelodicaNotes,
@@ -119,9 +105,7 @@ export const ScoreSettingsPanel = ({
   onMusicXmlStaffChange,
   onMidiQuantizationChange,
   onLibraryScoreLoad,
-  onMelodicaRangeChange,
   onSelectedPresetChange,
-  onSoundFontChange,
   onTogglePin,
   onTryHighFidelityMscz,
   routeStatus,
@@ -133,8 +117,6 @@ export const ScoreSettingsPanel = ({
   selectedMusicXmlStaffId,
   resolvedMidiQuantization,
   selectedPreset,
-  selectedSoundFont,
-  soundFonts,
 }: ScoreSettingsPanelProps) => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const highFidelityAction = canTryHighFidelityMscz ? (
@@ -173,36 +155,6 @@ export const ScoreSettingsPanel = ({
     )}
 
     <div className="space-y-4">
-      <div>
-        <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Melodica Range</label>
-        <select
-          value={keyCount}
-          onChange={(e) => onMelodicaRangeChange(Number(e.target.value) as MelodicaKeyCount)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-        >
-          {melodicaRanges.map((range) => (
-            <option key={range.value} value={range.value}>
-              {range.label} ({range.startNote}-{range.endNote})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">SoundFont</label>
-        <select
-          value={selectedSoundFont}
-          onChange={(e) => onSoundFontChange(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-2 w-full text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-        >
-          {soundFonts.map((soundFont) => (
-            <option key={soundFont.value} value={soundFont.value}>
-              {soundFont.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {availablePresets.length > 0 && (
         <div>
           <label className="block mb-1 text-gray-400 font-bold text-[10px] uppercase tracking-widest">Instrument</label>

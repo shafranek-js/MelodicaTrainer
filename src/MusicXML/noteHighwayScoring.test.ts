@@ -36,12 +36,12 @@ describe("noteHighwayScoring", () => {
 
         expect(isDetectedPitchHit({
             currentGameEvent: chord,
-            detectedNote: { note: "E4", cents: 12 },
+            detectedNotes: [{ note: "B4", cents: 0 }, { note: "E4", cents: 12 }],
             targetEventIndex: 0,
         })).toBe(true);
         expect(isDetectedPitchHit({
             currentGameEvent: chord,
-            detectedNote: { note: "E4", cents: 60 },
+            detectedNotes: [{ note: "E4", cents: 60 }],
             targetEventIndex: 0,
         })).toBe(false);
     });
@@ -52,7 +52,7 @@ describe("noteHighwayScoring", () => {
         expect(getTargetMidiNumbers(tieStopOnly).size).toBe(0);
         expect(isDetectedPitchHit({
             currentGameEvent: tieStopOnly,
-            detectedNote: { note: "C4", cents: 0 },
+            detectedNotes: [{ note: "C4", cents: 0 }],
             targetEventIndex: 0,
         })).toBe(false);
     });

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gauge, Github, Minus, Pause, Play, Plus, Repeat2, RotateCcw, Pin, PinOff, Settings } from "lucide-react";
+import { Circle, Gauge, Github, LoaderCircle, Minus, Pause, Play, Plus, Repeat2, RotateCcw, Pin, PinOff, Settings, Square } from "lucide-react";
 import NotationSwitch from "./NotationSwitch";
 import { usePlaybackToolbarState } from "./PlaybackToolbarContext";
 
@@ -26,7 +26,13 @@ const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
     gameStats,
     accuracy,
     canPlayback,
+    onToggleRecording,
+    recordingDurationMs,
+    recordingError,
+    recordingState,
   } = tabsState ?? {};
+  const recordingSeconds = Math.floor((recordingDurationMs ?? 0) / 1000);
+  const recordingTime = `${Math.floor(recordingSeconds / 60).toString().padStart(2, "0")}:${(recordingSeconds % 60).toString().padStart(2, "0")}`;
 
   return (
     <nav className="flex flex-col border-b border-gray-700 bg-gray-900 shadow-lg shrink-0 z-50 relative">
@@ -88,6 +94,35 @@ const Menu: React.FC<MenuProps> = ({ isPinned, onTogglePin }) => {
                 {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                 {isPlaying ? "Pause" : (isPaused ? "Resume" : "Play")}
               </button>
+              {onToggleRecording && recordingState && (
+                <button
+                  aria-pressed={recordingState === "recording"}
+                  className={`flex h-8 items-center gap-2 rounded border px-3 text-xs font-bold transition disabled:cursor-wait disabled:opacity-70 ${
+                    recordingState === "recording"
+                      ? "border-red-400 bg-red-600 text-white hover:bg-red-500"
+                      : recordingState === "error"
+                        ? "border-red-700 bg-red-950 text-red-200 hover:bg-red-900"
+                        : "border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
+                  }`}
+                  disabled={recordingState === "exporting"}
+                  onClick={onToggleRecording}
+                  title={recordingError ?? "Record the synthesized mix as MP3"}
+                  type="button"
+                >
+                  {recordingState === "exporting"
+                    ? <LoaderCircle className="animate-spin" size={13} />
+                    : recordingState === "recording"
+                      ? <Square fill="currentColor" size={11} />
+                      : <Circle className="text-red-400" fill="currentColor" size={11} />}
+                  {recordingState === "exporting"
+                    ? "Exporting…"
+                    : recordingState === "recording"
+                      ? `Stop ${recordingTime}`
+                      : recordingState === "error"
+                        ? "Rec error"
+                        : "Rec"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onToggleLoop}

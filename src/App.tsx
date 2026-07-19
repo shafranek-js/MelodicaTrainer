@@ -11,6 +11,7 @@ import { PlaybackToolbarProvider } from "./PlaybackToolbarProvider";
 import { RouteErrorBoundary } from "./ErrorBoundary";
 import { usePersistentState } from "./hooks/usePersistentState";
 import { UserScoreLibraryProvider } from "./MusicXML/UserScoreLibraryContext";
+import { AppSettingsProvider } from "./Settings/AppSettingsContext";
 
 const Circle = lazy(() => import("./Circle/Circle"));
 const Help = lazy(() => import("./Help/Help"));
@@ -35,8 +36,9 @@ function App() {
 
   return (
     <Router>
-      <UserScoreLibraryProvider>
-        <PlaybackToolbarProvider>
+      <AppSettingsProvider>
+        <UserScoreLibraryProvider>
+          <PlaybackToolbarProvider>
         <div className="grid h-screen w-full max-w-full grid-rows-[auto_1fr] bg-gray-950 overflow-hidden relative">
           {/* Invisible Trigger for the Global Menu Drawer */}
           <div 
@@ -78,8 +80,9 @@ function App() {
             </RouteErrorBoundary>
           </main>
         </div>
-        </PlaybackToolbarProvider>
-      </UserScoreLibraryProvider>
+          </PlaybackToolbarProvider>
+        </UserScoreLibraryProvider>
+      </AppSettingsProvider>
     </Router>
   );
 }

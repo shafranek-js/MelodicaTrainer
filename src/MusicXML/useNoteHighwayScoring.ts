@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
-import type { freqToNoteAndCents } from "../utils/utils";
+import { Note } from "tonal";
 import {
+  getDetectedPitchHitMidi,
   getMissedEventIndexes,
-  isDetectedPitchHit,
 } from "./noteHighwayScoring";
+import type { ScoringDetectedNote } from "./noteHighwayScoring";
 import type { GameStats, PlaybackEvent, PlaybackTiming } from "./types";
-
-type DetectedNote = NonNullable<ReturnType<typeof freqToNoteAndCents>>;
 
 type UseNoteHighwayScoringOptions = {
   currentGameTimeMs: number;
   currentGameEvent: PlaybackEvent | undefined;
-  detectedNote: DetectedNote | null;
+  detectedNotes: readonly ScoringDetectedNote[];
   playbackEvents: PlaybackEvent[];
   playbackTimeline: PlaybackTiming[];
   targetEventIndex: number | null;
@@ -30,7 +29,7 @@ const emptyGameStats: GameStats = {
 export const useNoteHighwayScoring = ({
   currentGameTimeMs,
   currentGameEvent,
-  detectedNote,
+  detectedNotes,
   playbackEvents,
   playbackTimeline,
   targetEventIndex,
@@ -41,20 +40,30 @@ export const useNoteHighwayScoring = ({
   const [gameStats, setGameStats] = useState<GameStats>(emptyGameStats);
   const [lastHitIndex, setLastHitIndex] = useState<number | null>(null);
   const scoredEventIndexesRef = useRef(new Set<number>());
-  const consumedPitchNameRef = useRef<string | null>(null);
+  const consumedMidiNumbersRef = useRef(new Set<number>());
 
-  // Clear consumed pitch lock when the user stops playing or changes notes.
+  // A held note can score once. Releasing it makes the same pitch eligible again.
   useEffect(() => {
-    if (!detectedNote) {
-      consumedPitchNameRef.current = null;
-    } else if (consumedPitchNameRef.current && detectedNote.note !== consumedPitchNameRef.current) {
-      consumedPitchNameRef.current = null;
-    }
-  }, [detectedNote]);
+    const activeMidiNumbers = new Set(
+      detectedNotes
+        .map((detectedNote) => Note.midi(detectedNote.note))
+        .filter((midi): midi is number => midi !== null),
+    );
+    consumedMidiNumbersRef.current.forEach((midi) => {
+      if (!activeMidiNumbers.has(midi)) {
+        consumedMidiNumbersRef.current.delete(midi);
+      }
+    });
+  }, [detectedNotes]);
 
-  const isCurrentHit = isDetectedPitchHit({
+  const unconsumedDetectedNotes = detectedNotes.filter((detectedNote) => {
+    const midi = Note.midi(detectedNote.note);
+    return midi !== null && !consumedMidiNumbersRef.current.has(midi);
+  });
+
+  const currentHitMidi = getDetectedPitchHitMidi({
     currentGameEvent,
-    detectedNote,
+    detectedNotes: unconsumedDetectedNotes,
     targetEventIndex,
   });
 
@@ -66,17 +75,17 @@ export const useNoteHighwayScoring = ({
     : targetEventIndex;
 
   // Similarly, check the hit against the effective target event.
-  const effectiveHit = isStudyMode && studyModeNextIndexRef
-    ? (effectiveTarget !== null &&
-       detectedNote &&
-       isDetectedPitchHit({
-         currentGameEvent: playbackEvents[effectiveTarget],
-         detectedNote,
-         targetEventIndex: effectiveTarget,
-       }))
-    : isCurrentHit;
-    
-  const isFreshHit = Boolean(effectiveHit && detectedNote && detectedNote.note !== consumedPitchNameRef.current);
+  const effectiveHitMidi = isStudyMode && studyModeNextIndexRef
+    ? effectiveTarget === null
+      ? null
+      : getDetectedPitchHitMidi({
+          currentGameEvent: playbackEvents[effectiveTarget],
+          detectedNotes: unconsumedDetectedNotes,
+          targetEventIndex: effectiveTarget,
+        })
+    : currentHitMidi;
+
+  const isFreshHit = effectiveHitMidi !== null;
 
   const accuracy =
     gameStats.hits + gameStats.misses > 0
@@ -87,7 +96,7 @@ export const useNoteHighwayScoring = ({
     setGameStats(emptyGameStats);
     setLastHitIndex(null);
     scoredEventIndexesRef.current = new Set();
-    consumedPitchNameRef.current = null;
+    consumedMidiNumbersRef.current = new Set();
   }, []);
 
   useEffect(() => {
@@ -101,10 +110,10 @@ export const useNoteHighwayScoring = ({
 
     scoredEventIndexesRef.current.add(effectiveTarget);
     setLastHitIndex(effectiveTarget);
-    if (detectedNote) {
-      consumedPitchNameRef.current = detectedNote.note;
+    if (effectiveHitMidi !== null) {
+      consumedMidiNumbersRef.current.add(effectiveHitMidi);
     }
-    
+
     setGameStats((stats) => ({
       ...stats,
       hits: stats.hits + 1,
@@ -114,7 +123,7 @@ export const useNoteHighwayScoring = ({
     if (isStudyMode && effectiveTarget !== null) {
       studyModeOnHit?.(effectiveTarget);
     }
-  }, [isFreshHit, effectiveTarget, isStudyMode, studyModeOnHit, detectedNote]);
+  }, [effectiveHitMidi, isFreshHit, effectiveTarget, isStudyMode, studyModeOnHit]);
 
   useEffect(() => {
     const missedIndexes = getMissedEventIndexes({

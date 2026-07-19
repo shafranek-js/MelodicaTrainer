@@ -74,6 +74,17 @@
 
 /* ── Candy Note Highway Animations ── */
 
+@keyframes melodicaKeyStrike {
+  0% { opacity: 0.9; transform: translateY(0) scale(1); }
+  35% { opacity: 0.62; transform: translateY(3px) scale(0.985); }
+  100% { opacity: 0; transform: translateY(0) scale(1); }
+}
+
+.melodica-key-strike {
+  animation: melodicaKeyStrike 175ms ease-out both;
+  z-index: 35;
+}
+
 /* Block springs in from above with a bounce */
 @keyframes candyDrop {
   0%   { transform: translateY(-24px) scale(0.75); opacity: 0; }

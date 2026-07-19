@@ -5,9 +5,16 @@ import {
   FolderOpen,
   Link2,
   RefreshCw,
+  SlidersHorizontal,
   Unlink,
 } from "lucide-react";
+import { useMidiInput } from "../hooks/useMidiInput";
 import { useUserScoreLibrary } from "../MusicXML/UserScoreLibraryContext";
+import type { InputMode } from "../MusicXML/inputMode";
+import { melodicaRangeOptions } from "../utils/utils";
+import type { MelodicaKeyCount } from "../utils/utils";
+import { useAppSettings } from "./AppSettingsContext";
+import { SOUND_FONT_OPTIONS } from "./appSettings";
 
 const formatScanTime = (value: string | null) => {
   if (!value) return "Not scanned yet";
@@ -19,8 +26,26 @@ const formatScanTime = (value: string | null) => {
 
 const Settings = () => {
   const library = useUserScoreLibrary();
+  const {
+    inputMode,
+    melodicaRange,
+    setInputMode,
+    setMelodicaRange,
+    setSoundFont,
+    soundFont,
+  } = useAppSettings();
+  const midiInput = useMidiInput();
   const isConnected = Boolean(library.directoryHandle);
   const isGranted = library.permission === "granted";
+  const midiStatus = midiInput.accessState === "unsupported"
+    ? "Web MIDI is not supported in this browser."
+    : midiInput.accessState === "denied"
+      ? "MIDI access was not granted."
+      : midiInput.accessState === "requesting"
+        ? "Checking MIDI devices…"
+        : midiInput.connectedInputCount === 0
+          ? "No MIDI keyboard connected."
+          : `${midiInput.connectedInputCount} MIDI input${midiInput.connectedInputCount === 1 ? "" : "s"} connected.`;
 
   return (
     <div className="custom-scrollbar h-full overflow-y-auto bg-gray-950 px-4 py-6 text-gray-100 sm:px-8">
@@ -36,6 +61,66 @@ const Settings = () => {
             </div>
           </div>
         </header>
+
+        <section className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-xl">
+          <div className="border-b border-gray-800 px-5 py-4 sm:px-6">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="text-emerald-400" size={19} />
+              <h2 className="font-black text-white">Instrument and input</h2>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-gray-400">
+              Range is shared by Tabs, Melodica and Practice. Input and SoundFont control playable audio.
+            </p>
+          </div>
+          <div className="grid gap-5 px-5 py-5 sm:grid-cols-3 sm:px-6">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              Melodica Range
+              <select
+                className="mt-1.5 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                id="melodica-range-setting"
+                onChange={(event) => setMelodicaRange(Number(event.target.value) as MelodicaKeyCount)}
+                value={melodicaRange}
+              >
+                {melodicaRangeOptions.map((range) => (
+                  <option key={range.value} value={range.value}>
+                    {range.label} ({range.startNote}-{range.endNote})
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              Note input
+              <select
+                className="mt-1.5 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                id="note-input-mode"
+                onChange={(event) => setInputMode(event.target.value as InputMode)}
+                value={inputMode}
+              >
+                <option value="auto">Auto</option>
+                <option value="mic">Mic</option>
+                <option value="midi">MIDI</option>
+              </select>
+              <span className="mt-1.5 block text-[9px] font-medium normal-case leading-relaxed tracking-normal text-gray-500">
+                {midiStatus}
+              </span>
+            </label>
+
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              SoundFont
+              <select
+                className="mt-1.5 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm font-semibold normal-case tracking-normal text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                id="soundfont-setting"
+                onChange={(event) => setSoundFont(event.target.value)}
+                value={soundFont}
+              >
+                {SOUND_FONT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </section>
 
         <section className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-xl">
           <div className="border-b border-gray-800 px-5 py-4 sm:px-6">

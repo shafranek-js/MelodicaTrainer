@@ -50,6 +50,7 @@ export type UseScorePlaybackState = {
 };
 
 export type UseScorePlaybackCallbacks = {
+  onPlaybackAttack: (midiNumbers: number[]) => void;
   onPlaybackComplete: () => void;
   resetScoring: () => void;
   setCurrentEventIndex: (index: number) => void;

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Note } from "tonal";
 import {
   freqToNoteAndCents,
-  melodicaRangeOptions,
-  normalizeMelodicaKeyCount,
 } from "../utils/utils";
-import type { MelodicaKeyCount } from "../utils/utils";
 import { usePitchDetector } from "../hooks/usePitchDetector";
+import { useInteractiveSynth } from "../hooks/useInteractiveSynth";
+import { useMidiInput } from "../hooks/useMidiInput";
+import { useAppSettings } from "../Settings/AppSettingsContext";
 import { useNoteHighwayScoring } from "./useNoteHighwayScoring";
 import { usePersistentState } from "../hooks/usePersistentState";
 import { useScoreFileLoader } from "./useScoreFileLoader";
@@ -36,6 +37,7 @@ import type { PlaybackEvent } from "./types";
 import { assignFingers } from "./fingerAssigner";
 import { usePhantomHand } from "./usePhantomHand";
 import { releaseSynthesizer } from "./audioPlayback";
+import { resolveEffectiveInputSource } from "./inputMode";
 import { useMusicXmlPanels } from "./useMusicXmlPanels";
 import { useStudyModePlayback } from "./useStudyModePlayback";
 import { useUserScoreLibrary } from "./UserScoreLibraryContext";
@@ -47,6 +49,8 @@ import { useEndStatsOverlay } from "./useEndStatsOverlay";
 import { useMidiScore } from "./useMidiScore";
 import { getMusicXmlFileErrorMessage } from "./musicXmlFile";
 import { getMsczFileErrorMessage } from "./msczFile";
+import type { PlaybackAttack } from "./noteHighwayKeyboardState";
+import { useMidiRecording } from "./useMidiRecording";
 import { getMidiFileErrorMessage } from "./midiParser";
 import {
   sanitizeMidiQuantizationMode,
@@ -73,15 +77,6 @@ const routeStatusClassNames: Record<RouteStatusTone, string> = {
   error: "border-red-800 bg-red-950/70 text-red-200",
 };
 
-const SOUNDFONTS = [
-    { label: "Melodica", value: "melodica.sf2" },
-    { label: "General MIDI Reed", value: "MS_Basic.sf3" },
-    { label: "Florestan Harmonica", value: "022_Florestan_Harmonica.sf2" },
-    { label: "Harmonica Essentials", value: "Harmonica_Essentials.sf2" },
-    { label: "Monsoons Hohner C", value: "Monsoons Hohner C Harmonica.sf2" },
-    { label: "Sonivox", value: "soundfont/sonivox.sf2" },
-];
-
 const sanitizeFiniteNumber = (value: unknown): number | undefined =>
   typeof value === "number" && Number.isFinite(value) ? value : undefined;
 
@@ -91,29 +86,22 @@ const sanitizeBoolean = (value: unknown): boolean | undefined =>
 const sanitizeString = (value: unknown): string | undefined =>
   typeof value === "string" ? value : undefined;
 
-const sanitizeSoundFont = (value: unknown): string | undefined => {
-  if (typeof value !== "string") return undefined;
-  return SOUNDFONTS.some((soundFont) => soundFont.value === value) ? value : "melodica.sf2";
-};
-
-const sanitizeMelodicaKeyCount = (value: unknown): MelodicaKeyCount | undefined => {
-  if (typeof value !== "number" && typeof value !== "string") return undefined;
-  return normalizeMelodicaKeyCount(value);
-};
-
 const LEGACY_STORAGE_KEYS = {
   preset: ["harptrainer_preset"],
   showNoteNames: ["harptrainer_show_note_names"],
-  soundfont: ["harptrainer_soundfont"],
   tempo: ["harptrainer_user_tempo"],
   transpose: ["harptrainer_transpose"],
 } as const;
 
 const MusicXML: React.FC = () => {
   const userLibrary = useUserScoreLibrary();
+  const {
+    inputMode,
+    melodicaRange: keyCount,
+    soundFont: selectedSf,
+  } = useAppSettings();
   // PERSISTENT STATES
   const [transpose, setTranspose] = usePersistentState<number>("melodicatrainer_transpose", 0, { legacyKeys: LEGACY_STORAGE_KEYS.transpose, sanitize: sanitizeFiniteNumber });
-  const [selectedKeyCount, setSelectedKeyCount] = usePersistentState<MelodicaKeyCount>("melodicatrainer_key_count", 32, { sanitize: sanitizeMelodicaKeyCount });
   const [showNoteNames, setShowNoteNames] = usePersistentState<boolean>("melodicatrainer_show_note_names", true, { legacyKeys: LEGACY_STORAGE_KEYS.showNoteNames, sanitize: sanitizeBoolean });
   const [fingeringGuide, setFingeringGuide] = usePersistentState<string>("melodicatrainer_fingering_guide", "numbers", { sanitize: sanitizeString });
   const [isStudyMode, setIsStudyMode] = usePersistentState<boolean>("melodicatrainer_study_mode", false, { sanitize: sanitizeBoolean });
@@ -129,13 +117,10 @@ const MusicXML: React.FC = () => {
       "auto",
       { sanitize: sanitizeMidiQuantizationMode },
     );
-
   const handleSetTempo = useCallback((newTempo: number) => {
     setUserTempoBpm(newTempo);
   }, [setUserTempoBpm]);
-  const [selectedSf, setSelectedSf] = usePersistentState<string>("melodicatrainer_soundfont", "melodica.sf2", { legacyKeys: LEGACY_STORAGE_KEYS.soundfont, sanitize: sanitizeSoundFont });
   const [selectedPreset, setSelectedPreset] = usePersistentState<string>("melodicatrainer_preset", "0:0", { legacyKeys: LEGACY_STORAGE_KEYS.preset, sanitize: sanitizeString });
-  const keyCount = normalizeMelodicaKeyCount(selectedKeyCount);
   const panels = useMusicXmlPanels();
 
   // VOLATILE STATES
@@ -168,6 +153,10 @@ const MusicXML: React.FC = () => {
   const [osmdScorePaneHeightPx, setOsmdScorePaneHeightPx] = useState(128);
   const [playbackEvents, setPlaybackEvents] = useState<PlaybackEvent[]>([]);
   const [playbackCompletionId, setPlaybackCompletionId] = useState(0);
+  const [playbackAttack, setPlaybackAttack] = useState<PlaybackAttack>({
+    midiNumbers: [],
+    sequence: 0,
+  });
   const [isTryingHighFidelityMscz, setIsTryingHighFidelityMscz] = useState(false);
 
   const showNumbers = fingeringGuide === "numbers" || fingeringGuide === "debugBoth";
@@ -368,8 +357,91 @@ const MusicXML: React.FC = () => {
     showVirtualHand,
   );
 
-  const { pitch, clarity, error: pitchError } = usePitchDetector(0.82, isPlaying && playbackEvents.length > 0, { allowedMidiNumbers: playableMidiNumbers, minRms: 0.012, stableFrames: 2 });
-  const detectedNote = useMemo(() => pitch ? freqToNoteAndCents(Number(pitch)) : null, [pitch]);
+  const [activePressedNotes, setActivePressedNotes] = useState<Set<number>>(() => new Set());
+  const {
+    error: interactiveSynthError,
+    noteOff: stopInteractiveNote,
+    noteOn: startInteractiveNote,
+  } = useInteractiveSynth({
+    audioContextRef,
+    soundFont: selectedSf,
+  });
+  const midiInput = useMidiInput({
+    onNoteOff: stopInteractiveNote,
+    onNoteOn: startInteractiveNote,
+  });
+  const effectiveInputSource = resolveEffectiveInputSource(
+    inputMode,
+    midiInput.connectedInputCount,
+  );
+
+  const handleVirtualNoteOn = useCallback((midi: number) => {
+    setActivePressedNotes((prev) => {
+      const next = new Set(prev);
+      next.add(midi);
+      return next;
+    });
+    startInteractiveNote(midi);
+  }, [startInteractiveNote]);
+
+  const handleVirtualNoteOff = useCallback((midi: number) => {
+    setActivePressedNotes((prev) => {
+      const next = new Set(prev);
+      next.delete(midi);
+      return next;
+    });
+    stopInteractiveNote(midi);
+  }, [stopInteractiveNote]);
+
+  const userActiveMidi = useMemo(() => {
+    const merged = new Set<number>();
+    midiInput.activeNotes.forEach((note) => merged.add(note));
+    activePressedNotes.forEach((note) => merged.add(note));
+    return merged;
+  }, [midiInput.activeNotes, activePressedNotes]);
+
+  const microphoneEnabled = effectiveInputSource === "mic" &&
+    isPlaying && playbackEvents.length > 0;
+  const { pitch, clarity, error: pitchError } = usePitchDetector(0.82, microphoneEnabled, {
+    allowedMidiNumbers: playableMidiNumbers,
+    minRms: 0.012,
+    stableFrames: 2,
+  });
+  const microphoneDetectedNote = useMemo(
+    () => pitch ? freqToNoteAndCents(Number(pitch)) : null,
+    [pitch],
+  );
+  const detectedNote = useMemo(() => {
+    if (userActiveMidi.size > 0) {
+      const lastMidi = Array.from(userActiveMidi).pop()!;
+      const noteName = Note.fromMidi(lastMidi);
+      return {
+        note: noteName,
+        pitchClass: Note.pitchClass(noteName),
+        cents: 0,
+      };
+    }
+    return effectiveInputSource === "mic" ? microphoneDetectedNote : null;
+  }, [effectiveInputSource, microphoneDetectedNote, userActiveMidi]);
+  const scoringDetectedNotes = useMemo(() => {
+    const notesByMidi = new Map<number, { cents: number; note: string }>();
+
+    activePressedNotes.forEach((midi) => {
+      notesByMidi.set(midi, { cents: 0, note: Note.fromMidi(midi) });
+    });
+    if (effectiveInputSource === "midi") {
+      midiInput.activeNotes.forEach((midi) => {
+        notesByMidi.set(midi, { cents: 0, note: Note.fromMidi(midi) });
+      });
+    } else if (microphoneDetectedNote) {
+      const midi = Note.midi(microphoneDetectedNote.note);
+      if (midi !== null) {
+        notesByMidi.set(midi, microphoneDetectedNote);
+      }
+    }
+
+    return Array.from(notesByMidi.values());
+  }, [activePressedNotes, effectiveInputSource, microphoneDetectedNote, midiInput.activeNotes]);
   const {
     handleStudyModeHit,
     isWaiting,
@@ -389,7 +461,7 @@ const MusicXML: React.FC = () => {
   const { accuracy, gameStats, lastHitIndex, resetScoring } = useNoteHighwayScoring({
     currentGameTimeMs,
     currentGameEvent,
-    detectedNote,
+    detectedNotes: scoringDetectedNotes,
     playbackEvents,
     playbackTimeline,
     targetEventIndex,
@@ -422,6 +494,10 @@ const MusicXML: React.FC = () => {
 
   const { stopPlayback, togglePlayback } = useScorePlayback({
     callbacks: {
+      onPlaybackAttack: (midiNumbers) => setPlaybackAttack((previous) => ({
+        midiNumbers,
+        sequence: previous.sequence + 1,
+      })),
       onPlaybackComplete: () => setPlaybackCompletionId((id) => id + 1),
       resetScoring,
       setCurrentEventIndex,
@@ -469,6 +545,12 @@ const MusicXML: React.FC = () => {
   });
   const handleRestartPlayback = useCallback(() => stopPlayback(true), [stopPlayback]);
   const handleToggleLoop = useCallback(() => setIsLooping((value) => !value), []);
+  const {
+    recordingDurationMs,
+    recordingError,
+    recordingState,
+    toggleRecording,
+  } = useMidiRecording({ fileName, soundFont: selectedSf });
   const stopPlaybackRef = useRef(stopPlayback);
 
   useEffect(() => {
@@ -497,7 +579,11 @@ const MusicXML: React.FC = () => {
     onSetTempo: handleSetTempo,
     onToggleLoop: handleToggleLoop,
     onTogglePlayback: togglePlayback,
+    onToggleRecording: toggleRecording,
     progress,
+    recordingDurationMs,
+    recordingError,
+    recordingState,
     tempo,
   });
 
@@ -681,20 +767,29 @@ const MusicXML: React.FC = () => {
           activeFinger,
           activeMidi,
           clarity,
+          connectedMidiInputCount: midiInput.connectedInputCount,
           detectedNote,
+          effectiveInputSource,
+          inputError: interactiveSynthError,
+          inputMode,
           fingerAssignments: fingerMap,
           isPlaying,
           isWaiting,
           keyCount,
           lastHitIndex,
+          midiAccessState: midiInput.accessState,
           phantomStates,
-          pitchError,
+          pitchError: effectiveInputSource === "mic" ? pitchError : null,
           shortestNoteDurationMs,
           showNoteNames,
           showNumbers,
           showVirtualHand,
           visibleGameEvents,
           visualPlayheadMs,
+          onNoteOn: handleVirtualNoteOn,
+          onNoteOff: handleVirtualNoteOff,
+          playbackAttack,
+          userActiveMidi,
         }}
         onCenterContextMenu={panels.toggleAllPanels}
         onCenterWheel={(deltaY) => {
@@ -720,8 +815,6 @@ const MusicXML: React.FC = () => {
           gpTracks,
           isPinned: panels.isDrawerPinned,
           isTryingHighFidelityMscz,
-          keyCount,
-          melodicaRanges: melodicaRangeOptions,
           midiParts,
           musicXmlParts,
           musicXmlStaves,
@@ -752,12 +845,7 @@ const MusicXML: React.FC = () => {
             stopPlayback(true);
             setMidiQuantizationMode(mode);
           },
-          onMelodicaRangeChange: setSelectedKeyCount,
           onSelectedPresetChange: setSelectedPreset,
-          onSoundFontChange: (soundFont) => {
-            setSelectedSf(soundFont);
-            stopPlayback();
-          },
           onTogglePin: () => panels.setIsDrawerPinned(!panels.isDrawerPinned),
           onTryHighFidelityMscz: () => { void handleHighFidelityMsczRetry(); },
           routeStatus,
@@ -769,8 +857,6 @@ const MusicXML: React.FC = () => {
           selectedMusicXmlStaffId,
           resolvedMidiQuantization,
           selectedPreset,
-          selectedSoundFont: selectedSf,
-          soundFonts: SOUNDFONTS,
         }}
         tempo={tempo}
         transposeControlsProps={{

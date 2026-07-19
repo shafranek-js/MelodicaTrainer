@@ -27,12 +27,13 @@ const makeNote = (overrides: Partial<PlaybackNote> = {}): PlaybackNote => ({
   ...overrides,
 });
 
-const makeAudioContext = () =>
+const makeAudioContext = (state: AudioContextState = "running") =>
   ({
     audioWorklet: {
       addModule: vi.fn().mockResolvedValue(undefined),
     },
     destination: {},
+    state,
   }) as unknown as AudioContext;
 
 const makeFetchResponse = () =>
@@ -58,6 +59,7 @@ const makeSynth = () => ({
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("audio playback helpers", () => {
@@ -99,6 +101,53 @@ describe("audio playback helpers", () => {
     expect(service.getAvailablePresets()).toEqual([
       { bank: 0, program: 22, name: "Harmonica" },
     ]);
+  });
+
+  it("replaces an AudioContext that has already been closed", () => {
+    const replacement = makeAudioContext();
+    const AudioContextMock = vi.fn(function AudioContextConstructor() {
+      return replacement;
+    });
+    vi.stubGlobal("AudioContext", AudioContextMock);
+    const service = new AudioPlaybackService();
+
+    expect(service.ensureAudioContext(makeAudioContext("closed"))).toBe(replacement);
+    expect(AudioContextMock).toHaveBeenCalledOnce();
+  });
+
+  it("does not reuse a pending SoundFont load from a different AudioContext", async () => {
+    const synth = makeSynth();
+    const fetchResolvers: Array<(response: Response) => void> = [];
+    const fetchFn = vi.fn(() => new Promise<Response>((resolve) => {
+      fetchResolvers.push(resolve);
+    }));
+    const createSynthesizer = vi.fn(() => synth as never);
+    const service = new AudioPlaybackService({
+      baseUrl: "/",
+      createSynthesizer,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      logger: { log: vi.fn(), warn: vi.fn() },
+      setTimeoutFn: (callback) => {
+        callback();
+        return 0 as never;
+      },
+    });
+    const staleContext = makeAudioContext();
+    const activeContext = makeAudioContext();
+
+    const staleLoad = service.initSynthesizer(staleContext, "test.sf2");
+    const activeLoad = service.initSynthesizer(activeContext, "test.sf2");
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+
+    fetchResolvers.forEach((resolve) => resolve({
+      ok: true,
+      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+    } as unknown as Response));
+
+    await expect(staleLoad).rejects.toThrow("SoundFont load superseded");
+    await expect(activeLoad).resolves.toBe(synth);
+    expect(createSynthesizer).toHaveBeenCalledOnce();
+    expect(createSynthesizer).toHaveBeenCalledWith(activeContext);
   });
 
   it("cancels pending noteOff timers when playback stops", async () => {
@@ -167,5 +216,29 @@ describe("audio playback helpers", () => {
 
     await vi.runOnlyPendingTimersAsync();
     expect(synth.noteOff).toHaveBeenCalledWith(2, 60);
+  });
+
+  it("records the synthesized mix and closes notes without stopping live audio", async () => {
+    let now = 0;
+    const synth = makeSynth();
+    const service = new AudioPlaybackService({
+      baseUrl: "/",
+      createSynthesizer: () => synth as never,
+      fetchFn: vi.fn(makeFetchResponse) as unknown as typeof fetch,
+      logger: { log: vi.fn(), warn: vi.fn() },
+    });
+    await service.initSynthesizer(makeAudioContext(), "test.sf2");
+    service.changeInstrument(22, 0);
+    expect(service.startMidiRecording(() => now)).toBe(true);
+    service.noteOn(60, 105);
+    now = 180;
+    const recording = service.finishMidiRecording();
+
+    expect(recording?.durationMs).toBe(180);
+    expect(recording?.events.some((event) =>
+      event.kind === "program-change" && event.value === 22)).toBe(true);
+    expect(recording?.events.filter((event) => event.kind === "note-on")).toHaveLength(1);
+    expect(recording?.events.filter((event) => event.kind === "note-off")).toHaveLength(1);
+    expect(synth.noteOff).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,6 @@ import type { ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
-import { melodicaRangeOptions } from "../utils/utils";
 
 vi.mock("./ScoreLibraryDialog", () => ({ ScoreLibraryDialog: () => null }));
 
@@ -22,8 +21,6 @@ const makeProps = (): ComponentProps<typeof ScoreSettingsPanel> => ({
   gpTracks: [],
   isPinned: false,
   isTryingHighFidelityMscz: false,
-  keyCount: 32,
-  melodicaRanges: melodicaRangeOptions,
   midiNotationStatus: "preparing",
   midiNotationWarnings: [],
   midiParts: [],
@@ -36,13 +33,11 @@ const makeProps = (): ComponentProps<typeof ScoreSettingsPanel> => ({
   onAccompanimentVolumeChange: vi.fn(),
   onGpTrackChange: vi.fn(),
   onLibraryScoreLoad: vi.fn(),
-  onMelodicaRangeChange: vi.fn(),
   onMidiPartChange: vi.fn(),
   onMusicXmlPartChange: vi.fn(),
   onMusicXmlStaffChange: vi.fn(),
   onMidiQuantizationChange: vi.fn(),
   onSelectedPresetChange: vi.fn(),
-  onSoundFontChange: vi.fn(),
   onTogglePin: vi.fn(),
   onTryHighFidelityMscz: vi.fn(),
   resolvedMidiQuantization: null,
@@ -58,8 +53,6 @@ const makeProps = (): ComponentProps<typeof ScoreSettingsPanel> => ({
   selectedMusicXmlPartId: null,
   selectedMusicXmlStaffId: null,
   selectedPreset: "0:0",
-  selectedSoundFont: "melodica.sf2",
-  soundFonts: [{ label: "Melodica", value: "melodica.sf2" }],
 });
 
 describe("ScoreSettingsPanel MSCZ fallback", () => {

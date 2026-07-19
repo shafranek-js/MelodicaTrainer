@@ -20,20 +20,35 @@ const library = vi.hoisted(() => ({
 vi.mock("../MusicXML/UserScoreLibraryContext", () => ({
   useUserScoreLibrary: () => library,
 }));
+vi.mock("../hooks/useMidiInput", () => ({
+  useMidiInput: () => ({
+    accessState: "ready",
+    activeNotes: new Set<number>(),
+    connectedInputCount: 2,
+    error: null,
+  }),
+}));
 
 import Settings from "./Settings";
+import { AppSettingsProvider } from "./AppSettingsContext";
+import { decodePersistentValue } from "../hooks/usePersistentState";
 
 const renderSettings = () => {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  act(() => root.render(<Settings />));
+  act(() => root.render(
+    <AppSettingsProvider>
+      <Settings />
+    </AppSettingsProvider>,
+  ));
   return { container, root };
 };
 
 describe("Settings local library", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    localStorage.clear();
     library.directoryHandle = null;
     library.error = null;
     library.index = { entries: [], issues: [], lastScanAt: null };
@@ -53,6 +68,38 @@ describe("Settings local library", () => {
     const { container, root } = renderSettings();
     expect(container.textContent).toContain("Choose local library folder");
     act(() => root.unmount());
+  });
+
+  it("owns the shared instrument and input settings", () => {
+    const { container, root } = renderSettings();
+    expect(container.textContent).toContain("Instrument and input");
+    expect(container.textContent).toContain("2 MIDI inputs connected");
+    const noteInput = container.querySelector<HTMLSelectElement>("#note-input-mode");
+    expect(noteInput?.value).toBe("auto");
+    const labels = Array.from(container.querySelectorAll("label")).map((label) => label.textContent);
+    expect(labels.some((label) => label?.includes("Melodica Range"))).toBe(true);
+    expect(labels.some((label) => label?.includes("SoundFont"))).toBe(true);
+    act(() => root.unmount());
+  });
+
+  it("persists range, input mode and SoundFont from the Settings page", () => {
+    const { container, root } = renderSettings();
+    const changes = [
+      ["#melodica-range-setting", "44"],
+      ["#note-input-mode", "midi"],
+      ["#soundfont-setting", "MS_Basic.sf3"],
+    ] as const;
+    act(() => {
+      changes.forEach(([selector, value]) => {
+        const select = container.querySelector<HTMLSelectElement>(selector)!;
+        select.value = value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+    act(() => root.unmount());
+    expect(decodePersistentValue(localStorage.getItem("melodicatrainer_key_count")!)).toBe(44);
+    expect(decodePersistentValue(localStorage.getItem("melodicatrainer_input_mode")!)).toBe("midi");
+    expect(decodePersistentValue(localStorage.getItem("melodicatrainer_soundfont")!)).toBe("MS_Basic.sf3");
   });
 
   it("shows the browser fallback when folder access is unsupported", () => {

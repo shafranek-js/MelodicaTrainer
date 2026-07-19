@@ -1,11 +1,11 @@
 # webmscore provenance
 
-This directory contains the browser runtime from `webmscore` 1.0.0.
+This directory contains the browser runtime from `webmscore` 1.2.1.
 
 - Upstream: <https://github.com/LibreScore/webmscore>
-- Tag: `v1.0.0`
-- Commit: `27fae042078cbaed396920ff70662cca0417431c`
-- npm package: <https://registry.npmjs.org/webmscore/-/webmscore-1.0.0.tgz>
+- Tag: `v1.2.1`
+- Commit: `78db5eb5437ccf1d17e0c4820374ee12f8862ce9`
+- npm package: <https://registry.npmjs.org/webmscore/-/webmscore-1.2.1.tgz>
 - License: GPL-3.0; see `LICENSE.GPL`
 
 Only the browser JavaScript entry and the three runtime assets needed for MSCZ to
@@ -15,10 +15,10 @@ only when a user explicitly requests the optional high-fidelity conversion.
 SHA-256:
 
 ```text
-609B7392D70F6170096E54558664D4DC27A4E11CA5EB06481C0113BDCAEE1BB1  webmscore.js
-92E09D8C4B1291615EA037717EDEDA2F1150802D64A5E7CB614FCE0339525CF4  webmscore.lib.data
-D63CF90470CDCE64A4FA2400262D9DC394C38A5CD21D8D53871A235CF9A1802E  webmscore.lib.mem.wasm
-08B3AFC6A0B19851A676411ED370A185A3568F91560F4B6A124F2D37D5ED88FB  webmscore.lib.wasm
+145877CFFCC6490D56A21DB7E080127FA748A6B67D3113703ECEF8C15EC02D1D  webmscore.js
+0973455D6388C133A13106E4022C1ECC276AE9ECA7A0386ED9A22ECA04FE0750  webmscore.lib.data
+5C1FCF2D898369AE2B7304E3EBEF355904999FEFE0A81BA261548D3E414D31A9  webmscore.lib.mem.wasm
+512CAD6B503349ED6EC46F996256B4A7F00B6B8C8F070B2AF829C68A943CB504  webmscore.lib.wasm
 ```
 
 When updating these files, update the exact upstream tag and hashes here and

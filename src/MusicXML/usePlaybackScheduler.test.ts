@@ -17,6 +17,7 @@ const playbackEvent: PlaybackEvent = {
 const createPlaybackOptions = (): MutableRefObject<UseScorePlaybackOptions> => ({
   current: {
     callbacks: {
+      onPlaybackAttack: vi.fn(),
       onPlaybackComplete: vi.fn(),
       resetScoring: vi.fn(),
       setCurrentEventIndex: vi.fn(),
@@ -67,6 +68,43 @@ afterEach(() => {
 });
 
 describe("usePlaybackScheduler loop completion", () => {
+  it("reports every attack when the same pitch is scheduled repeatedly", async () => {
+    vi.useFakeTimers();
+    const latestOptionsRef = createPlaybackOptions();
+    latestOptionsRef.current.state.playbackEvents = [{
+      ...playbackEvent,
+      notes: [{
+        articulation: "normal",
+        durationBeats: 1,
+        name: "C4",
+        shouldPlay: true,
+        tieStart: false,
+        tieStop: false,
+        velocity: 0.8,
+      }],
+    }];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    let schedulePlayback: ((startIndex: number, runId: number) => void) | null = null;
+    const Probe = () => {
+      schedulePlayback = usePlaybackScheduler({
+        latestOptionsRef,
+        playNotes: vi.fn(),
+        restartPlaybackLoop: vi.fn(() => false),
+        stopPlayback: vi.fn(),
+      }).schedulePlaybackRef.current;
+      return null;
+    };
+    await act(async () => root.render(createElement(Probe)));
+    act(() => {
+      schedulePlayback?.(0, 7);
+      schedulePlayback?.(0, 7);
+    });
+    expect(latestOptionsRef.current.callbacks.onPlaybackAttack).toHaveBeenNthCalledWith(1, [60]);
+    expect(latestOptionsRef.current.callbacks.onPlaybackAttack).toHaveBeenNthCalledWith(2, [60]);
+    await act(async () => root.unmount());
+  });
+
   it("restarts at the first event without reporting completion", async () => {
     vi.useFakeTimers();
     const latestOptionsRef = createPlaybackOptions();

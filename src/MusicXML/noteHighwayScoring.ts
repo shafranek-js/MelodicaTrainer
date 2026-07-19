@@ -17,27 +17,37 @@ export const getTargetMidiNumbers = (event: PlaybackEvent | undefined) =>
             .filter((midi): midi is number => midi !== null)
     );
 
-export const isDetectedPitchHit = ({
+export const getDetectedPitchHitMidi = ({
     currentGameEvent,
-    detectedNote,
+    detectedNotes,
     targetEventIndex,
     toleranceCents = NOTE_PITCH_TOLERANCE_CENTS,
 }: {
     currentGameEvent: PlaybackEvent | undefined;
-    detectedNote: ScoringDetectedNote | null;
+    detectedNotes: readonly ScoringDetectedNote[];
     targetEventIndex: number | null;
     toleranceCents?: number;
 }) => {
-    if (targetEventIndex === null || !detectedNote) return false;
+    if (targetEventIndex === null || detectedNotes.length === 0) return null;
 
-    const detectedMidi = Note.midi(detectedNote.note);
-    if (detectedMidi === null) return false;
+    const targetMidiNumbers = getTargetMidiNumbers(currentGameEvent);
+    for (const detectedNote of detectedNotes) {
+        const detectedMidi = Note.midi(detectedNote.note);
+        if (
+            detectedMidi !== null &&
+            targetMidiNumbers.has(detectedMidi) &&
+            Math.abs(detectedNote.cents) <= toleranceCents
+        ) {
+            return detectedMidi;
+        }
+    }
 
-    return (
-        getTargetMidiNumbers(currentGameEvent).has(detectedMidi) &&
-        Math.abs(detectedNote.cents) <= toleranceCents
-    );
+    return null;
 };
+
+export const isDetectedPitchHit = (
+    options: Parameters<typeof getDetectedPitchHitMidi>[0],
+) => getDetectedPitchHitMidi(options) !== null;
 
 export const getMissedEventIndexes = ({
     currentGameTimeMs,

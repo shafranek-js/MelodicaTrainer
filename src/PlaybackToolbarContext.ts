@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import type { RecordingState } from "./MusicXML/useMidiRecording";
 
 type GameStats = {
   hits: number;
@@ -19,6 +20,10 @@ export type PlaybackToolbarState = {
   gameStats?: GameStats;
   accuracy?: number;
   canPlayback?: boolean;
+  onToggleRecording?: () => void;
+  recordingDurationMs?: number;
+  recordingError?: string | null;
+  recordingState?: RecordingState;
 };
 
 export type PlaybackToolbarContextValue = {

@@ -7,6 +7,10 @@ import type { MelodicaKeyboardGeometry, MelodicaLayout } from "../utils/utils";
 import { PhantomHand } from "./PhantomHand";
 import type { NoteHighwayRenderItem } from "./noteHighwayLayout";
 import type { FingerVisualState } from "./usePhantomHand";
+import type { MidiAccessState } from "../hooks/useMidiInput";
+import type { EffectiveInputSource, InputMode } from "./inputMode";
+import { getKeyboardOverlayKeyState } from "./noteHighwayKeyboardState";
+import type { PlaybackAttack } from "./noteHighwayKeyboardState";
 
 type DetectedNote = {
   note: string;
@@ -15,35 +19,66 @@ type DetectedNote = {
 
 type PitchStatusBarProps = {
   clarity: string | null;
+  connectedMidiInputCount: number;
   detectedNote: DetectedNote | null;
+  effectiveInputSource: EffectiveInputSource;
+  inputError?: string | null;
+  inputMode: InputMode;
   isPlaying: boolean;
+  midiAccessState: MidiAccessState;
   pitchError: string | null;
 };
 
 export const PitchStatusBar = ({
   clarity,
+  connectedMidiInputCount,
   detectedNote,
+  effectiveInputSource,
+  inputError,
+  inputMode,
   isPlaying,
+  midiAccessState,
   pitchError,
-}: PitchStatusBarProps) => (
-  <div className="absolute left-3 right-3 top-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
-    <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-      <Mic size={14} />
-      {pitchError
-        ? "Mic unavailable"
-        : detectedNote
-          ? `${Note.pitchClass(detectedNote.note)} ${
-              detectedNote.cents > 0 ? "+" : ""
-            }${Math.round(detectedNote.cents)}c`
-          : isPlaying
-            ? "Listening"
-            : "Press play"}
-    </span>
-    <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
-      Clarity {clarity || "-"}
-    </span>
-  </div>
-);
+}: PitchStatusBarProps) => {
+  const sourceLabel = inputMode === "auto"
+    ? `Auto → ${effectiveInputSource === "midi" ? "MIDI" : "Mic"}`
+    : effectiveInputSource === "midi" ? "MIDI" : "Mic";
+  const midiStatus = midiAccessState === "unsupported"
+    ? "MIDI unsupported"
+    : midiAccessState === "denied"
+      ? "MIDI unavailable"
+      : midiAccessState === "requesting"
+        ? "Checking MIDI"
+        : connectedMidiInputCount === 0
+          ? "No MIDI device"
+          : `${connectedMidiInputCount} MIDI input${connectedMidiInputCount === 1 ? "" : "s"}`;
+  const activityLabel = inputError
+    ? "Instrument audio unavailable"
+    : effectiveInputSource === "mic" && pitchError
+      ? "Mic unavailable"
+      : detectedNote
+        ? `${Note.pitchClass(detectedNote.note)} ${
+            detectedNote.cents > 0 ? "+" : ""
+          }${Math.round(detectedNote.cents)}c`
+        : isPlaying
+          ? effectiveInputSource === "midi" && connectedMidiInputCount === 0
+            ? "Use screen keys or connect MIDI"
+            : "Listening"
+          : "Press play";
+
+  return (
+    <div className="absolute left-3 right-3 top-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-300 pointer-events-none z-[60]">
+      <span className="inline-flex items-center gap-2 rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+        <Mic size={14} />
+        <span className="font-bold text-emerald-300">{sourceLabel}</span>
+        <span>{activityLabel}</span>
+      </span>
+      <span className="rounded border border-gray-800 bg-gray-900/90 px-2 py-1">
+        {effectiveInputSource === "mic" ? `Clarity ${clarity || "-"}` : midiStatus}
+      </span>
+    </div>
+  );
+};
 
 type LaneTracksProps = {
   keys: MelodicaKeyboardGeometry["keys"];
@@ -223,6 +258,10 @@ type KeyboardAndHandOverlayProps = {
   onSvgWidthChange: (width: number) => void;
   phantomStates?: FingerVisualState[];
   showVirtualHand?: boolean;
+  onNoteOn?: (midi: number) => void;
+  onNoteOff?: (midi: number) => void;
+  userActiveMidi?: ReadonlySet<number>;
+  playbackAttack?: PlaybackAttack;
 };
 
 export const KeyboardAndHandOverlay = forwardRef<
@@ -237,6 +276,10 @@ export const KeyboardAndHandOverlay = forwardRef<
       onSvgWidthChange,
       phantomStates,
       showVirtualHand,
+      onNoteOn,
+      onNoteOff,
+      userActiveMidi,
+      playbackAttack,
     },
     ref,
   ) => (
@@ -247,16 +290,21 @@ export const KeyboardAndHandOverlay = forwardRef<
       >
         <MelodicaKeyboard
           formatPitchClass={(pitchClass) => pitchClass}
-          getKeyState={(key) => ({
-            activeColor: activeKeyboardMidi.get(key.midi),
-            isActive: activeKeyboardMidi.has(key.midi),
-          })}
+          getKeyState={(key) =>
+            getKeyboardOverlayKeyState(
+              key.midi,
+              activeKeyboardMidi,
+              userActiveMidi,
+              playbackAttack,
+            )}
           heightClassName="h-44 lg:h-56"
           innerInsetClassName="inset-0"
           layout={layout}
           minWhiteKeyWidthPx={0}
           showOctaves
           showNoteNames
+          onNoteOn={onNoteOn}
+          onNoteOff={onNoteOff}
         />
       </div>
 

@@ -3,6 +3,8 @@ import type { PlaybackNote } from "./types";
 import { WorkletSynthesizer } from "spessasynth_lib";
 import { musicXmlDebugLogger } from "./debugLogger";
 import { ACCOMPANIMENT_CHANNELS } from "./accompaniment";
+import { MidiRecordingSession } from "./midiRecording";
+import type { MidiRecording } from "./midiRecording";
 
 export type SoundFontPreset = {
   bank: number;
@@ -49,9 +51,18 @@ export class AudioPlaybackService {
   private currentSfName: string | null = null;
   private pendingSfName: string | null = null;
   private initPromise: Promise<WorkletSynthesizer> | null = null;
+  private initAudioContext: AudioContext | null = null;
   private initGeneration = 0;
   private noteGeneration = 0;
   private readonly noteOffTimers = new Set<TimerId>();
+  private readonly activeSynthNotes = new Map<
+    string,
+    { channel: number; count: number; midi: number; velocity: number }
+  >();
+  private readonly bankByChannel = new Map<number, number>();
+  private readonly programByChannel = new Map<number, number>();
+  private readonly volumeByChannel = new Map<number, number>();
+  private recordingSession: MidiRecordingSession | null = null;
 
   private readonly baseUrl: string;
   private readonly clearTimeoutFn: (timerId: TimerId) => void;
@@ -77,26 +88,35 @@ export class AudioPlaybackService {
   }
 
   ensureAudioContext(audioContext: AudioContext | null) {
-    if (audioContext) return audioContext;
+    if (audioContext && audioContext.state !== "closed") return audioContext;
     return new AudioContext();
   }
 
   async initSynthesizer(audioContext: AudioContext, sfName: string = "MS_Basic.sf3") {
-    if (this.initPromise && (this.currentSfName === sfName || this.pendingSfName === sfName)) {
+    if (
+      this.initPromise &&
+      this.initAudioContext === audioContext &&
+      (this.currentSfName === sfName || this.pendingSfName === sfName)
+    ) {
       return this.initPromise;
     }
 
     const generation = this.initGeneration + 1;
     this.initGeneration = generation;
     this.pendingSfName = sfName;
+    this.initAudioContext = audioContext;
 
     const assertCurrentGeneration = () => {
       if (generation !== this.initGeneration) {
         throw new Error(`SoundFont load superseded: ${sfName}`);
       }
+      if (audioContext.state === "closed") {
+        throw new Error("Audio context closed while loading the SoundFont.");
+      }
     };
 
     this.initPromise = (async () => {
+      assertCurrentGeneration();
       if (this.synth && this.currentSfName === sfName) return this.synth;
 
       this.logger.log(`Loading SoundFont: ${sfName}...`);
@@ -110,11 +130,7 @@ export class AudioPlaybackService {
       if (!this.synth) {
         this.logger.log("Loading SpessaSynth Worklet...");
         const workletUrl = `${this.baseUrl}spessasynth_processor.min.js`;
-        try {
-          await audioContext.audioWorklet.addModule(workletUrl);
-        } catch {
-          this.logger.log("Worklet already loaded or failed to load, continuing...");
-        }
+        await audioContext.audioWorklet.addModule(workletUrl);
         assertCurrentGeneration();
 
         this.synth = this.createSynthesizer(audioContext);
@@ -151,6 +167,7 @@ export class AudioPlaybackService {
       if (generation === this.initGeneration) {
         this.pendingSfName = null;
         this.initPromise = null;
+        this.initAudioContext = null;
       }
     }
   }
@@ -173,8 +190,18 @@ export class AudioPlaybackService {
     PLAYBACK_CHANNELS.forEach((channel) => {
       this.synth!.controllerChange(channel, 0, bank);
       this.synth!.programChange(channel, program);
+      this.bankByChannel.set(channel, bank);
+      this.programByChannel.set(channel, program);
+      this.recordingSession?.recordControlChange(channel, 0, bank);
+      this.recordingSession?.recordProgramChange(channel, program);
     });
     this.synth.controllerChange(PRIMARY_PLAYBACK_CHANNEL, 7, PRIMARY_CHANNEL_VOLUME);
+    this.volumeByChannel.set(PRIMARY_PLAYBACK_CHANNEL, PRIMARY_CHANNEL_VOLUME);
+    this.recordingSession?.recordControlChange(
+      PRIMARY_PLAYBACK_CHANNEL,
+      7,
+      PRIMARY_CHANNEL_VOLUME,
+    );
   }
 
   setAccompanimentVolume(volumePercent: number) {
@@ -184,7 +211,71 @@ export class AudioPlaybackService {
     );
     ACCOMPANIMENT_CHANNELS.forEach((channel) => {
       this.synth!.controllerChange(channel, 7, channelVolume);
+      this.volumeByChannel.set(channel, channelVolume);
+      this.recordingSession?.recordControlChange(channel, 7, channelVolume);
     });
+  }
+
+  private synthNoteKey(channel: number, midi: number) {
+    return `${channel}:${midi}`;
+  }
+
+  private sendNoteOn(channel: number, midi: number, velocity: number) {
+    if (!this.synth) return;
+    this.synth.noteOn(channel, midi, velocity);
+    const key = this.synthNoteKey(channel, midi);
+    const active = this.activeSynthNotes.get(key);
+    this.activeSynthNotes.set(key, {
+      channel,
+      count: (active?.count ?? 0) + 1,
+      midi,
+      velocity,
+    });
+    this.recordingSession?.recordNoteOn(channel, midi, velocity);
+  }
+
+  private sendNoteOff(channel: number, midi: number) {
+    if (!this.synth) return;
+    this.synth.noteOff(channel, midi);
+    const key = this.synthNoteKey(channel, midi);
+    const active = this.activeSynthNotes.get(key);
+    if (active && active.count > 1) {
+      this.activeSynthNotes.set(key, { ...active, count: active.count - 1 });
+    } else {
+      this.activeSynthNotes.delete(key);
+    }
+    this.recordingSession?.recordNoteOff(channel, midi);
+  }
+
+  private releaseRecordedActiveNotes() {
+    this.activeSynthNotes.forEach(({ channel, count, midi }) => {
+      for (let index = 0; index < count; index += 1) {
+        this.recordingSession?.recordNoteOff(channel, midi);
+      }
+    });
+    this.activeSynthNotes.clear();
+  }
+
+  startMidiRecording(now?: () => number) {
+    if (this.recordingSession) return false;
+    this.recordingSession = new MidiRecordingSession({
+      activeNotes: Array.from(this.activeSynthNotes.values()),
+      banks: this.bankByChannel,
+      programs: this.programByChannel,
+      volumes: this.volumeByChannel,
+    }, now);
+    return true;
+  }
+
+  finishMidiRecording(): MidiRecording | null {
+    const session = this.recordingSession;
+    if (!session) return null;
+    this.recordingSession = null;
+    return session.finish();
+  }
+
+  cancelMidiRecording() {
+    this.recordingSession = null;
   }
 
   stopAudioNodes(nodes?: Set<AudioScheduledSourceNode>) {
@@ -202,6 +293,7 @@ export class AudioPlaybackService {
     });
     nodes?.clear();
 
+    this.releaseRecordedActiveNotes();
     this.synth?.stopAll();
   }
 
@@ -209,6 +301,7 @@ export class AudioPlaybackService {
     this.initGeneration += 1;
     this.pendingSfName = null;
     this.initPromise = null;
+    this.initAudioContext = null;
     this.stopAudioNodes();
 
     try {
@@ -260,16 +353,24 @@ export class AudioPlaybackService {
       const velocity = Math.min(127, Math.max(0, Math.floor(note.velocity * 127)));
       const generation = this.noteGeneration;
 
-      this.synth!.noteOn(channel, midiNote, velocity);
+      this.sendNoteOn(channel, midiNote, velocity);
 
       const timerId = this.setTimeoutFn(() => {
         this.noteOffTimers.delete(timerId);
         if (this.synth && generation === this.noteGeneration) {
-          this.synth.noteOff(channel, midiNote);
+          this.sendNoteOff(channel, midiNote);
         }
       }, soundDurationMs);
       this.noteOffTimers.add(timerId);
     });
+  }
+
+  noteOn(midiNote: number, velocity = 100, channel = PRIMARY_PLAYBACK_CHANNEL) {
+    this.sendNoteOn(channel, midiNote, velocity);
+  }
+
+  noteOff(midiNote: number, channel = PRIMARY_PLAYBACK_CHANNEL) {
+    this.sendNoteOff(channel, midiNote);
   }
 }
 
@@ -303,3 +404,15 @@ export const playPlaybackNotes = (
   tempoScale = 1,
   channel = PRIMARY_PLAYBACK_CHANNEL,
 ) => audioPlaybackService.playPlaybackNotes(notes, tempoBpm, tempoScale, channel);
+
+export const noteOn = (midiNote: number, velocity = 100, channel = PRIMARY_PLAYBACK_CHANNEL) =>
+  audioPlaybackService.noteOn(midiNote, velocity, channel);
+
+export const noteOff = (midiNote: number, channel = PRIMARY_PLAYBACK_CHANNEL) =>
+  audioPlaybackService.noteOff(midiNote, channel);
+
+export const startMidiRecording = () => audioPlaybackService.startMidiRecording();
+
+export const finishMidiRecording = () => audioPlaybackService.finishMidiRecording();
+
+export const cancelMidiRecording = () => audioPlaybackService.cancelMidiRecording();

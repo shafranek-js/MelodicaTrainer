@@ -25,6 +25,7 @@ const noteEvent: PlaybackEvent = {
 const createOptions = (): MutableRefObject<UseScorePlaybackOptions> => ({
   current: {
     callbacks: {
+      onPlaybackAttack: vi.fn(),
       onPlaybackComplete: vi.fn(),
       resetScoring: vi.fn(),
       setCurrentEventIndex: vi.fn(),
