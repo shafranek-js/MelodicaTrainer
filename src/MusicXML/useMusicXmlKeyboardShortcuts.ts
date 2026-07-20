@@ -5,6 +5,8 @@ type UseMusicXmlKeyboardShortcutsOptions = {
   onSetTempo: (tempo: number) => void;
   onTogglePlayback: () => void;
   tempo: number;
+  onToggleRecording?: () => void;
+  recordingState?: string;
 };
 
 export const useMusicXmlKeyboardShortcuts = ({
@@ -12,6 +14,8 @@ export const useMusicXmlKeyboardShortcuts = ({
   onSetTempo,
   onTogglePlayback,
   tempo,
+  onToggleRecording,
+  recordingState,
 }: UseMusicXmlKeyboardShortcutsOptions) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -28,7 +32,11 @@ export const useMusicXmlKeyboardShortcuts = ({
         onTogglePlayback();
       } else if (e.code === "Escape") {
         e.preventDefault();
-        onResetPlayback();
+        if (recordingState === "recording") {
+          onToggleRecording?.();
+        } else {
+          onResetPlayback();
+        }
       } else if (e.key === "+" || e.key === "=") {
         onSetTempo(Math.min(240, tempo + 5));
       } else if (e.key === "-" || e.key === "_") {
@@ -38,5 +46,5 @@ export const useMusicXmlKeyboardShortcuts = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onResetPlayback, onSetTempo, onTogglePlayback, tempo]);
+  }, [onResetPlayback, onSetTempo, onTogglePlayback, tempo, onToggleRecording, recordingState]);
 };

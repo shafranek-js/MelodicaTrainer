@@ -58,9 +58,25 @@
     filter: invert(100%) hue-rotate(180deg);
 }
 
-/* Keep notes bright while softening the five horizontal staff lines to match alphaTab. */
-.osmd-dark .vf-measure > path[fill="none"] {
-    stroke: #4b5563;
+/* Keep staff lines, ledger lines at 1px thickness and soft grey color matching alphaTab */
+.osmd-dark svg path[fill="none"]:not(.vf-note *):not(.vf-stavenote *):not(.vf-stem *):not(.vf-notehead *):not(.vf-flag *) {
+    stroke: #9ca3af !important;
+    stroke-width: 1px !important;
+}
+
+/* Style vertical barlines (which are rect elements outside note/stem groups) to 1px and soft grey */
+.osmd-dark svg rect[width="1"]:not(.vf-note *):not(.vf-stavenote *):not(.vf-stem *):not(.vf-notehead *):not(.vf-flag *) {
+    fill: #9ca3af !important;
+    width: 1px !important;
+    stroke: none !important;
+    stroke-width: 0px !important;
+}
+
+/* Style thicker vertical barlines' colors to soft grey while preserving their original width */
+.osmd-dark svg rect:not([width="1"]):not(.vf-note *):not(.vf-stavenote *):not(.vf-stem *):not(.vf-notehead *):not(.vf-flag *) {
+    fill: #9ca3af !important;
+    stroke: none !important;
+    stroke-width: 0px !important;
 }
 
 .alpha-tab-dark .at-cursor-beat {

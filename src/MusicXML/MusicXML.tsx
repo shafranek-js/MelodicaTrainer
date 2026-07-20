@@ -241,6 +241,7 @@ const MusicXML: React.FC = () => {
     setPlaybackEvents,
     setRouteStatus,
     transpose,
+    showNoteNames,
   });
 
   const {
@@ -268,6 +269,7 @@ const MusicXML: React.FC = () => {
     setRouteStatus,
     setTranspose,
     transpose,
+    showNoteNames,
   });
 
   const accompanimentTracks = useMemo<AccompanimentTrack[]>(() => {
@@ -602,6 +604,8 @@ const MusicXML: React.FC = () => {
     onSetTempo: handleSetTempo,
     onTogglePlayback: togglePlayback,
     tempo,
+    onToggleRecording: toggleRecording,
+    recordingState,
   });
 
   const isBpmOverlayVisible = useBpmOverlay(tempo);

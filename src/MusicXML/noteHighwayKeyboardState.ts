@@ -1,5 +1,5 @@
 import { Note } from "tonal";
-import { getSuzukiNoteColor } from "../utils/utils";
+import { getCandyNoteColor } from "../utils/utils";
 
 export type PlaybackAttack = {
   midiNumbers: readonly number[];
@@ -12,18 +12,17 @@ export const getKeyboardOverlayKeyState = (
   userActiveMidi?: ReadonlySet<number>,
   playbackAttack?: PlaybackAttack,
 ) => {
-  const isTarget = activeKeyboardMidi.has(midi);
   const isUserActive = userActiveMidi?.has(midi) ?? false;
   const playbackPulseId = playbackAttack?.midiNumbers.includes(midi)
     ? playbackAttack.sequence
     : undefined;
   return {
     activeColor: isUserActive
-      ? getSuzukiNoteColor(Note.fromMidi(midi))
+      ? getCandyNoteColor(Note.fromMidi(midi)).shell
       : activeKeyboardMidi.get(midi),
-    isActive: isTarget || isUserActive,
-    isTarget,
-    targetColor: activeKeyboardMidi.get(midi),
+    isActive: activeKeyboardMidi.has(midi) || isUserActive,
+    isTarget: false,
+    targetColor: undefined,
     ...(playbackPulseId === undefined ? {} : { playbackPulseId }),
   };
 };

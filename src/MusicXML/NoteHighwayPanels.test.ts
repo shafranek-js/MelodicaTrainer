@@ -2,16 +2,16 @@ import { describe, expect, it } from "vitest";
 import { getKeyboardOverlayKeyState } from "./noteHighwayKeyboardState";
 
 describe("Note Highway keyboard state", () => {
-  it("uses Suzuki fill for a user-held target while preserving the target ring", () => {
+  it("uses Candy fill for a user-held target and disables the target ring", () => {
     expect(getKeyboardOverlayKeyState(
       60,
       new Map([[60, "#f43f5e"]]),
       new Set([60]),
     )).toEqual({
-      activeColor: "#ef4444",
+      activeColor: "#ff6b6b",
       isActive: true,
-      isTarget: true,
-      targetColor: "#f43f5e",
+      isTarget: false,
+      targetColor: undefined,
     });
   });
 
@@ -31,8 +31,8 @@ describe("Note Highway keyboard state", () => {
     expect(getKeyboardOverlayKeyState(60, new Map([[60, "#f43f5e"]]))).toEqual({
       activeColor: "#f43f5e",
       isActive: true,
-      isTarget: true,
-      targetColor: "#f43f5e",
+      isTarget: false,
+      targetColor: undefined,
     });
   });
 });

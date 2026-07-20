@@ -22,6 +22,7 @@ type UseMusicXmlScoreOptions = {
   setPlaybackEvents: (events: PlaybackEvent[]) => void;
   setRouteStatus: (status: { tone: "info" | "success" | "error"; message: string }) => void;
   transpose: number;
+  showNoteNames: boolean;
 };
 
 export const useMusicXmlScore = ({
@@ -33,6 +34,7 @@ export const useMusicXmlScore = ({
   setPlaybackEvents,
   setRouteStatus,
   transpose,
+  showNoteNames,
 }: UseMusicXmlScoreOptions) => {
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [partSelection, setPartSelection] = useState<{
@@ -159,6 +161,7 @@ export const useMusicXmlScore = ({
       setFileContent(
         injectMelodicaLabels(selectedRawFileContent, {
           keyCount,
+          labelMode: showNoteNames ? "note" : "none",
           staffNumber: selectedMusicXmlStaffNumber,
           transpose,
         })
@@ -182,6 +185,7 @@ export const useMusicXmlScore = ({
     setPlaybackEvents,
     setRouteStatus,
     transpose,
+    showNoteNames,
   ]);
 
   useEffect(() => {

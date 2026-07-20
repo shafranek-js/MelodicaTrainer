@@ -52,7 +52,7 @@ export const injectHarmonicaTabs = (
 
 type InjectMelodicaLabelsOptions = {
   keyCount: MelodicaKeyCount;
-  labelMode?: "note" | "keyNumber";
+  labelMode?: "note" | "keyNumber" | "none";
   staffNumber?: string | null;
   transpose: number;
 };

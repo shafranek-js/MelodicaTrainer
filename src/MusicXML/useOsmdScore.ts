@@ -94,6 +94,12 @@ export const useOsmdScore = ({
       cursorsOptions: [{ type: CursorType.ThinLeft, color: "#10b981", alpha: 0.85, follow: true }],
     });
     configureSingleLineSheetWidth(osmd.EngravingRules);
+    // Unify staff line thickness and color to match alphaTab after dark mode inversion
+    osmd.EngravingRules.StaffLineWidth = 0.1;
+    osmd.EngravingRules.StaffLineColor = "#9ca3af";
+    osmd.EngravingRules.LedgerLineWidth = 0.1;
+    osmd.EngravingRules.LedgerLineColorDefault = "#9ca3af";
+    osmd.EngravingRules.SystemThinLineWidth = 0.1;
     osmdInstanceRef.current = osmd;
 
     osmd

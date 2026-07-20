@@ -167,8 +167,9 @@ export const getMelodicaKeyForNote = (
 export const getMelodicaKeyLabelForNote = (
   keyCount: MelodicaKeyCount,
   targetNote: string,
-  mode: "note" | "keyNumber" = "note"
+  mode: "note" | "keyNumber" | "none" = "note"
 ) => {
+  if (mode === "none") return null;
   const key = getMelodicaKeyForNote(keyCount, targetNote);
   if (!key) return null;
 

@@ -40,6 +40,7 @@ type UseMidiScoreOptions = {
   setRouteStatus: (status: RouteStatus) => void;
   setTranspose: (transpose: number) => void;
   transpose: number;
+  showNoteNames: boolean;
 };
 
 type ParsedMidiResult = {
@@ -51,8 +52,13 @@ export const createMidiDisplayXml = (
   musicXml: string,
   keyCount: MelodicaKeyCount,
   transpose: number,
+  showNoteNames = true,
 ) => createFirstStaffDisplayXml(
-  injectMelodicaLabels(musicXml, { keyCount, transpose }),
+  injectMelodicaLabels(musicXml, {
+    keyCount,
+    labelMode: showNoteNames ? "note" : "none",
+    transpose,
+  }),
 );
 
 export const useMidiScore = ({
@@ -67,6 +73,7 @@ export const useMidiScore = ({
   setRouteStatus,
   setTranspose,
   transpose,
+  showNoteNames,
 }: UseMidiScoreOptions) => {
   const [selectedMidiPartId, setSelectedMidiPartId] = useState<string | null>(null);
   const shouldAutoTransposeRef = useRef(false);
@@ -148,12 +155,17 @@ export const useMidiScore = ({
   const midiDisplayFileContent = useMemo(() => {
     if (!notationResult) return null;
     try {
-      return createMidiDisplayXml(notationResult.musicXml, keyCount, transpose);
+      return createMidiDisplayXml(
+        notationResult.musicXml,
+        keyCount,
+        transpose,
+        showNoteNames,
+      );
     } catch (error) {
       console.error("MIDI notation transform error:", error);
       return null;
     }
-  }, [keyCount, notationResult, transpose]);
+  }, [keyCount, notationResult, transpose, showNoteNames]);
 
   const midiNotationStatus: MidiNotationStatus = !isMidiFile
     ? "unavailable"
